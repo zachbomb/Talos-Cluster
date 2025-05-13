@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - nginx-external/ks.yaml
+  - nginx-internal/ks.yaml
+  - namespace.yaml
+  - homeassistant/ks.yaml
+  - homebridge/ks.yaml
+  - homepage/ks.yaml
+  - minio/ks.yaml
+  - pihole/ks.yaml
+  - proxmox/ks.yaml
+  - truenas/ks.yaml
