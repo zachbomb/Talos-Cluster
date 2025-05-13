@@ -1,0 +1,166 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+    name: overseerr
+    namespace: media
+spec:
+    interval: 15m
+    chart:
+        spec:
+            chart: overseerr
+            version: 15.6.0
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+    timeout: 20m
+    releaseName: overseerr
+    values:
+        credentials:
+            s3:
+                type: s3
+                url: "${S3URL}"
+                bucket: "${S3PREFIX}-overseerr"
+                accessKey: "${S3ID}"
+                secretKey: "${S3KEY}"
+                encrKey: "${S3KEY}"
+        TZ: America/Los_Angeles
+        ingress:
+            main:
+                enabled: true
+                ingressClassName: internal
+                integrations:
+                    traefik:
+                        enabled: false
+                        middlewares:
+                         - name: local
+                           namespace: traefik
+                    certManager:
+                        certificateIssuer: wethecommon-prod-cert
+                        enabled: true
+                    homepage:
+                        description: Content Requesting Service
+                        enabled: true
+                        group: Content Management
+                        icon: ""
+                        name: Overseerr
+                        widget:
+                            custom:
+                              url: http://192.168.10.207:5055
+                              key: MTczNjMyNDAxNjE5MGMzMThjZDQ1LWRiNmUtNGFkZC1hMDM3LWEwM2FiMzg2ZDdkYQ==
+                            enabled: true
+                hosts:
+                    - host: "overseerr.${BASE_DOMAIN}"
+                      paths:
+                        - path: /
+                          pathType: Prefix
+        service:
+            main:
+                enabled: true
+                loadBalancerIP: ${OVERSEERR_IP}
+                ports:
+                    main:
+                        port: 5055
+                        targetPort: 5055
+                type: LoadBalancer
+        persistence:
+            config:
+                enabled: true
+                main:
+                    enabled: true
+                    mountPath: /config
+                    volsync:
+                    - name: config
+                      type: restic
+                      credentials: s3
+                      dest:
+                        enabled: true
+                      src:
+                        enabled: true
+            media:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data
+                server: 192.168.10.123
+                mountPath: /media
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            movies:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/media/movies
+                server: 192.168.10.123
+                mountPath: /movies
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            tv:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/media/tv
+                server: 192.168.10.123
+                mountPath: /tv
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            downloads:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/usenet
+                server: 192.168.10.123
+                mountPath: /usenet
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+#            backup:
+#               enabled: true
+#                mountPath: /backups
+#                volsync:
+#                    - name: b2
+#                      type: restic
+#                      credentials: s3
+#                      dest:
+#                        enabled: true
+#                      src:
+#                        enabled: true
+        securityContext:
+            container:
+                UMASK: "022"
+                readOnlyRootFilesystem: false
+                runAsGroup: 1000
+                runAsUser: 1000
+            pod:
+                fsGroup: 1000
+                fsGroupChangePolicy: OnRootMismatch
+        workload:
+            main:
+                podSpec:
+                    containers:
+                        main:
+                            env:
+                                LOG_LEVEL: info
+                replicas: 1
+                type: Deployment

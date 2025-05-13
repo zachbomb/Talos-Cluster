@@ -1,0 +1,61 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+    name: homeassistant
+    namespace: networking
+spec:
+    interval: 15m
+    chart:
+        spec:
+            chart: external-service
+            version: 15.6.2
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+    releaseName: homeassistant
+    values:
+        ingress:
+            main:
+                enabled: true
+                ingressClassName: internal
+                hosts:
+                    - host: homeassistant.${BASE_DOMAIN}
+                      paths:
+                        - path: /
+                          pathType: Prefix
+#                tls:
+#                    hosts:
+#                        - homeassistant.${BASE_DOMAIN}
+#                    secretName: homeassistant-tls
+                integrations:
+                    traefik:
+                        enabled: false
+                        middlewares:
+                            - name: local
+                              namespace: traefik
+                    certManager:
+                        enabled: true
+                        certificateIssuer: wethecommon-prod-cert
+                    homepage:
+                        enabled: false
+        release_name: homeassistant
+        service:
+            main:
+                enabled: true
+                externalIP: 192.168.10.191
+                ports:
+                    main:
+                        enabled: true
+                        port: 8123
+                        protocol: http
+                type: ExternalIP
+                useSlice: false
+        workload:
+            main:
+                enabled: false
+                podSpec:
+                    containers:
+                        main: {}

@@ -1,0 +1,167 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: radarr
+  namespace: media
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: radarr
+      version: 23.25.3
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  timeout: 20m
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    TZ: America/Los_Angeles
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-radarr"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    exportarrImage:
+      pullPolicy: IfNotPresent
+      repository: ghcr.io/onedr0p/exportarr
+      tag: v2.2.0@sha256:320b0ea7399f4b9af4741dcdddd7d40c05c36b0359679305d8a54df4e97065df
+    securityContext:
+      container:
+        UMASK: "0022"
+        readOnlyRootFilesystem: false
+        runAsGroup: 1000
+        runAsUser: 1000
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    
+    metrics:
+      main:
+        enabled: false
+    workload:
+      exportarr:
+        enabled: false
+        
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${RADARR_IP}
+        ports:
+          main:
+            port: 7878
+        
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          traefik:
+            enabled: false
+            middlewares:
+            - name: local
+              namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            description: Movie Downloader/Manager
+            enabled: true
+            group: -*rrs
+            icon: ""
+            name: Radarr
+            widget:
+              custom:
+               key: c0a84c5da5804c47a146ea036e5b961d
+              enabled: true
+        hosts:
+          - host: "radarr.${BASE_DOMAIN}"
+    persistence:
+      config:
+        enabled: true
+        readOnly: false
+        main:
+          mountPath: /config
+          volsync:
+          - name: config
+            credentials: s3
+            type: restic
+            dest:
+              enabled: true
+              cacheCapacity: 10Gi
+            src:
+              enabled: true
+              cacheCapacity: 10Gi
+          exportarr:
+            mountPath: /config
+            readOnly: true
+      media:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
+      movies:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        server: 192.168.10.123
+        mountPath: /movies
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
+      downloads:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/usenet
+        server: 192.168.10.123
+        mountPath: /usenet
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
+      backup:
+        enabled: true
+        mountPath: /backups
+      #  volsync:
+      #  - credentials: s3
+      #    name: backup
+      #    type: restic
+      #    dest:
+      #      enabled: true
+      #    src:
+      #      enabled: true
+            

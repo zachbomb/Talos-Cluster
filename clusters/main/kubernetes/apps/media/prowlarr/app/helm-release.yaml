@@ -1,0 +1,42 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+    name: prowlarr
+    namespace: media
+spec:
+    interval: 15m
+    chart:
+        spec:
+            chart: external-service
+            version: 15.6.2
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+    releaseName: prowlarr
+    values:
+        service:
+            main:
+                enabled: true
+                type: ExternalIP
+                externalIP: 192.168.10.10
+                ports:
+                    main:
+                        enabled: true
+                        protocol: http
+                        port: 9696
+        ingress:
+            main:
+                enabled: true
+                ingressClassName: internal   
+                hosts:
+                    - host: prowlarr.${BASE_DOMAIN}
+                      paths:
+                        - path: /
+                          pathType: Prefix
+                integrations:
+                    certManager:
+                        enabled: true
+                        certificateIssuer: wethecommon-prod-cert
