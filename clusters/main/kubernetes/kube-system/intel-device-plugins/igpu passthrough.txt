@@ -1,0 +1,113 @@
+Passthrough the iGPU to each Talos worker VM in Proxmox
+
+Edit clusters/main/talos/talconfig.yaml
+
+Under each worker entry, control plane or worker main body add the required intel extensions, for example:
+      schematic:
+          customization:
+              systemExtensions:
+                  officialExtensions:
+                      - siderolabs/i915-ucode
+                      - siderolabs/intel-ucode
+
+apply changes to the cluster/nodes via clustertool apply/apply-config
+
+Confirm the extensions have loaded by describing each of the nodes the extensions enabled on;
+
+#kubectl describe node k8s-worker-1 
+
+Look for similar to below;
+
+talos.dev/owned-labels:
+                      ["extensions.talos.dev/i915-ucode","extensions.talos.dev/intel-ucode"
+
+
+#kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.31.1' --namespace kube-system
+#kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes?ref=v0.31.1' --namespace kube-system
+#kubectl get nodes -o=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{' i915: '}{.status.allocatable.gpu\.intel\.com/i915}{'\n'}"
+#kubectl get pods -n kube-system -o wide
+#cd /srv
+#git clone https://github.com/intel/intel-device-plugins-for-kubernetes.git
+#cd intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes
+#vim add-args.yaml
+Edit to look as follows
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: intel-gpu-plugin
+spec:
+  template:
+    spec:
+      containers:
+      - name: intel-gpu-plugin
+        args:
+        - "-enable-monitoring"
+        - "-v=2"
+        - --shared-dev-num
+        - "5"
+
+Save & Exit file edit
+#kubectl patch daemonset intel-gpu-plugin -n kube-system --patch "$(cat add-args.yaml)"
+#kubectl describe node k8s-worker-1 
+
+Look for similar to below;
+
+Capacity:
+  cpu:                            19
+  ephemeral-storage:              522799708Ki
+  gpu.intel.com/i915:             5
+  gpu.intel.com/i915_monitoring:  1
+  hugepages-2Mi:                  0
+  memory:                         16357328Ki
+  pods:                           250
+Allocatable:
+  cpu:                            18950m
+  ephemeral-storage:              481543774640
+  gpu.intel.com/i915:             5
+  gpu.intel.com/i915_monitoring:  1
+  hugepages-2Mi:                  0
+  memory:                         15861712Ki
+  pods:                           250
+
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource                       Requests      Limits
+  --------                       --------      ------
+  cpu                            3309m (17%)   116200m (613%)
+  memory                         1953Mi (12%)  238554Mi (1540%)
+  ephemeral-storage              0 (0%)        0 (0%)
+  hugepages-2Mi                  0 (0%)        0 (0%)
+  gpu.intel.com/i915             1             1
+  gpu.intel.com/i915_monitoring  0             0
+  
+
+Update plex/jellyfin helm-release.yaml with required resource change/addition;
+
+        resources:
+            limits:
+                gpu.intel.com/i915: 1
+
+#kubectl describe node k8s-worker-1
+
+Look for similar at end of output;
+
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource                       Requests      Limits
+  --------                       --------      ------
+  cpu                            3309m (17%)   116200m (613%)
+  memory                         1953Mi (12%)  238554Mi (1540%)
+  ephemeral-storage              0 (0%)        0 (0%)
+  hugepages-2Mi                  0 (0%)        0 (0%)
+  gpu.intel.com/i915             1             1
+  gpu.intel.com/i915_monitoring  0             0
+				
+#./clustertool genconfig
+#./clustertool encrypt
+#git add *
+#git commit -a -m "."
+#git push
+#flux reconcile source git cluster -n flux-system
+
+Test hw transcoding in Plex/Jellyfin

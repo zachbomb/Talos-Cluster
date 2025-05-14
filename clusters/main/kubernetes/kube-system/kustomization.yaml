@@ -7,3 +7,5 @@ resources:
   - kubelet-csr-approver/ks.yaml
   - metrics-server/ks.yaml
   - node-feature-discovery/ks.yaml
+  - intel-device-plugins/ks.yaml
+  - nvidia-device-plugin/ks.yaml
