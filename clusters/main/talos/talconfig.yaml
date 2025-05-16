@@ -2,7 +2,7 @@ clusterName: ${CLUSTERNAME}
 # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
 talosVersion: v1.10.1
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-kubernetesVersion: v1.33.0
+kubernetesVersion: v1.33.1
 endpoint: https://${VIP}:6443
 allowSchedulingOnControlPlanes: true
 additionalMachineCertSans:
@@ -63,8 +63,8 @@ controlPlane:
                     - siderolabs/i915
                     - siderolabs/intel-ucode
                     - siderolabs/thunderbolt
-                    - siderolabs/nonfree-kmod-nvidia-production
-                    - siderolabs/nvidia-container-toolkit-production
+                    - siderolabs/nonfree-kmod-nvidia-lts
+                    - siderolabs/nvidia-container-toolkit-lts
     machineFiles:
     - content: |
         [plugins."io.containerd.grpc.v1.cri"]
@@ -112,8 +112,8 @@ worker:
                     - siderolabs/i915
                     - siderolabs/intel-ucode
                     - siderolabs/thunderbolt
-                    - siderolabs/nonfree-kmod-nvidia-production
-                    - siderolabs/nvidia-container-toolkit-production
+                    - siderolabs/nonfree-kmod-nvidia-lts
+                    - siderolabs/nvidia-container-toolkit-lts
     machineFiles:
     - content: |
         [plugins."io.containerd.grpc.v1.cri"]
