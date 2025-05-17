@@ -62,6 +62,7 @@ controlPlane:
                     - siderolabs/gasket-driver
                     - siderolabs/i915
                     - siderolabs/intel-ucode
+                    - siderolabs/mei
                     - siderolabs/thunderbolt
                     - siderolabs/nonfree-kmod-nvidia-lts
                     - siderolabs/nvidia-container-toolkit-lts
@@ -100,6 +101,8 @@ worker:
                     - siderolabs/qemu-guest-agent
                     - siderolabs/gasket-driver
                     - siderolabs/i915
+                    - siderolabs/intel-ucode
+                    - siderolabs/mei
                     - siderolabs/nonfree-kmod-nvidia-lts
                     - siderolabs/nvidia-container-toolkit-lts
     machineFiles:
