@@ -156,12 +156,12 @@ spec:
       backup:
         enabled: true
         mountPath: /backups
-      #  volsync:
-      #  - credentials: s3
-      #    name: backup
-      #    type: restic
-      #    dest:
-      #      enabled: true
-      #    src:
-      #      enabled: true
+        volsync:
+        - credentials: s3
+          name: backup
+          type: restic
+          dest:
+            enabled: true
+          src:
+            enabled: true
             
