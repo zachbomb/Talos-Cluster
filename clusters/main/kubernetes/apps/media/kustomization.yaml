@@ -6,14 +6,14 @@ resources:
   #- media-nfs-pvc.yaml
   - roon/ks.yaml
   - prowlarr/ks.yaml
-  - radarr/ks.yaml
-  - lidarr/ks.yaml
+  #- radarr/ks.yaml
+  #- lidarr/ks.yaml
   - nzbget/ks.yaml
   - overseerr/ks.yaml
   - sabnzbd/ks.yaml
-  - sonarr/ks.yaml
+  #- sonarr/ks.yaml
   - tinymediamanager/ks.yaml
   - dizquetv/ks.yaml
   - plex/ks.yaml
-  - emby/ks.yaml
-  - tautulli/ks.yaml
+  #- emby/ks.yaml
+  #- tautulli/ks.yaml
