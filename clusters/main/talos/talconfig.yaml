@@ -1,8 +1,8 @@
 clusterName: ${CLUSTERNAME}
 # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
-talosVersion: v1.10.2
+talosVersion: v1.10.1
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
-kubernetesVersion: v1.33.2
+kubernetesVersion: v1.33.0
 endpoint: https://${VIP}:6443
 allowSchedulingOnControlPlanes: true
 additionalMachineCertSans:
@@ -29,7 +29,7 @@ nodes:
         - 1.1.1.1
         - 8.8.8.8
       installDiskSelector:
-        size: <= 2400GB
+        size: <= 3200GB
       networkInterfaces:
         # suffix is the adapter mac adres.
         - interface: eth0
@@ -62,7 +62,6 @@ controlPlane:
                     - siderolabs/gasket-driver
                     - siderolabs/i915
                     - siderolabs/intel-ucode
-                    - siderolabs/mei
                     - siderolabs/thunderbolt
                     - siderolabs/nonfree-kmod-nvidia-lts
                     - siderolabs/nvidia-container-toolkit-lts
@@ -102,7 +101,7 @@ worker:
                     - siderolabs/gasket-driver
                     - siderolabs/i915
                     - siderolabs/intel-ucode
-                    - siderolabs/mei
+                    - siderolabs/thunderbolt
                     - siderolabs/nonfree-kmod-nvidia-lts
                     - siderolabs/nvidia-container-toolkit-lts
     machineFiles:
