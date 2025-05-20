@@ -62,7 +62,7 @@ spec:
             widget:
               custom:
                 key: 88be0b2b2e7e4d88a3e01aa96887752e
-                user: true
+                user: "true"
               enabled: true
 
         hosts:
