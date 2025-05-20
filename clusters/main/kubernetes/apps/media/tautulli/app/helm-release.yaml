@@ -61,6 +61,7 @@ spec:
             name: Tautulli
             widget:
               custom:
+                url: http://192.168.10.224:8181/
                 key: 88be0b2b2e7e4d88a3e01aa96887752e
                 user: "true"
               enabled: true
@@ -76,6 +77,6 @@ spec:
         loadBalancerIP: ${TAUTULLI_IP}
         ports:
           main:
-            port: 10097
+            port: 8181
         type: LoadBalancer
 
