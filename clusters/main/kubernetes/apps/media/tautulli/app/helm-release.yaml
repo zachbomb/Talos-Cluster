@@ -28,6 +28,8 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    podOptions:
+      hostUsers: true
     securityContext:
       readOnlyRootFilesystem: false
     credentials:

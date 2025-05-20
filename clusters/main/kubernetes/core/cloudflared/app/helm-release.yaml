@@ -17,6 +17,8 @@ spec:
                 namespace: flux-system
     releaseName: cloudflared
     values:
+        podOptions:
+            hostUsers: true
         TZ: America/Los_Angeles
         addons:
             codeserver:
