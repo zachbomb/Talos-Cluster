@@ -50,10 +50,21 @@ spec:
         integrations:
           traefik:
             enabled: false
-
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
+          homepage:
+            description: Plex Metrics
+            enabled: true
+            group: Metrics / Data
+            icon: ""
+            name: Tautulli
+            widget:
+              custom:
+                key: 88be0b2b2e7e4d88a3e01aa96887752e
+                user: true
+              enabled: true
+
         hosts:
           - host: "tautulli.${DOMAIN_0}"
             paths:
