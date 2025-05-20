@@ -67,7 +67,7 @@ spec:
               enabled: true
 
         hosts:
-          - host: "tautulli.${DOMAIN_0}"
+          - host: "tautulli.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
