@@ -6,7 +6,7 @@ resources:
   - namespace.yaml
   - homeassistant/ks.yaml
   - homebridge/ks.yaml
-  - homepage/ks.yaml
+  #- homepage/ks.yaml
   - minio/ks.yaml
   - pihole/ks.yaml
   - proxmox/ks.yaml
