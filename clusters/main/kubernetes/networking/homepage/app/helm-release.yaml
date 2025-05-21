@@ -40,22 +40,11 @@ spec:
         enabled: true
         ingressClassName: internal
         integrations:
-          traefik:
-            enabled: false
-            middlewares:
-              - name: local
-                namespace: traefik
-              # - name: bouncer
-              #   namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
         hosts:
           - host: homepage.${BASE_DOMAIN}
-        # tls:
-        #   - hosts:
-        #       - homepage.${BASE_DOMAIN}
-        #     secretName: homepage-tls
 
     podOptions:
       dnsConfig:
