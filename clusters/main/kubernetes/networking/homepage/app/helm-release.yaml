@@ -132,6 +132,7 @@ spec:
       config:
         enabled: true
         mountPath: /config
+        readOnly: false
         volsync:
           - name: config
             type: restic
