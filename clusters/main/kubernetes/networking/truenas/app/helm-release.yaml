@@ -1,42 +1,41 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-    name: truenas
-    namespace: networking
+  name: truenas
+  namespace: networking
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: external-service
-            version: 15.6.2
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: truenas
-    values:
-        service:
-            main:
-                enabled: true
-                type: ExternalIP
-                externalIP: 192.168.10.122
-                ports:
-                    main:
-                        enabled: true
-                        protocol: https
-                        port: 444
-        ingress:
-            main:
-                enabled: true
-                ingressClassName: internal
-                hosts:
-                    - host: truenas.${BASE_DOMAIN}
-                      paths:
-                        - path: /
-                          pathType: Prefix
-                integrations:
-                    certManager:
-                        enabled: true
-                        certificateIssuer: wethecommon-prod-cert
+  interval: 15m
+  chart:
+    spec:
+      chart: external-service
+      version: 15.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  releaseName: truenas
+  values:
+    service:
+      main:
+        enabled: true
+        type: ExternalIP
+        externalIP: 192.168.10.122
+        ports:
+          main:
+            enabled: true
+            protocol: https
+            port: 444
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+          - host: truenas.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+    integrations:
+      certManager:
+        enabled: true
+        certificateIssuer: wethecommon-prod-cert

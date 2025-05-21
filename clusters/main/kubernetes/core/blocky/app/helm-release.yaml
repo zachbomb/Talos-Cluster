@@ -60,7 +60,7 @@ spec:
     # CANNOT be defined in above yaml section
     queryLog:
       # optional one of: mysql, postgresql, csv, csv-client. If empty, log to console only
-      type: ""
+      type: mysql
 
     configmap:
       dashboard:
