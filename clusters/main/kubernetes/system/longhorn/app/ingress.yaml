@@ -21,5 +21,8 @@ spec:
               number: 80
   tls:
   - hosts:
-    - longhorn.${BASE_DOMAIN}
+    - longhorn.${BASE_DOMAIN}"
+    paths:
+      - path: /
+        pathType: Prefix
     secretName: longhorn-tls-0
