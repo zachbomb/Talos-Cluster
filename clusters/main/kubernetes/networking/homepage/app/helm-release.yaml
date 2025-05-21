@@ -141,6 +141,7 @@ spec:
 
     persistence:
       config:
+        enabled: true
         volsync:
           - name: config
             type: restic
