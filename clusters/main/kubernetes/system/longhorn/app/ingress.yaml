@@ -20,6 +20,6 @@ spec:
             port:
               number: 80
   tls:
-    - hosts:
-      - longhorn.${BASE_DOMAIN}
-      secretName: longhorn-tls-0
+  - hosts:
+    - longhorn.${BASE_DOMAIN}
+    secretName: longhorn-tls-0
