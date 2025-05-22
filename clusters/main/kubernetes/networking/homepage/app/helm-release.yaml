@@ -101,6 +101,21 @@ spec:
       main:
         enabled: true
         primary: true
+    persistence:
+      config:
+        enabled: true
+        mountPath: /config
+        readOnly: false
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "10 0 * * *"
 
     addons:
       codeserver:
@@ -128,18 +143,4 @@ spec:
                 - name: local
                   namespace: traefik
 
-    persistence:
-      config:
-        enabled: true
-        mountPath: /config
-        readOnly: false
-        volsync:
-          - name: config
-            type: restic
-            credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
-              trigger:
-                schedule: "10 0 * * *"
+
