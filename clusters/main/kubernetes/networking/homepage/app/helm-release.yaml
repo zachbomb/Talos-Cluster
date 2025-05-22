@@ -3,144 +3,161 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: homepage
-  namespace: networking
+    name: homepage
+    namespace: networking
 spec:
-  interval: 15m
-  releaseName: homepage
-  timeout: 10m
-  chart:
-    spec:
-      chart: homepage
-      version: 10.2.0
-      sourceRef:
-        kind: HelmRepository
-        name: truecharts
-        namespace: flux-system
-  values:
-    TZ: America/Los_Angeles
-    credentials:
-      s3:
-        type: s3
-        url: "${S3URL}"
-        bucket: "${S3PREFIX}-homepage"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
-
-    workload:
-      main:
-        podSpec:
-          containers:
+    interval: 15m
+    chart:
+        spec:
+            chart: homepage
+            version: 10.2.0
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+    releaseName: homepage
+    values:
+        credentials:
+            s3:
+              type: s3
+              url: "${S3URL}"
+              bucket: "${S3PREFIX}-homepage"
+              accessKey: "${S3ID}"
+              secretKey: "${S3KEY}"
+              encrKey: "${S3KEY}"
+        TZ: America/Los_Angeles
+        workload:
             main:
-              env:
-                HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}
-
-    ingress:
-      main:
-        enabled: true
-        ingressClassName: internal
-        integrations:
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-        hosts:
-          - host: homepage.${BASE_DOMAIN}
-
-    podOptions:
-      dnsConfig:
-        options:
-          - name: ndots
-            value: "3"
-
-    rbac:
-      main:
-        clusterWide: true
-        enabled: true
-        primary: true
-        rules:
-          - apiGroups: [""]
-            resources: [namespaces, pods, nodes]
-            verbs: [get, list]
-          - apiGroups: [extensions, networking.k8s.io]
-            resources: [ingresses]
-            verbs: [get, list]
-          - apiGroups: [traefik.containo.us, traefik.io]
-            resources: [ingressroutes]
-            verbs: [get, list]
-          - apiGroups: [metrics.k8s.io]
-            resources: [nodes, pods]
-            verbs: [get, list]
-          - apiGroups: [apiextensions.k8s.io]
-            resources: [customresourcedefinitions/status]
-            verbs: [get]
-
-    release_name: homepage
-    resources: {}
-
-    securityContext:
-      container:
-        UMASK: "0022"
-        runAsGroup: 1000
-        runAsUser: 1000
-      pod:
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-
-    service:
-      main:
-        enabled: true
-        type: LoadBalancer
-        loadBalancerIP: ${HOMEPAGE_IP}
-        ports:
-          main:
-            port: 10352
-            protocol: http
-            targetPort: 3000
-
-    serviceAccount:
-      main:
-        enabled: true
-        primary: true
-    persistence:
-      config:
-        enabled: true
-        mountPath: /config
-        volsync:
-          - name: config
-            type: restic
-            credentials: s3
-            dest:
-              enabled: false
-            src:
-              enabled: true
-              trigger:
-                schedule: "10 0 * * *"
-
-    addons:
-      codeserver:
-        enabled: true
-        service:
-          type: LoadBalancer
-          loadBalancerIP: ${HOMEPAGE_IP}
-          ports:
-            codeserver:
-              port: 12321
+              podSpec:
+                containers:
+                  main:
+                    env:
+                      HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}
         ingress:
-          enabled: true
-          hosts:
-            - host: homepage-code.${BASE_DOMAIN}
-              paths:
-                - path: /
-                  pathType: Prefix
-          integrations:
-            certManager:
-              certificateIssuer: wethecommon-prod-cert
-              enabled: true
-            traefik:
-              enabled: false
-              middlewares:
-                - name: local
-                  namespace: traefik
-
+            main:
+                enabled: true
+                ingressClassName: internal
+                integrations:
+                    traefik:
+                        enabled: false
+                        middlewares:
+                            - name: local
+                              namespace: traefik
+                    certManager:
+                        enabled: true
+                        certificateIssuer: wethecommon-prod-cert
+                hosts:
+                    - host: homepage.${BASE_DOMAIN}
+        persistence:
+            config:
+                main:
+                  enabled: true
+                  mountPath: /config
+                  volsync:
+                  - name: config
+                    type: restic
+                    credentials: s3
+                    dest:
+                      enabled: true
+                    src:
+                      enabled: true
+        podOptions:
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+        rbac:
+            main:
+                clusterWide: true
+                enabled: true
+                primary: true
+                rules:
+                    - apiGroups:
+                        - ""
+                      resources:
+                        - namespaces
+                        - pods
+                        - nodes
+                      verbs:
+                        - get
+                        - list
+                    - apiGroups:
+                        - extensions
+                        - networking.k8s.io
+                      resources:
+                        - ingresses
+                      verbs:
+                        - get
+                        - list
+                    - apiGroups:
+                        - traefik.containo.us
+                        - traefik.io
+                      resources:
+                        - ingressroutes
+                      verbs:
+                        - get
+                        - list
+                    - apiGroups:
+                        - metrics.k8s.io
+                      resources:
+                        - nodes
+                        - pods
+                      verbs:
+                        - get
+                        - list
+                    - apiGroups:
+                        - apiextensions.k8s.io
+                      resources:
+                        - customresourcedefinitions/status
+                      verbs:
+                        - get
+        release_name: homepage
+        resources: {}
+        securityContext:
+            container:
+                UMASK: "0022"
+                runAsGroup: 1000
+                runAsUser: 1000
+            pod:
+                fsGroup: 1000
+                fsGroupChangePolicy: OnRootMismatch
+        service:
+            main:
+                enabled: true
+                type: LoadBalancer
+                loadBalancerIP: ${HOMEPAGE_IP}
+                ports:
+                    main:
+                        port: 10352
+                        protocol: http
+                        targetPort: 3000
+        serviceAccount:
+            main:
+                enabled: true
+                primary: true
+        addons:
+            codeserver:
+                enabled: true
+                service:
+                    type: LoadBalancer
+                    loadBalancerIP: ${HOMEPAGE_IP}
+                    ports:
+                        codeserver:
+                            port: 12321
+                ingress:
+                    enabled: true
+                    hosts:
+                        - host: homepage-code.${BASE_DOMAIN}
+                          paths:
+                          - path: /
+                            pathType: Prefix
+                    integrations:
+                        certManager:
+                            certificateIssuer: wethecommon-prod-cert
+                            enabled: true
+                        traefik:
+                            enabled: false
+                            middlewares:
+                                - name: local
+                                  namespace: traefik
 
