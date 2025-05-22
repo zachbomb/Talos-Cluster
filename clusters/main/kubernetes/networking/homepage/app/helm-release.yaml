@@ -8,6 +8,7 @@ metadata:
 spec:
   interval: 15m
   releaseName: homepage
+  timeout: 10m
   chart:
     spec:
       chart: homepage
