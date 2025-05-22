@@ -9,7 +9,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-method: 'GET'
 spec:
   rules:
-  - host: longhorn.${DOMAIN_1}
+  - host: longhorn.${BASE_DOMAIN}
     http:
       paths:
       - pathType: Prefix
@@ -19,10 +19,3 @@ spec:
             name: longhorn-frontend
             port:
               number: 80
-  tls:
-  - hosts:
-    - "longhorn.${BASE_DOMAIN}"
-    paths:
-      - path: /
-        pathType: Prefix
-    secretName: longhorn-tls-0
