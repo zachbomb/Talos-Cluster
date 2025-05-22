@@ -25,17 +25,17 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-    integrations:
-      traefik:
-        enabled: false
-        middlewares:
-          - name: local
-            namespace: traefik
-      certManager:
-        enabled: true
-        certificateIssuer: wethecommon-prod-cert
-      homepage:
-        enabled: false
+        integrations:
+            traefik:
+                enabled: false
+                middlewares:
+                    - name: local
+                      namespace: traefik
+            certManager:
+                enabled: true
+                certificateIssuer: wethecommon-prod-cert
+            homepage:
+                enabled: false
     service:
       main:
         enabled: true
