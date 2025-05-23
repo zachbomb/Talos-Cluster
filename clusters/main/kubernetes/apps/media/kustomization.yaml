@@ -17,3 +17,5 @@ resources:
   - plex/ks.yaml
   - emby/ks.yaml
   - tautulli/ks.yaml
+  - notifiarr/ks.yaml
+  - recyclarr/ks.yaml
