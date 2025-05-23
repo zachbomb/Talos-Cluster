@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: clusters/main/kubernetes/media/recyclarr/app
+  path: clusters/main/kubernetes/apps/media/recyclarr/app
   prune: true
   sourceRef:
     kind: GitRepository
