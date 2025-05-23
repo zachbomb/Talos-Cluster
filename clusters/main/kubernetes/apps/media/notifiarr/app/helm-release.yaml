@@ -1,0 +1,80 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: notifiarr
+  namespace: media
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: notifiarr
+      version: 6.6.1
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    portal:
+      open:
+        enabled: false
+    global:
+      stopAll: false
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-notifiarr"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    addons:
+      codeserver:
+        enabled: true
+        ingress:
+          main:
+            enabled: true
+            ingressClassName: internal
+            integrations:
+              certManager:
+                enabled: true
+                certificateIssuer: wethecommon-prod-cert
+            hosts:
+              - host: notifiarr.${BASE_DOMAIN}
+        service:
+          main:
+            enabled: true
+            loadBalancerIP: ${notifiarr_IP}
+            ports:
+              main:
+                port: 5454
+                protocol: http
+                targetPort: 5454
+              type: LoadBalancer
+    workload:
+      main:
+        podSpec:
+          initContainers:
+            initconfig:
+              enabled: false
+    persistence:
+      config:
+        volsync:
+        - name: config
+          type: restic
+          credentials: s3
+          dest:
+            enabled: true
+          src:
+            enabled: true
+            trigger:
+              schedule: 40 0 * * *
