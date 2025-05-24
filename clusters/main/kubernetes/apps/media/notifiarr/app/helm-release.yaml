@@ -40,9 +40,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-    addons:
-      codeserver:
-        enabled: true
     ingress:
       main:
         enabled: true
@@ -57,12 +54,12 @@ spec:
       main:
         enabled: true
         loadBalancerIP: ${notifiarr_IP}
+        type: LoadBalancer
         ports:
           main:
             port: 5454
             protocol: http
             targetPort: 5454
-          type: LoadBalancer
     workload:
       main:
         podSpec:
