@@ -25,9 +25,11 @@ spec:
     remediation:
       retries: 3
   values:
-    portal:
-      open:
-        enabled: false
+    notifiarr:
+      # This will be your password for your first-time login.
+      # Use the username 'admin' and the API key as password to log in.
+      # After login you must change your password from the UI
+      apikey: "038cb3b1-195b-4ed7-8c14-d0d99c03a0b9"
     global:
       stopAll: false
     credentials:
@@ -79,3 +81,9 @@ spec:
             enabled: true
             trigger:
               schedule: 40 0 * * *
+      machine-id:
+        enabled: false
+        type: hostPath
+        hostPath: /etc/machine-id
+        mountPath: /etc/machine-id
+        readOnly: true
