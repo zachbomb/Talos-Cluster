@@ -82,8 +82,8 @@ spec:
             trigger:
               schedule: 40 0 * * *
       machine-id:
-        enabled: false
+        enabled: true
         type: hostPath
         hostPath: /etc/machine-id
         mountPath: /etc/machine-id
-        readOnly: true
+        readOnly: false
