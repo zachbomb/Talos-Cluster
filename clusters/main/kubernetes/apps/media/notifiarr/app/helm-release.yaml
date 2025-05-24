@@ -14,6 +14,7 @@ spec:
         name: truecharts
         namespace: flux-system
       interval: 5m
+  timeout: 20m
   install:
     createNamespace: true
     crds: CreateReplace
@@ -40,26 +41,26 @@ spec:
     addons:
       codeserver:
         enabled: true
-        ingress:
-          main:
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          certManager:
             enabled: true
-            ingressClassName: internal
-            integrations:
-              certManager:
-                enabled: true
-                certificateIssuer: wethecommon-prod-cert
-            hosts:
-              - host: notifiarr.${BASE_DOMAIN}
-        service:
+            certificateIssuer: wethecommon-prod-cert
+        hosts:
+          - host: notifiarr.${BASE_DOMAIN}
+    service:
+      main:
+        enabled: true
+        loadBalancerIP: ${notifiarr_IP}
+        ports:
           main:
-            enabled: true
-            loadBalancerIP: ${notifiarr_IP}
-            ports:
-              main:
-                port: 5454
-                protocol: http
-                targetPort: 5454
-              type: LoadBalancer
+            port: 5454
+            protocol: http
+            targetPort: 5454
+          type: LoadBalancer
     workload:
       main:
         podSpec:
