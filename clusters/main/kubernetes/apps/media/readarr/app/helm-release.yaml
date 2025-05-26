@@ -53,8 +53,8 @@ spec:
             name: Readarr
             widget:
               custom:
-               key: ""
-              enabled: false
+               key: 146042a1bae846f9b5e70c4beb521c76
+              enabled: true
         hosts:
           - host: readarr.${BASE_DOMAIN}
     service:
