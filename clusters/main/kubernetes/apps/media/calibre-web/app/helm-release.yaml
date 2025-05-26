@@ -52,7 +52,7 @@ spec:
             icon: ""
             name: Calibre-Web
             widget:
-              calibreweb:
+              custom:
                 url: http://192.168.10.235:8083
                 username: zach
                 password: mtj1bqa*MNT4fxr4hra
