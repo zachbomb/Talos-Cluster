@@ -64,9 +64,9 @@ spec:
         type: LoadBalancer
         ports:
           main:
-            port: 8484
+            port: 8090
             protocol: http
-            targetPort: 8484
+            targetPort: 8090
     persistence:
       config:
         volsync:
