@@ -20,3 +20,4 @@ resources:
   - notifiarr/ks.yaml
   - recyclarr/ks.yaml
   - readarr/ks.yaml
+  - mylar/ks.yaml
