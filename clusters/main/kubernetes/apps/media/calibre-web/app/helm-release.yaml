@@ -52,9 +52,10 @@ spec:
             icon: ""
             name: Calibre-Web
             widget:
-              custom:
-               key: ""
-              enabled: false
+              calibreweb:
+                username: zach
+                password: mtj1bqa*MNT4fxr4hra
+              enabled: true
         hosts:
           - host: calibre-web.${BASE_DOMAIN}
     service:
