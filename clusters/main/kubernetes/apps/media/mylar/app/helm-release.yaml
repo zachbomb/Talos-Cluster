@@ -53,8 +53,8 @@ spec:
             name: Mylar
             widget:
               custom:
-               key: ""
-              enabled: false
+               key: 54ae2f2b77fe7b739155e3111c5b9474
+              enabled: true
         hosts:
           - host: mylar.${BASE_DOMAIN}
     service:
