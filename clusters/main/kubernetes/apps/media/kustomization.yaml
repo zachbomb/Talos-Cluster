@@ -21,3 +21,5 @@ resources:
   - recyclarr/ks.yaml
   - readarr/ks.yaml
   - mylar/ks.yaml
+  - calibre/ks.yaml
+  - calibre-web/ks.yaml
