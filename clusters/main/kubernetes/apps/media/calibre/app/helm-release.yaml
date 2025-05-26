@@ -103,12 +103,26 @@ spec:
          - noatime
          - nodiratime
          - nolock
+      books:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/books
+        server: 192.168.10.123
+        mountPath: /books
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
       comics:
         enabled: true
         type: nfs
         path: /mnt/Pibbs-Horde/media/data/media/comics
         server: 192.168.10.123
-        mountPath: /books
+        mountPath: /comics
         mountOptions:
          - nfsvers=4
          - tcp
