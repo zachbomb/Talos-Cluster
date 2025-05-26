@@ -60,13 +60,13 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: ${notifiarr_IP}
+        loadBalancerIP: ${READARR_IP}
         type: LoadBalancer
         ports:
           main:
-            port: 5454
+            port: 8787
             protocol: http
-            targetPort: 5454
+            targetPort: 8787
     persistence:
       config:
         volsync:
