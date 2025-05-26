@@ -112,7 +112,7 @@ spec:
         type: nfs
         path: /mnt/Pibbs-Horde/media/data/media/comics
         server: 192.168.10.123
-        mountPath: /books
+        mountPath: /comics
         mountOptions:
          - nfsvers=4
          - tcp
