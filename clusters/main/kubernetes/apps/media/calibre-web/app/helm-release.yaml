@@ -53,6 +53,7 @@ spec:
             name: Calibre-Web
             widget:
               calibreweb:
+                url: http://192.168.10.235:8083
                 username: zach
                 password: mtj1bqa*MNT4fxr4hra
               enabled: true
