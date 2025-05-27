@@ -30,6 +30,12 @@ spec:
       main:
         enabled: true
         ingressClassName: internal
+        annotations:
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+          nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+          nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/proxy-ssl-verify: "false"  # <-- Skip TLS verification
+          nginx.ingress.kubernetes.io/proxy-ssl-name: "proxmox.${BASE_DOMAIN}"  # Optional: Use hostname to match cert CN/SAN
         hosts:
           - host: proxmox.${BASE_DOMAIN}
             paths:
@@ -46,5 +52,3 @@ spec:
             certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: false
-    env:
-      DISABLE_TLS_VERIFY: "true"
