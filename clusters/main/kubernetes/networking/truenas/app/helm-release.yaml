@@ -35,7 +35,7 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-    integrations:
-      certManager:
-        enabled: true
-        certificateIssuer: wethecommon-prod-cert
+        integrations:
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
