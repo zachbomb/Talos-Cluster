@@ -46,3 +46,5 @@ spec:
             certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: false
+    env:
+      DISABLE_TLS_VERIFY: "true"
