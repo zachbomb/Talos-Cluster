@@ -24,8 +24,8 @@ spec:
         ports:
           main:
             enabled: true
-            protocol: https
-            port: 444
+            protocol: http
+            port: 81
     ingress:
       main:
         enabled: true
