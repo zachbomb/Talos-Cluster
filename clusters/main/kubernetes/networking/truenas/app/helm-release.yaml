@@ -39,5 +39,3 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-    env:
-      DISABLE_TLS_VERIFY: "true"
