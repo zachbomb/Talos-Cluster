@@ -65,9 +65,15 @@ spec:
         type: LoadBalancer
         ports:
           main:
+            port: 8265
+      comm:
+        enabled: true
+        loadBalancerIP: ${tdarr_IP}
+        type: LoadBalancer
+        ports:
+          comm:
+            enabled: true
             port: 8266
-            protocol: http
-            targetPort: 8266
     persistence:
       configs:
         volsync:
