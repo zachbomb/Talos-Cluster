@@ -69,6 +69,7 @@ spec:
             targetPort: 5656
     persistence:
       config:
+        enabled: true
         volsync:
         - name: config
           type: restic

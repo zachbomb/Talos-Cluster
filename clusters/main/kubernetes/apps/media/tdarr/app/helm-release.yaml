@@ -69,7 +69,7 @@ spec:
         volsync:
         - name: config
           type: restic
-          credentials: minio
+          credentials: s3
           dest:
             enabled: true
           src:
@@ -80,7 +80,7 @@ spec:
         volsync:
         - name: logs
           type: restic
-          credentials: minio
+          credentials: s3
           dest:
             enabled: true
           src:
@@ -91,7 +91,7 @@ spec:
         volsync:
         - name: server
           type: restic
-          credentials: minio
+          credentials: s3
           dest:
             cacheCapacity: 20Gi
             enabled: true
