@@ -13,7 +13,6 @@ resources:
   - sabnzbd/ks.yaml
   - sonarr/ks.yaml
   - tinymediamanager/ks.yaml
-  - dizquetv/ks.yaml
   - plex/ks.yaml
   - emby/ks.yaml
   - tautulli/ks.yaml
