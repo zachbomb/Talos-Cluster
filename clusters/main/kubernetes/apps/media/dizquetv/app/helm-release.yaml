@@ -170,7 +170,7 @@ spec:
         containers:
           - name: dizquetv
             args:
-              - "--unlock"
+              - ["--unlock"]
             volumeMounts:
               - name: ffmpeg-bin
                 mountPath: /usr/local/bin/ffmpeg
