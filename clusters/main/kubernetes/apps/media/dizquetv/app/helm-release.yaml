@@ -153,6 +153,8 @@ spec:
 
     workload:
       main:
+        args:
+          - "--unlock"
         podSpec:
           runtimeClassName: "nvidia"
           initContainers:
@@ -169,8 +171,6 @@ spec:
                   mountPath: /ffmpeg-bin
         containers:
           - name: dizquetv
-            args:
-              - ["--unlock"]
             volumeMounts:
               - name: ffmpeg-bin
                 mountPath: /usr/local/bin/ffmpeg
