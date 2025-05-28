@@ -207,3 +207,11 @@ spec:
               middlewares:
                 - name: local
                   namespace: traefik
+        workload:
+          containers:
+            - name: codeserver
+              shortName: codeserver        # <-- here inside container spec
+              image: tccr/code-server:4.15.0
+              ports:
+                - containerPort: 8080
+                  name: http
