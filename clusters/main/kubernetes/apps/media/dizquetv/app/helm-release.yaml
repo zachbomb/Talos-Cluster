@@ -169,6 +169,8 @@ spec:
                   mountPath: /ffmpeg-bin
         containers:
           - name: dizquetv
+            args:
+              - "--unlock"
             volumeMounts:
               - name: ffmpeg-bin
                 mountPath: /usr/local/bin/ffmpeg
