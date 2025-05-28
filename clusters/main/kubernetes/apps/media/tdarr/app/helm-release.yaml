@@ -58,22 +58,6 @@ spec:
               enabled: true
         hosts:
           - host: tdarr.${BASE_DOMAIN}
-    service:
-      main:
-        enabled: true
-        loadBalancerIP: ${tdarr_IP}
-        type: LoadBalancer
-        ports:
-          main:
-            port: 8265
-      comm:
-        enabled: true
-        loadBalancerIP: ${tdarr_IP}
-        type: LoadBalancer
-        ports:
-          comm:
-            enabled: true
-            port: 8266
     persistence:
       configs:
         volsync:
