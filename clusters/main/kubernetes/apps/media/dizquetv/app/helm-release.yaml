@@ -159,6 +159,7 @@ spec:
           runtimeClassName: "nvidia"
           initContainers:
             install-ffmpeg:
+              enabled: true
               image: jrottenberg/ffmpeg:7.1-nvidia
               command:
                 - sh
@@ -187,10 +188,10 @@ spec:
                   type: http
                   path: /
                   port: 8000
-              volumes:
-                ffmpeg-bin:
-                  enabled: true
-                  type: emptyDir
+          volumes:
+            ffmpeg-bin:
+              enabled: true
+              type: emptyDir
         resources:
           limits:
             nvidia.com/gpu: 2
