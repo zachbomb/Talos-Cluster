@@ -117,7 +117,7 @@ spec:
             xmltv:
                 enabled: true
                 type: nfs
-                path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/backups
+                path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/xmltv
                 server: 192.168.10.123
                 mountPath: /xmltv
                 mountOptions:
@@ -141,10 +141,9 @@ spec:
 #                      src:
 #                        enabled: true
 #                        cacheCapacity: 10Gi
-        release_name: dizquetv
         resources:
             limits:
-                nvidia.com/gpu: 1
+                nvidia.com/gpu: 2
         securityContext:
             container:
                 PUID: 1000
