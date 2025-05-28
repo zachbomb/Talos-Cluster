@@ -157,6 +157,7 @@ spec:
           runtimeClassName: "nvidia"
           initContainers:
             - name: install-ffmpeg
+                enabled: true
               image: linuxserver/ffmpeg:latest
               command:
                 - sh
