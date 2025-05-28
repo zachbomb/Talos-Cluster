@@ -161,12 +161,8 @@ spec:
             - name: install-ffmpeg
               type: install
               enabled: true
-<<<<<<< HEAD
-              image: linuxserver/ffmpeg:latest
-=======
               shortName: install-ffmpeg
               image: jrottenberg/ffmpeg:4.4-nvidia
->>>>>>> refs/remotes/origin/main
               command:
                 - sh
                 - -c
