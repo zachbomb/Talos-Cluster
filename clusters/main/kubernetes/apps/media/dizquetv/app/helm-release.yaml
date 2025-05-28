@@ -175,7 +175,7 @@ spec:
                   mountPath: /usr/local/bin/ffmpeg
                   subPath: ffmpeg
           volumes:
-            name: ffmpeg-bin
+            ffmpeg-bin:
               emptyDir: {}
         resources:
           limits:
