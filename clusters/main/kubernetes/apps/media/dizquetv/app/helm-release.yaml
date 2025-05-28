@@ -56,7 +56,8 @@ spec:
     nvidiaImage:
       pullPolicy: IfNotPresent
       repository: vexorian/dizquetv
-      tag: 1.5.3-nvidia@sha256:83ab31bf62ee67f9ba3d93994dc396ac678ef4fc1cbdc4df2d7ccb54d85da140
+      tag: 1.5.3-nvidia
+      # Note: Remove '@sha256:...' from tag; if you want to use digest, use repository@sha256 format
 
     persistence:
       config:
@@ -157,9 +158,29 @@ spec:
           - "--unlock"
         podSpec:
           runtimeClassName: "nvidia"
-    resources:
-      limits:
-        nvidia.com/gpu: 2
+          initContainers:
+            - name: install-ffmpeg
+              image: jrottenberg/ffmpeg:7.1-nvidia
+              command:
+                - sh
+                - -c
+                - cp /opt/ffmpeg/ffmpeg /ffmpeg-bin/ffmpeg
+              volumeMounts:
+                - name: ffmpeg-bin
+                  mountPath: /ffmpeg-bin
+          containers:
+            - name: dizquetv
+              volumeMounts:
+                - name: ffmpeg-bin
+                  mountPath: /usr/local/bin/ffmpeg
+                  subPath: ffmpeg
+          volumes:
+            - name: ffmpeg-bin
+              emptyDir: {}
+        resources:
+          limits:
+            nvidia.com/gpu: 2
+
     addons:
       codeserver:
         enabled: true
