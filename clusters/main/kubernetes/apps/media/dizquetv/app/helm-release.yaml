@@ -42,7 +42,6 @@ spec:
             description: Streaming Channel Scheduler / Management
             enabled: true
             group: Media Players
-            icon: ""
             name: DizqueTV
             widget:
               custom:
@@ -53,10 +52,12 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+
     nvidiaImage:
       pullPolicy: IfNotPresent
       repository: vexorian/dizquetv
       tag: latest-nvidia@sha256:83ab31bf62ee67f9ba3d93994dc396ac678ef4fc1cbdc4df2d7ccb54d85da140
+
     persistence:
       config:
         enabled: true
@@ -127,9 +128,7 @@ spec:
           - noatime
           - nodiratime
           - nolock
-    resources:
-      limits:
-        nvidia.com/gpu: 2
+
     securityContext:
       container:
         PUID: 1000
@@ -141,6 +140,7 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+
     service:
       main:
         enabled: true
@@ -150,16 +150,11 @@ spec:
             port: 10071
             targetPort: 8000
         type: LoadBalancer
+
     workload:
       main:
         podSpec:
           runtimeClassName: "nvidia"
-          containers:
-            - name: dizquetv
-              volumeMounts:
-                - name: ffmpeg-bin
-                  mountPath: /usr/local/bin/ffmpeg
-                  subPath: ffmpeg
           initContainers:
             - name: install-ffmpeg
               image: linuxserver/ffmpeg:latest
@@ -173,6 +168,16 @@ spec:
           volumes:
             - name: ffmpeg-bin
               emptyDir: {}
+        container:
+          name: dizquetv
+          volumeMounts:
+            - name: ffmpeg-bin
+              mountPath: /usr/local/bin/ffmpeg
+              subPath: ffmpeg
+    resources:
+      limits:
+        nvidia.com/gpu: 2
+
     addons:
       codeserver:
         enabled: true
