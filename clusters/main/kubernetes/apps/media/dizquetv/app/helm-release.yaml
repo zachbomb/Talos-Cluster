@@ -160,7 +160,7 @@ spec:
           initContainers:
             install-ffmpeg:
               enabled: true
-              type: container
+              type: install
               image: jrottenberg/ffmpeg:7.1-nvidia
               command:
                 - sh
