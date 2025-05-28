@@ -166,6 +166,7 @@ spec:
                 - cp /opt/ffmpeg/ffmpeg /ffmpeg-bin/ffmpeg
               volumeMounts:
                 - name: ffmpeg-bin
+                  enabled: true
                   mountPath: /ffmpeg-bin
           containers:
             dizquetv:
