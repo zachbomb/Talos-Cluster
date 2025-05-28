@@ -1,191 +1,200 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-    name: dizquetv
-    namespace: media
+  name: dizquetv
+  namespace: media
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: dizquetv
-            version: 16.5.1
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: dizquetv
-    values:
-        credentials:
-            s3:
-              type: s3
-              url: "${S3URL}"
-              bucket: "${S3PREFIX}-dizquetv"
-              accessKey: "${S3ID}"
-              secretKey: "${S3KEY}"
-              encrKey: "${S3KEY}"
-        TZ: America/Los_Angeles
-        ingress:
-            main:
+  interval: 15m
+  chart:
+    spec:
+      chart: dizquetv
+      version: 16.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  releaseName: dizquetv
+  values:
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-dizquetv"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    TZ: America/Los_Angeles
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            certificateIssuer: wethecommon-prod-cert
+            enabled: true
+          homepage:
+            description: Streaming Channel Scheduler / Management
+            enabled: true
+            group: Media Players
+            icon: ""
+            name: DizqueTV
+            widget:
+              custom:
+                key: ""
+              enabled: false
+        hosts:
+          - host: "dizquetv.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+    nvidiaImage:
+      pullPolicy: IfNotPresent
+      repository: vexorian/dizquetv
+      tag: latest-nvidia@sha256:83ab31bf62ee67f9ba3d93994dc396ac678ef4fc1cbdc4df2d7ccb54d85da140
+    persistence:
+      config:
+        enabled: true
+        main:
+          enabled: true
+          mountPath: /config
+          volsync:
+            - name: config
+              type: restic
+              credentials: s3
+              dest:
                 enabled: true
-                ingressClassName: internal
-                integrations:
-                    traefik:
-                        enabled: false
-                        middlewares:
-                         - name: local
-                           namespace: traefik
-                    certManager:
-                        certificateIssuer: wethecommon-prod-cert
-                        enabled: true
-                    homepage:
-                        description: Streaming Channel Scheduler / Management
-                        enabled: true
-                        group: Media Players
-                        icon: ""
-                        name: DizqueTV
-                        widget:
-                            custom:
-                                key: ""
-                            enabled: false
-                hosts:
-                    - host: "dizquetv.${BASE_DOMAIN}"
-                      paths:
-                        - path: /
-                          pathType: Prefix
-        persistence:
-            config:
+              src:
                 enabled: true
-                main:
-                  enabled: true
-                  mountPath: /config
-                  volsync:
-                  - name: config
-                    type: restic
-                    credentials: s3
-                    dest:
-                      enabled: true
-                    src:
-                      enabled: true
-            media:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data
-                server: 192.168.10.123
-                mountPath: /media
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            movies:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/movies
-                server: 192.168.10.123
-                mountPath: /movies
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            tv:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/tv
-                server: 192.168.10.123
-                mountPath: /tv
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            xmltv:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/xmltv
-                server: 192.168.10.123
-                mountPath: /xmltv
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-#            backup:
-#                enabled: true
-#                mountPath: /config/Backups
-#                volsync:
-#                    - name: b2
-#                      type: restic
-#                      credentials: s3
-#                      dest:
-#                        cacheCapacity: 10Gi
-#                        enabled: true
-#                      src:
-#                        enabled: true
-#                        cacheCapacity: 10Gi
-        resources:
-            limits:
-                nvidia.com/gpu: 2
-        securityContext:
-            container:
-                PUID: 1000
-                UMASK: "0022"
-                privileged: false
-                readOnlyRootFilesystem: false
-                runAsGroup: 1000
-                runAsUser: 1000
-            pod:
-                fsGroup: 1000
-                fsGroupChangePolicy: OnRootMismatch
+      media:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      movies:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        server: 192.168.10.123
+        mountPath: /movies
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      tv:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        server: 192.168.10.123
+        mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      xmltv:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/xmltv
+        server: 192.168.10.123
+        mountPath: /xmltv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+    resources:
+      limits:
+        nvidia.com/gpu: 2
+    securityContext:
+      container:
+        PUID: 1000
+        UMASK: "0022"
+        privileged: false
+        readOnlyRootFilesystem: false
+        runAsGroup: 1000
+        runAsUser: 1000
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    service:
+      main:
+        enabled: true
+        loadBalancerIP: ${DIZQUETV_IP}
+        ports:
+          main:
+            port: 10071
+            targetPort: 8000
+        type: LoadBalancer
+    workload:
+      main:
+        podSpec:
+          runtimeClassName: "nvidia"
+          containers:
+            - name: dizquetv
+              volumeMounts:
+                - name: ffmpeg-bin
+                  mountPath: /usr/local/bin/ffmpeg
+                  subPath: ffmpeg
+          initContainers:
+            - name: install-ffmpeg
+              image: linuxserver/ffmpeg:latest
+              command:
+                - sh
+                - -c
+                - cp /usr/bin/ffmpeg /ffmpeg-bin/ffmpeg
+              volumeMounts:
+                - name: ffmpeg-bin
+                  mountPath: /ffmpeg-bin
+          volumes:
+            - name: ffmpeg-bin
+              emptyDir: {}
+    addons:
+      codeserver:
+        enabled: true
         service:
-            main:
-                enabled: true
-                loadBalancerIP: ${DIZQUETV_IP}
-                ports:
-                    main:
-                        port: 10071
-                        targetPort: 8000
-                type: LoadBalancer
-        workload:
-            main:
-                podSpec:
-                runtimeClassName: "nvidia"
-        addons:
+          type: LoadBalancer
+          loadBalancerIP: ${DIZQUETV_IP}
+          ports:
             codeserver:
-                enabled: true
-                service:
-                    type: LoadBalancer
-                    loadBalancerIP: ${DIZQUETV_IP}
-                    ports:
-                        codeserver:
-                            port: 12321
-                ingress:
-                    enabled: true
-                    hosts:
-                        - host: dizquetv-code.${BASE_DOMAIN}
-                          paths:
-                          - path: /
-                            pathType: Prefix
-                    integrations:
-                        certManager:
-                            certificateIssuer: wethecommon-prod-cert
-                            enabled: true
-                        traefik:
-                            enabled: true
-                            middlewares:
-                                - name: local
-                                  namespace: traefik
+              port: 12321
+        ingress:
+          enabled: true
+          hosts:
+            - host: dizquetv-code.${BASE_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+          integrations:
+            certManager:
+              certificateIssuer: wethecommon-prod-cert
+              enabled: true
+            traefik:
+              enabled: true
+              middlewares:
+                - name: local
+                  namespace: traefik
