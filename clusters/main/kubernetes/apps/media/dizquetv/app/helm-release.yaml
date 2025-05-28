@@ -210,6 +210,7 @@ spec:
         workload:
           containers:
             - name: codeserver
+              shortName: codeserver
               image: tccr/code-server:4.15.0
               ports:
                 - containerPort: 8080
