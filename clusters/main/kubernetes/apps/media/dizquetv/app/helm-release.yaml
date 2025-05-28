@@ -161,6 +161,7 @@ spec:
             - name: install-ffmpeg
               type: install
               enabled: true
+              shortName: install-ffmpeg
               image: jrottenberg/ffmpeg:4.3-nvidia
               command:
                 - sh
@@ -171,6 +172,7 @@ spec:
                   mountPath: /ffmpeg-bin
         containers:
           - name: dizquetv
+            shortName: dizquetv
             volumeMounts:
               - name: ffmpeg-bin
                 mountPath: /usr/local/bin/ffmpeg
