@@ -185,6 +185,7 @@ spec:
     addons:
       codeserver:
         enabled: true
+        shortName: codeserver
         service:
           type: LoadBalancer
           loadBalancerIP: ${DIZQUETV_IP}
