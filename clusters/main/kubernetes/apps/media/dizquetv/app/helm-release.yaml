@@ -166,15 +166,15 @@ spec:
               volumeMounts:
                 - name: ffmpeg-bin
                   mountPath: /ffmpeg-bin
-          volumes:
-            - name: ffmpeg-bin
-              emptyDir: {}
-        container:
-          name: dizquetv
-          volumeMounts:
-            - name: ffmpeg-bin
-              mountPath: /usr/local/bin/ffmpeg
-              subPath: ffmpeg
+        containers:
+          - name: dizquetv
+            volumeMounts:
+              - name: ffmpeg-bin
+                mountPath: /usr/local/bin/ffmpeg
+                subPath: ffmpeg
+        volumes:
+          - name: ffmpeg-bin
+            emptyDir: {}
     resources:
       limits:
         nvidia.com/gpu: 2
