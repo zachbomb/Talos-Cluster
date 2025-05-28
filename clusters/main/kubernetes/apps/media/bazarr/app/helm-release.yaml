@@ -45,12 +45,22 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
+          homepage:
+            description: Subtitle Downloader/Manager
+            enabled: true
+            group: -*rrs
+            icon: ""
+            name: Bazarr
+            widget:
+              custom:
+               key: ***REMOVED***
+              enabled: true
         hosts:
           - host: bazarr.${BASE_DOMAIN}
     service:
       main:
         enabled: true
-        loadBalancerIP: ${bazarr_IP}
+        loadBalancerIP: ${BAZARR_IP}
         type: LoadBalancer
         ports:
           main:
