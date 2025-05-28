@@ -159,7 +159,7 @@ spec:
         podSpec:
           runtimeClassName: "nvidia"
           initContainers:
-            - name: install-ffmpeg
+            install-ffmpeg:
               image: jrottenberg/ffmpeg:7.1-nvidia
               command:
                 - sh
@@ -169,13 +169,13 @@ spec:
                 - name: ffmpeg-bin
                   mountPath: /ffmpeg-bin
           containers:
-            - name: dizquetv
+            dizquetv:
               volumeMounts:
                 - name: ffmpeg-bin
                   mountPath: /usr/local/bin/ffmpeg
                   subPath: ffmpeg
           volumes:
-            - name: ffmpeg-bin
+            name: ffmpeg-bin
               emptyDir: {}
         resources:
           limits:
