@@ -176,17 +176,17 @@ spec:
                   subPath: ffmpeg
               probes:
                 liveness:
-                  httpGet:
-                    path: /
-                    port: 8000
+                  type: http
+                  path: /
+                  port: 8000
                 readiness:
-                  httpGet:
-                    path: /
-                    port: 8000
+                  type: http
+                  path: /
+                  port: 8000
                 startup:
-                  httpGet:
-                    path: /
-                    port: 8000
+                  type: http
+                  path: /
+                  port: 8000
             volumes:
               ffmpeg-bin:
                 emptyDir: {}
