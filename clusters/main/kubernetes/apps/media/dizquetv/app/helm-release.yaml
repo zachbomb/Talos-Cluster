@@ -166,7 +166,6 @@ spec:
                 - cp /opt/ffmpeg/ffmpeg /ffmpeg-bin/ffmpeg
               volumeMounts:
                 - name: ffmpeg-bin
-                  enabled: true
                   mountPath: /ffmpeg-bin
           containers:
             dizquetv:
@@ -188,9 +187,10 @@ spec:
                   type: http
                   path: /
                   port: 8000
-            volumes:
-              ffmpeg-bin:
-                emptyDir: {}
+              volumes:
+                ffmpeg-bin:
+                  enabled: true
+                  type: emptyDir
         resources:
           limits:
             nvidia.com/gpu: 2
