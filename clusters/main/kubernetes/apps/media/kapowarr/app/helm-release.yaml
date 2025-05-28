@@ -1,0 +1,126 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kapowarr
+  namespace: media
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: kapowarr
+      version: 2.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    portal:
+      open:
+        enabled: false
+    global:
+      stopAll: false
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-kapowarr"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            description: Comic Downloader/Manager
+            enabled: true
+            group: -*rrs
+            icon: ""
+            name: Kapowarr
+            widget:
+              custom:
+               key: ""
+              enabled: true
+        hosts:
+          - host: kapowarr.${BASE_DOMAIN}
+    service:
+      main:
+        enabled: true
+        loadBalancerIP: ${KAPOWARR_IP}
+        type: LoadBalancer
+        ports:
+          main:
+            port: 5656
+            protocol: http
+            targetPort: 5656
+    persistence:
+      config:
+        volsync:
+        - name: config
+          type: restic
+          credentials: s3
+          dest:
+            enabled: true
+          src:
+            enabled: true
+            trigger:
+              schedule: 40 0 * * *
+      media:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
+      comics:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/comics
+        server: 192.168.10.123
+        mountPath: /comics
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
+      downloads:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/usenet
+        server: 192.168.10.123
+        mountPath: /usenet
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
+    metrics:
+      main:
+        enabled: false

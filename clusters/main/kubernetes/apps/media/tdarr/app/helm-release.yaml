@@ -1,0 +1,118 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tdarr
+  namespace: media
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: tdarr
+      version: 11.25.0
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  timeout: 20m
+  values:
+    portal:
+      open:
+        enabled: false
+    global:
+      stopAll: false
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-tdarr"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+        hosts:
+          - host: tdarr.${BASE_DOMAIN}
+    service:
+      main:
+        enabled: true
+        loadBalancerIP: ${tdarr_IP}
+        type: LoadBalancer
+        ports:
+          main:
+            port: 8266
+            protocol: http
+            targetPort: 8266
+    workload:
+      main:
+        podSpec:
+          initContainers:
+            initconfig:
+              enabled: false
+    persistence:
+      configs:
+        volsync:
+        - name: config
+          type: restic
+          credentials: minio
+          dest:
+            enabled: true
+          src:
+            enabled: true
+            trigger:
+              schedule: 50 0 * * *
+      logs:
+        volsync:
+        - name: logs
+          type: restic
+          credentials: minio
+          dest:
+            enabled: true
+          src:
+            enabled: true
+            trigger:
+              schedule: 50 0 * * *
+      server:
+        volsync:
+        - name: server
+          type: restic
+          credentials: minio
+          dest:
+            cacheCapacity: 20Gi
+            enabled: true
+          src:
+            cacheCapacity: 20Gi
+            enabled: true
+            trigger:
+              schedule: 50 0 * * *
+      transcode-cache:
+        type: "emptyDir"
+      media:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
