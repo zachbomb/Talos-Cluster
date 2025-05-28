@@ -161,7 +161,6 @@ spec:
             - name: install-ffmpeg
               type: install
               enabled: true
-              shortName: install-ffmpeg
               image: jrottenberg/ffmpeg:4.4-nvidia
               command:
                 - sh
