@@ -46,6 +46,16 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
+          homepage:
+            description: Transcoder
+            enabled: true
+            group: -*rrs
+            icon: ""
+            name: tdarr
+            widget:
+              custom:
+               key: ""
+              enabled: true
         hosts:
           - host: tdarr.${BASE_DOMAIN}
     service:
@@ -58,12 +68,6 @@ spec:
             port: 8266
             protocol: http
             targetPort: 8266
-    workload:
-      main:
-        podSpec:
-          initContainers:
-            initconfig:
-              enabled: false
     persistence:
       configs:
         volsync:
@@ -116,3 +120,10 @@ spec:
          - noatime
          - nodiratime
          - nolock
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+    workload:
+      main:
+        podSpec:
+          runtimeClassName: "nvidia"
