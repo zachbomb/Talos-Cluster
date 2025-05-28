@@ -53,7 +53,7 @@ spec:
             name: Kapowarr
             widget:
               custom:
-               key: ""
+               key: 0c056d6d5c0206155947652bb26ce254
               enabled: true
         hosts:
           - host: kapowarr.${BASE_DOMAIN}
