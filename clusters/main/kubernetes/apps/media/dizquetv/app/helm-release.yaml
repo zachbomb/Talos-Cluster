@@ -161,8 +161,7 @@ spec:
             - name: install-ffmpeg
               type: install
               enabled: true
-              shortName: install-ffmpeg
-              image: jrottenberg/ffmpeg:4.3-nvidia
+              image: linuxserver/ffmpeg:latest
               command:
                 - sh
                 - -c
@@ -172,7 +171,6 @@ spec:
                   mountPath: /ffmpeg-bin
         containers:
           - name: dizquetv
-            shortName: dizquetv
             volumeMounts:
               - name: ffmpeg-bin
                 mountPath: /usr/local/bin/ffmpeg
@@ -209,11 +207,3 @@ spec:
               middlewares:
                 - name: local
                   namespace: traefik
-        workload:
-          containers:
-            - name: codeserver
-              shortName: codeserver
-              image: tccr/code-server:4.15.0
-              ports:
-                - containerPort: 8080
-                  name: http
