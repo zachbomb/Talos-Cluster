@@ -1,0 +1,100 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tunarr
+  namespace: media
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: app-template
+      version: 14.5.3
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/chrisbenincasa/tunarr
+      tag: latest
+      pullPolicy: IfNotPresent
+      
+    workload:
+      main:
+        podSpec:
+          runtimeClassName: "nvidia"
+
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${TUNARR_IP}
+        ports:
+          main:
+            port: 8000
+            targetPort: 8000
+
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Tunarr
+            description: Custom IPTV-like server
+            group: Media Players
+        hosts:
+          - host: tunarr.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+
+    persistence:
+      config:
+        enabled: true
+        mountPath: /config
+        type: pvc
+        accessMode: ReadWriteOnce
+        size: 1Gi
+      media:
+        enabled: true
+        mountPath: /media
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
+        type: nfs
+        mountOptions:
+          - nfsvers=4
+          - noatime
+          - nodiratime
+          - nolock
+
+    env:
+      TZ: America/Los_Angeles
+      TUNARR__TV_DIR: /media/media/tv
+      TUNARR__MOVIES_DIR: /media/media/movies
+      TUNARR__CONFIG_DIR: /config
+      TUNARR__PORT: "8000"
+
+    securityContext:
+      container:
+        runAsUser: 1000
+        runAsGroup: 1000
+        readOnlyRootFilesystem: false
+      pod:
+        fsGroup: 1000
+
+    resources:
+      limits:
+        nvidia.com/gpu: 1

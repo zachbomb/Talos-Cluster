@@ -27,3 +27,4 @@ resources:
   - kapowarr/ks.yaml
   - tdarr/ks.yaml
   - dizquetv/ks.yaml
+  - tunarr/ks.yaml
