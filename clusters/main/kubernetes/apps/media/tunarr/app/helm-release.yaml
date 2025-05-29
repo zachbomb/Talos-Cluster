@@ -112,9 +112,20 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
+              enabled: false
             src:
-              enabled: true
+              enabled: false
+      cache:
+        enabled: true
+        mountPath: /.cache
+        volsync:
+          - name: cache
+            type: restic
+            credentials: s3
+            dest:
+              enabled: false
+            src:
+              enabled: false
       media:
         enabled: true
         type: nfs
