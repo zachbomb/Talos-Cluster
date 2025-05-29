@@ -24,7 +24,7 @@ spec:
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: latest
+      tag: latest-nvidia
       pullPolicy: IfNotPresent
 
     env:
