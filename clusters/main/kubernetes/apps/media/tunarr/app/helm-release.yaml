@@ -92,6 +92,17 @@ spec:
               enabled: true
             src:
               enabled: true
+      streams:
+        enabled: true
+        mountPath: /streams
+        volsync:
+          - name: streams
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
       media:
         enabled: true
         type: nfs
