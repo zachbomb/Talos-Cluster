@@ -83,10 +83,7 @@ spec:
     persistence:
       config:
         enabled: true
-        mountPath: /config
-        type: pvc
-        accessMode: ReadWriteOnce
-        size: 1Gi
+        mountPath: /root
         volsync:
           - name: config
             type: restic
