@@ -16,6 +16,10 @@ spec:
         namespace: flux-system
   releaseName: dizquetv
   values:
+    nvidiaImage:
+      pullPolicy: IfNotPresent
+      repository: vexorian/dizquetv
+      tag: latest-nvidia
     credentials:
       s3:
         type: s3
@@ -52,15 +56,8 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-
-    nvidiaImage:
-      pullPolicy: IfNotPresent
-      repository: vexorian/dizquetv
-      tag: latest-nvidia
-
     persistence:
       config:
-        enabled: true
         main:
           enabled: true
           mountPath: /config

@@ -104,6 +104,17 @@ spec:
               enabled: true
             src:
               enabled: true
+      local:
+        enabled: true
+        mountPath: /.local
+        volsync:
+          - name: local
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
       media:
         enabled: true
         type: nfs
