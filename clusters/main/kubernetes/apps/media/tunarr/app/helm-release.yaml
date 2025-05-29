@@ -44,6 +44,12 @@ spec:
       main:
         podSpec:
           runtimeClassName: "nvidia"
+        args:
+          - "--database"
+          - "/config"
+          - "--port"
+          - "8000"
+
 
     service:
       main:
