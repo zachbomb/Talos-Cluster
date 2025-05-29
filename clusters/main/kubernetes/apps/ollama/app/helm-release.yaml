@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: ollama  # Replace with the correct chart name in the Helm repository
-      version: 7.15.1  # Replace with the correct chart version
+      version: 7.15.2  # Replace with the correct chart version
       sourceRef:
         kind: HelmRepository
         name: truecharts  # Assuming you are using the TrueCharts repository
