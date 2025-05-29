@@ -26,6 +26,7 @@ spec:
       repository: ghcr.io/chrisbenincasa/tunarr
       tag: latest
       pullPolicy: IfNotPresent
+
     credentials:
       s3:
         type: s3
@@ -34,16 +35,21 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-      
+
     workload:
       main:
-        args:
-          - "--database"
-          - "/config/tunarr"
-          - "--port"
-          - "8000"
         podSpec:
           runtimeClassName: "nvidia"
+          initContainers:
+            fix-permissions:
+              image: busybox
+              command:
+                - sh
+                - -c
+                - "chown -R 1000:1000 /config"
+              volumeMounts:
+                - name: config
+                  mountPath: /config
 
     service:
       main:
@@ -95,6 +101,11 @@ spec:
 
     env:
       TZ: America/Los_Angeles
+      TUNARR__PORT: "8000"
+      TUNARR__CONFIG_DIR: /config
+      TUNARR__DATABASE: /config/tunarr
+      TUNARR__TV_DIR: /media/media/tv
+      TUNARR__MOVIES_DIR: /media/media/movies
 
     securityContext:
       container:
