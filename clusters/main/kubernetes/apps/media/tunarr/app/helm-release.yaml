@@ -26,10 +26,20 @@ spec:
       repository: ghcr.io/chrisbenincasa/tunarr
       tag: latest
       pullPolicy: IfNotPresent
-
     env:
       TZ: America/Los_Angeles
-
+      TUNARR__TV_DIR: /media/media/tv
+      TUNARR__MOVIES_DIR: /media/media/movies
+      TUNARR__CONFIG_DIR: /config
+      TUNARR__PORT: "8000"
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-tunarr"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
     workload:
       main:
         args:
@@ -84,18 +94,70 @@ spec:
     persistence:
       config:
         enabled: true
-        mountPath: /config
-        type: pvc
-        accessMode: ReadWriteOnce
-        size: 1Gi
+        main:
+          enabled: true
+          mountPath: /config
+          volsync:
+            - name: config
+              type: restic
+              credentials: s3
+              dest:
+                enabled: true
+              src:
+                enabled: true
       media:
         enabled: true
-        mountPath: /media
-        server: 192.168.10.123
-        path: /mnt/Pibbs-Horde/media/data
         type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
         mountOptions:
           - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      movies:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        server: 192.168.10.123
+        mountPath: /movies
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      tv:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        server: 192.168.10.123
+        mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      xmltv:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/xmltv
+        server: 192.168.10.123
+        mountPath: /xmltv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
           - noatime
           - nodiratime
           - nolock
