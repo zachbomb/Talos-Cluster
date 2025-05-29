@@ -184,9 +184,8 @@ spec:
                 - name: ffmpeg-bin
                   mountPath: /ffmpeg-bin
           containers:
-            dizquetv:
+            main:
               enabled: true
-              workingDir: /backups 
               volumeMounts:
                 - name: ffmpeg-bin
                   mountPath: /usr/local/bin/ffmpeg
