@@ -234,9 +234,9 @@ spec:
           volumes:
             ffmpeg-bin:
               emptyDir: {}
-          resources:
-            limits:
-              nvidia.com/gpu: 2
+    resources:
+      limits:
+        nvidia.com/gpu: 2
 
     addons:
       codeserver:
