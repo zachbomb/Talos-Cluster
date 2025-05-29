@@ -179,18 +179,18 @@ spec:
               command:
                 - sh
                 - -c
-                - cp /opt/ffmpeg/ffmpeg /ffmpeg-bin/ffmpeg
+                - cp /usr/bin/ffmpeg /ffmpeg-bin/ffmpeg
               volumeMounts:
                 - name: ffmpeg-bin
                   mountPath: /ffmpeg-bin
+                  subPath: ffmpeg
           containers:
             main:
               enabled: true
               workingDir: /config
               volumeMounts:
                 - name: ffmpeg-bin
-                  mountPath: /usr/local/bin/ffmpeg
-                  subPath: ffmpeg
+                  mountPath: /ffmpeg-bin
               probes:
                 liveness:
                   type: http
