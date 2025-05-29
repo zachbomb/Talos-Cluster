@@ -172,7 +172,7 @@ spec:
           containers:
             dizquetv:
               enabled: true
-              workingDir: /config  
+              workingDir: /data 
               volumeMounts:
                 - name: ffmpeg-bin
                   mountPath: /usr/local/bin/ffmpeg
