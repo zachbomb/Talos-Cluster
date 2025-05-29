@@ -194,3 +194,28 @@ spec:
     resources:
       limits:
         nvidia.com/gpu: 1
+    addons:
+      codeserver:
+        enabled: true
+        service:
+          type: LoadBalancer
+          loadBalancerIP: ${TUNARR_IP}
+          ports:
+            codeserver:
+              port: 12321
+        ingress:
+          enabled: true
+          hosts:
+            - host: tunarr-code.${BASE_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+          integrations:
+            certManager:
+              certificateIssuer: wethecommon-prod-cert
+              enabled: true
+            traefik:
+              enabled: false
+              middlewares:
+                - name: local
+                  namespace: traefik
