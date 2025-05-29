@@ -239,7 +239,7 @@ spec:
               certificateIssuer: wethecommon-prod-cert
               enabled: true
             traefik:
-              enabled: true
+              enabled: false
               middlewares:
                 - name: local
                   namespace: traefik
