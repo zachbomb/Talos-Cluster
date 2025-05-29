@@ -236,7 +236,7 @@ spec:
               emptyDir: {}
     resources:
       limits:
-        nvidia.com/gpu: 2
+        nvidia.com/gpu: 1
 
     addons:
       codeserver:
