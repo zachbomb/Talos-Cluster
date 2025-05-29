@@ -129,6 +129,20 @@ spec:
           - noatime
           - nodiratime
           - nolock
+      dizquetv:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/.dizquetv
+        server: 192.168.10.123
+        mountPath: /.dizquetv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       backups:
         enabled: true
         type: nfs
