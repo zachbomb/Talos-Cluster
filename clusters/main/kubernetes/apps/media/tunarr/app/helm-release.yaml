@@ -42,6 +42,7 @@ spec:
           initContainers:
             fix-permissions:
               enabled: true
+              type: init
               image: busybox
               command:
                 - sh
