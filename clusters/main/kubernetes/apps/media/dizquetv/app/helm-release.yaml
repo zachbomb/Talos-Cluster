@@ -16,6 +16,10 @@ spec:
         namespace: flux-system
   releaseName: dizquetv
   values:
+    image:
+      pullPolicy: IfNotPresent
+      repository: vexorian/dizquetv
+      tag: latest-nvidia
     nvidiaImage:
       pullPolicy: IfNotPresent
       repository: vexorian/dizquetv
