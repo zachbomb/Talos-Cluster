@@ -27,21 +27,21 @@ spec:
       tag: latest
       pullPolicy: IfNotPresent
 
-    credentials:
-      s3:
-        type: s3
-        url: "${S3URL}"
-        bucket: "${S3PREFIX}-plex"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+    env:
+      TZ: America/Los_Angeles
 
     workload:
       main:
+        args:
+          - "--database"
+          - "/config/tunarr"
+          - "--port"
+          - "8000"
         podSpec:
           runtimeClassName: "nvidia"
           initContainers:
             fix-permissions:
+              enabled: true
               image: busybox
               command:
                 - sh
@@ -98,14 +98,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
-    env:
-      TZ: America/Los_Angeles
-      TUNARR__PORT: "8000"
-      TUNARR__CONFIG_DIR: /config
-      TUNARR__DATABASE: /config/tunarr
-      TUNARR__TV_DIR: /media/media/tv
-      TUNARR__MOVIES_DIR: /media/media/movies
 
     securityContext:
       container:
