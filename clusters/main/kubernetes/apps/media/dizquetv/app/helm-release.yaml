@@ -172,9 +172,7 @@ spec:
         podSpec:
           runtimeClassName: "nvidia"
           initContainers:
-            install-ffmpeg:
-              enabled: true
-              type: install
+            - name: install-ffmpeg
               image: jrottenberg/ffmpeg:7.1-nvidia
               command:
                 - sh
@@ -183,10 +181,9 @@ spec:
               volumeMounts:
                 - name: ffmpeg-bin
                   mountPath: /ffmpeg-bin
-                  subPath: ffmpeg
           containers:
-            main:
-              enabled: true
+            - name: main
+              image: vexorian/dizquetv:latest-nvidia
               workingDir: /backups
               volumeMounts:
                 - name: ffmpeg-bin
@@ -204,13 +201,25 @@ spec:
                   type: http
                   path: /
                   port: 8000
+            - name: ffmpeg-sidecar
+              image: jrottenberg/ffmpeg:7.1-nvidia
+              command:
+                - sh
+                - -c
+                - |
+                  until [ -f /usr/bin/ffmpeg ]; do sleep 1; done
+                  cp /usr/bin/ffmpeg /ffmpeg-bin/ffmpeg
+                  echo "ffmpeg binary copied to shared volume"
+                  sleep infinity
+              volumeMounts:
+                - name: ffmpeg-bin
+                  mountPath: /ffmpeg-bin
           volumes:
-            ffmpeg-bin:
-              enabled: true
-              type: emptyDir
-        resources:
-          limits:
-            nvidia.com/gpu: 2
+            - name: ffmpeg-bin
+              emptyDir: {}
+          resources:
+            limits:
+              nvidia.com/gpu: 2
 
     addons:
       codeserver:
