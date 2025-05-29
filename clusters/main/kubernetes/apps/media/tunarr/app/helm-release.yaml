@@ -42,25 +42,8 @@ spec:
         encrKey: "${S3KEY}"
     workload:
       main:
-        args:
-          - "--database"
-          - "/config/tunarr"
-          - "--port"
-          - "8000"
         podSpec:
           runtimeClassName: "nvidia"
-          initContainers:
-            fix-permissions:
-              enabled: true
-              type: init
-              image: busybox
-              command:
-                - sh
-                - -c
-                - "chown -R 1000:1000 /config"
-              volumeMounts:
-                - name: config
-                  mountPath: /config
 
     service:
       main:
