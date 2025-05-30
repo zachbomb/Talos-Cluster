@@ -237,7 +237,6 @@ spec:
       limits:
         nvidia.com/gpu: 1
         memory: "8Gi"
-        cpu: "3"
     addons:
       codeserver:
         enabled: true
