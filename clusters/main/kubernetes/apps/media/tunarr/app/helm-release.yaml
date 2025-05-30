@@ -212,10 +212,15 @@ spec:
           - nolock
       transcoding:
         enabled: true
-        type: emptyDir
-        mountPath: /transcode
-        medium: ""
-        sizeLimit: 8Gi
+        mountPath: /.transcode
+        volsync:
+          - name: cache
+            type: restic
+            credentials: s3
+            dest:
+              enabled: false
+            src:
+              enabled: false
 
     securityContext:
       container:
