@@ -233,11 +233,11 @@ spec:
     resources:
       requests:
         memory: 2048Mi
-        cpu: 2000m
+        cpu: 1
       limits:
         nvidia.com/gpu: 1
         memory: 8Gi
-        cpu: 1
+        cpu: 4
     addons:
       codeserver:
         enabled: true
