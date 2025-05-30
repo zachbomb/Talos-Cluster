@@ -231,8 +231,13 @@ spec:
         fsGroup: 1000
 
     resources:
+      requests:
+        memory: "2048Mi"
+        cpu: "2000m"
       limits:
         nvidia.com/gpu: 1
+        memory: "8Gi"
+        cpu: "4"
     addons:
       codeserver:
         enabled: true
