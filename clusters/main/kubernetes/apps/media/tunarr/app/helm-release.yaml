@@ -210,6 +210,12 @@ spec:
           - noatime
           - nodiratime
           - nolock
+      transcoding:
+        enabled: true
+        type: emptyDir
+        mountPath: /transcode
+        medium: ""
+        sizeLimit: 8Gi
 
     securityContext:
       container:
