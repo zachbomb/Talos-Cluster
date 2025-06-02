@@ -72,9 +72,12 @@ spec:
             certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: true
+            icon: https://tunarr.com/assets/tunarr.png
             name: Tunarr
             description: Custom IPTV-like server
             group: Media Players
+            widget:
+              enabled: false
         hosts:
           - host: tunarr.${BASE_DOMAIN}
             paths:
