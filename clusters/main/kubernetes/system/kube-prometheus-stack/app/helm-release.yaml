@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: kube-prometheus-stack
-      version: 72.9.1
+      version: 72.6.4
       sourceRef:
         kind: HelmRepository
         name: prometheus-community
@@ -73,12 +73,12 @@ spec:
             memory: 500Mi
           limits:
             memory: 2000Mi
-        # storageSpec:
-        #   volumeClaimTemplate:
-        #     spec:
-        #       resources:
-        #         requests:
-        #           storage: 60Gi
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 60Gi
 
     prometheus-node-exporter:
       fullnameOverride: node-exporter
@@ -93,10 +93,10 @@ spec:
               targetLabel: kubernetes_node
     kube-state-metrics:
       fullnameOverride: kube-state-metrics
-      # metricLabelsAllowlist:
-      #   - pods=[*]
-      #   - deployments=[*]
-      #   - persistentvolumeclaims=[*]
+       metricLabelsAllowlist:
+         - pods=[*]
+         - deployments=[*]
+         - persistentvolumeclaims=[*]
       prometheus:
         monitor:
           enabled: true
