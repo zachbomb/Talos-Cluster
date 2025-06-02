@@ -18,3 +18,8 @@ spec:
   values:
     securityContext:
       readOnlyRootFilesystem: false
+    workload:
+      main:
+        enabled: true
+        podSpec:
+          hostUsers: true
