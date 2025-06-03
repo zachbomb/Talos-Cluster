@@ -26,7 +26,7 @@ spec:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
       tag: edge-nvidia
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
 
     env:
       TZ: America/Los_Angeles
