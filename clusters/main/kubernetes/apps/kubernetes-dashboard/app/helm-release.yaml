@@ -37,3 +37,8 @@ spec:
         ports:
           main:
             port: 80
+    workload:
+      main:
+        enabled: true
+        podSpec:
+          hostUsers: true
