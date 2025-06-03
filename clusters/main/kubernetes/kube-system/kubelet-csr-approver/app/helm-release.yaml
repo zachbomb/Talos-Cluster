@@ -16,10 +16,10 @@ spec:
         namespace: flux-system
       interval: 30m
   values:
-    securityContext:
-      readOnlyRootFilesystem: false
     workload:
       main:
         enabled: true
         podSpec:
           hostUsers: true
+    securityContext:
+      readOnlyRootFilesystem: false
