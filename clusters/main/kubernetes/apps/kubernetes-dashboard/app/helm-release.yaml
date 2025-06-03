@@ -38,7 +38,23 @@ spec:
           main:
             port: 80
     workload:
-      kubernetes-dashboard:
+      main:
+        enabled: true
+        podSpec:
+          hostUsers: true
+      web:
+        enabled: true
+        podSpec:
+          hostUsers: true
+      api:
+        enabled: true
+        podSpec:
+          hostUsers: true
+      auth:
+        enabled: true
+        podSpec:
+          hostUsers: true
+      scraper:
         enabled: true
         podSpec:
           hostUsers: true
