@@ -168,7 +168,7 @@ spec:
         release_name: plex
         resources:
             limits:
-                nvidia.com/gpu: 1
+                nvidia.com/gpu: 2
         securityContext:
             container:
                 UMASK: "0022"
