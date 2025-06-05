@@ -29,3 +29,11 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+  values:
+    workload:
+      main:
+        enabled: true
+        podSpec:
+          hostUsers: true
+    securityContext:
+      readOnlyRootFilesystem: false
