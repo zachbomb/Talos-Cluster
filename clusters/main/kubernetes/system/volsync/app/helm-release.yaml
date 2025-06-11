@@ -21,3 +21,11 @@ spec:
   upgrade:
     remediation:
       retries: 3
+  values:
+    workload:
+      main:
+        enabled: true
+        podSpec:
+          hostUsers: true
+    securityContext:
+      readOnlyRootFilesystem: false
