@@ -26,8 +26,6 @@ spec:
   values:
     global:
       stopAll: false
-    podOptions:
-      hostUsers: false
     env:
       LOG_LEVEL: ":info"
       OVERSEERR__URL: ""
@@ -76,3 +74,5 @@ spec:
             port: 8080
             protocol: http
             targetPort: 8080
+    podOptions:
+      hostUsers: false
