@@ -24,11 +24,27 @@ spec:
     remediation:
       retries: 3
   values:
-    portal:
-      open:
-        enabled: false
     global:
       stopAll: false
+
+    env:
+      LOG_LEVEL: ":info"
+      OVERSEERR__URL: ""
+      OVERSEERR__API: ""
+      OVERSEERR__DEFAULT_ID: ""
+      DISCORD__MAX_RESULTS: 25
+      DISCORD__REQUESTED_MSG_STYLE: ":plain"
+      DISCORD__ROLE_ID: ""
+      DISCORD__TOKEN: ""
+      SONARR__URL: ""
+      SONARR__API: ""
+      SONARR__QUALITY_PROFILE: ""
+      SONARR__LANGUAGE_PROFILE: ""
+      RADARR__URL: ""
+      RADARR__API: ""
+      RADARR__QUALITY_PROFILE: ""
+      PARTIAL_SEASONS: true
+
     credentials:
       s3:
         type: s3
@@ -37,16 +53,17 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
+
     ingress:
       main:
         enabled: true
         ingressClassName: internal
-        integrations:
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
+        certManager:
+          enabled: true
+          certificateIssuer: wethecommon-prod-cert
         hosts:
           - host: doplarr.${BASE_DOMAIN}
+
     service:
       main:
         enabled: true
@@ -57,25 +74,3 @@ spec:
             port: 8080
             protocol: http
             targetPort: 8080
-    workload:
-      main:
-        podSpec:
-          containers:
-            main:
-            env:
-              OVERSEERR__URL: ""
-              DISCORD__MAX_RESULTS: 25
-              DISCORD__REQUESTED_MSG_STYLE: ":plain"
-              SONARR__URL: ""
-              SONARR__QUALITY_PROFILE: ""
-              SONARR__LANGUAGE_PROFILE: ""
-              RADARR__URL: ""
-              RADARR__QUALITY_PROFILE: ""
-              PARTIAL_SEASONS: true
-              LOG_LEVEL: ":info"
-              OVERSEERR__API: ""
-              OVERSEERR__DEFAULT_ID: ""
-              SONARR__API: ""
-              RADARR__API: ""
-              DISCORD__ROLE_ID: ""
-              DISCORD__TOKEN: ""
