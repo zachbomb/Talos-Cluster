@@ -34,6 +34,7 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    replicaCount: 1
     # Core cluster settings
     cluster:
       name: ${CLUSTERNAME}
@@ -61,9 +62,15 @@ spec:
     operator:
       rollOutPods: true
 
-    # Hubble is disabled — update if needed
+    # Hubble disabled
     hubble:
       enabled: false
+
+    # Disable hostPorts that cause port conflicts on single node
+    agent:
+      hostPort:
+        health: false
+        prometheus: false
 
     # cgroup v2 support
     cgroup:
