@@ -75,4 +75,4 @@ spec:
             protocol: http
             targetPort: 8080
     podOptions:
-      hostUsers: false
+      hostUsers: true
