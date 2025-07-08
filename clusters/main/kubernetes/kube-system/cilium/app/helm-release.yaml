@@ -55,7 +55,7 @@ spec:
     hubble:
       enabled: false
     hostPorts:
-      health: false
+      health: true                   # enables 9879 health port
       prometheus: false
     cgroup:
       automount:
