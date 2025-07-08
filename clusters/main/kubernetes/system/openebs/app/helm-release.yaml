@@ -14,6 +14,7 @@ spec:
         kind: HelmRepository
         name: home-ops-mirror
         namespace: flux-system
+      interval: 5m
   install:
     createNamespace: true
     crds: CreateReplace
@@ -32,13 +33,19 @@ spec:
 
     engines:
       local:
-        # The lvm-localpv backend contains a duplicate of snapshot controller which will cause conflicts
         lvm:
           enabled: false
-        # The ZFS backend contains a duplicate of snapshot controller which will cause conflicts
         zfs:
           enabled: false
       replicated:
-        # The Mayastor backend contains a duplicate of snapshot controller which will cause conflicts
         mayastor:
           enabled: false
+
+    common:
+      # This section may be added based on TrueCharts common chart requirements,
+      # if the chart expects a 'common' block, e.g. for logging, image overrides, etc.
+      # You can extend this as needed for your environment.
+      logging:
+        level: info
+      imagePullSecrets: []
+
