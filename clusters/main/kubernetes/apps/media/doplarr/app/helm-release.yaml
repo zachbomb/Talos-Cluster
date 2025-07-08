@@ -71,6 +71,7 @@ spec:
         type: LoadBalancer
         ports:
           main:
+            enabled: true
             port: 8080
             protocol: http
             targetPort: 8080
