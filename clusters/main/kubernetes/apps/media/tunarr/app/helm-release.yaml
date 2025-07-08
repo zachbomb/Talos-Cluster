@@ -23,6 +23,7 @@ spec:
     remediation:
       retries: 3
   values:
+
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
       tag: latest-nvidia
@@ -44,6 +45,22 @@ spec:
           - "8000"
         podSpec:
           runtimeClassName: "nvidia"
+
+    autoscaling:
+      vpa:
+        enabled: true
+        mode: Auto
+
+    scheduling:
+      topologyKey: kubernetes.io/hostname
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: tunarr
+              topologyKey: kubernetes.io/hostname
+
     credentials:
       s3:
         type: s3
@@ -52,6 +69,7 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
+
     service:
       main:
         enabled: true
@@ -66,69 +84,34 @@ spec:
       main:
         enabled: true
         ingressClassName: internal
-        integrations:
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-          homepage:
-            enabled: true
-            icon: https://tunarr.com/assets/tunarr.png
-            name: Tunarr
-            description: Custom IPTV-like server
-            group: Media Players
-            widget:
-              enabled: false
         hosts:
           - host: tunarr.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
+        certManager:
+          enabled: true
+          certificateIssuer: wethecommon-prod-cert
+        homepage:
+          enabled: true
+          icon: https://tunarr.com/assets/tunarr.png
+          name: Tunarr
+          description: Custom IPTV-like server
+          group: Media Players
 
     persistence:
       config:
         enabled: true
         mountPath: /root
-        volsync:
-          - name: config
-            type: restic
-            credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
       streams:
         enabled: true
         mountPath: /streams
-        volsync:
-          - name: streams
-            type: restic
-            credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
       local:
         enabled: true
         mountPath: /.local
-        volsync:
-          - name: local
-            type: restic
-            credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
       cache:
         enabled: true
         mountPath: /.cache
-        volsync:
-          - name: cache
-            type: restic
-            credentials: s3
-            dest:
-              enabled: false
-            src:
-              enabled: false
       media:
         enabled: true
         type: nfs
@@ -216,14 +199,28 @@ spec:
       transcoding:
         enabled: true
         mountPath: /.transcode
-        volsync:
-          - name: cache
-            type: restic
-            credentials: s3
-            dest:
-              enabled: false
-            src:
-              enabled: false
+
+    volsync:
+      config:
+        type: restic
+        credentials: s3
+        srcEnabled: true
+        destEnabled: true
+      streams:
+        type: restic
+        credentials: s3
+        srcEnabled: true
+        destEnabled: true
+      local:
+        type: restic
+        credentials: s3
+        srcEnabled: true
+        destEnabled: true
+      cache:
+        type: restic
+        credentials: s3
+        srcEnabled: false
+        destEnabled: false
 
     securityContext:
       container:
@@ -235,12 +232,13 @@ spec:
 
     resources:
       requests:
-        memory: 2048Mi
-        cpu: 1
+        memory: 1024Mi
+        cpu: 250m
       limits:
         nvidia.com/gpu: 2
-        memory: 8Gi
-        cpu: 4
+        memory: 4Gi
+        cpu: 2
+
     addons:
       codeserver:
         enabled: true
@@ -257,12 +255,6 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
-          integrations:
-            certManager:
-              certificateIssuer: wethecommon-prod-cert
-              enabled: true
-            traefik:
-              enabled: false
-              middlewares:
-                - name: local
-                  namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
