@@ -5,17 +5,15 @@ metadata:
   namespace: openebs
 spec:
   interval: 5m
-  timeout: 10m
   releaseName: openebs
   chart:
     spec:
       chart: openebs
-      version: 4.3.2  # consider bumping to latest if possible
+      version: 4.3.2
       sourceRef:
         kind: HelmRepository
         name: home-ops-mirror
         namespace: flux-system
-      interval: 5m
   install:
     createNamespace: true
     crds: CreateReplace
@@ -31,22 +29,21 @@ spec:
         volumeSnapshots:
           enabled: false
           keep: false
-
+    loki:
+      enabled: false
+    alloy:
+      enabled: false
+    minio:
+      enabled: false        
     engines:
       local:
+        # The lvm-localpv backend contains a duplicate of snapshot controller which will cause conflicts
         lvm:
           enabled: false
+        # The ZFS backend contains a duplicate of snapshot controller which will cause conflicts
         zfs:
           enabled: false
       replicated:
+        # The Mayastor backend contains a duplicate of snapshot controller which will cause conflicts
         mayastor:
           enabled: false
-
-    common:
-      logging:
-        level: info
-      imagePullSecrets: []
-
-    # Optional: Explicitly enable EndpointSlice support if exposed by chart (check your chart docs)
-    endpointSlices:
-      enabled: true
