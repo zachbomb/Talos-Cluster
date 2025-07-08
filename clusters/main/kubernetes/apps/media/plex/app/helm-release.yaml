@@ -5,28 +5,27 @@ metadata:
   name: plex
   namespace: media
 spec:
-  interval: 15m
-  chart:
-    spec:
-      chart: plex
-      version: 20.0.7
-      sourceRef:
-        kind: HelmRepository
-        name: truecharts
-        namespace: flux-system
-      interval: 15m
-  timeout: 20m
-  maxHistory: 3
-  install:
-    createNamespace: true
-    remediation:
-      retries: 3
-  upgrade:
-    cleanupOnFail: true
-    remediation:
-      retries: 3
-  uninstall:
-    keepHistory: false
+    interval: 15m
+    chart:
+        spec:
+            chart: plex
+            version: 20.0.7
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+    timeout: 20m
+    maxHistory: 3
+    install:
+        createNamespace: true
+        remediation:
+          retries: 3
+    upgrade:
+        cleanupOnFail: true
+        remediation:
+          retries: 3
+    uninstall:
+        keepHistory: false
   values:
     credentials:
       s3:
