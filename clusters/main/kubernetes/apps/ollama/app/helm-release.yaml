@@ -63,8 +63,9 @@ spec:
         targetSelector: ui
         ports:
           main:
-            protocol: http
+            enabled: true
             port: 10686
+            protocol: http
             targetSelector: ui
         type: LoadBalancer
       api:
