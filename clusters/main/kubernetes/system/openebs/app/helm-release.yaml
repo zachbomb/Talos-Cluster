@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: openebs
-      version: 4.3.2
+      version: 4.3.2  # consider bumping to latest if possible
       sourceRef:
         kind: HelmRepository
         name: home-ops-mirror
@@ -43,10 +43,10 @@ spec:
           enabled: false
 
     common:
-      # This section may be added based on TrueCharts common chart requirements,
-      # if the chart expects a 'common' block, e.g. for logging, image overrides, etc.
-      # You can extend this as needed for your environment.
       logging:
         level: info
       imagePullSecrets: []
 
+    # Optional: Explicitly enable EndpointSlice support if exposed by chart (check your chart docs)
+    endpointSlices:
+      enabled: true
