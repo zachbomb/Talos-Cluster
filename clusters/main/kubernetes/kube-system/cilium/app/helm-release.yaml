@@ -35,50 +35,32 @@ spec:
     keepHistory: false
   values:
     replicaCount: 1
-    # Core cluster settings
     cluster:
       name: ${CLUSTERNAME}
       id: 1
-
-    # Networking
     ipv4NativeRoutingCIDR: ${PODNET}
     ipam:
       mode: kubernetes
-
-    # BPF + kube-proxy replacement
     kubeProxyReplacement: true
     kubeProxyReplacementHealthzBindAddr: "0.0.0.0:10256"
     k8sServiceHost: 127.0.0.1
     k8sServicePort: 7445
-
-    # Device detection and pod rollout
     enableRuntimeDeviceDetection: true
     rollOutCiliumPods: true
     endpointRoutes:
       enabled: true
     localRedirectPolicy: true
-
-    # Operator-specific config
     operator:
       rollOutPods: true
-
-    # Hubble disabled
     hubble:
       enabled: false
-
-    # Disable hostPorts that cause port conflicts on single node
-    agent:
-      hostPort:
-        health: false
-        prometheus: false
-
-    # cgroup v2 support
+    hostPorts:
+      health: false
+      prometheus: false
     cgroup:
       automount:
         enabled: false
       hostRoot: /sys/fs/cgroup
-
-    # Security context
     securityContext:
       privileged: true
       capabilities:
