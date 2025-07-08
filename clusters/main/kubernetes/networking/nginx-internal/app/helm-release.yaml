@@ -34,7 +34,6 @@ spec:
       service:
         externalTrafficPolicy: Local
         annotations:
-          # TODO: Maybe play with this
           internal-dns.alpha.kubernetes.io/hostname: internal.${BASE_DOMAIN}
           metallb.io/ip-allocated-from-pool: main
           metallb.io/loadBalancerIPs: ${NGINX_INTERNAL_IP}
@@ -62,6 +61,8 @@ spec:
         keep-alive: 120
         proxy-body-size: 0
         proxy-buffer-size: 16k
+        proxy-buffers: "8 16k"                    # ✅ Added
+        proxy-busy-buffers-size: "32k"            # ✅ Added
         ssl-protocols: TLSv1.3 TLSv1.2
         use-forwarded-headers: "true"
       metrics:
