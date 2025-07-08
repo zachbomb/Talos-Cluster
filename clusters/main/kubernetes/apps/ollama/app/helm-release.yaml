@@ -7,6 +7,7 @@ metadata:
   namespace: ollama  # Replace with your namespace if needed
 spec:
   interval: 15m
+  timeout: 10m
   chart:
     spec:
       chart: ollama  # Replace with the correct chart name in the Helm repository
@@ -62,8 +63,10 @@ spec:
         targetSelector: ui
         ports:
           main:
-            protocol: http
+            enabled: true
             port: 10686
+            targetPort: 10686
+            protocol: http
             targetSelector: ui
         type: LoadBalancer
       api:
