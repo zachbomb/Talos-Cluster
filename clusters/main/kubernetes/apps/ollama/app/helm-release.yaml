@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -70,8 +71,8 @@ spec:
         loadBalancerIP: "${OLLAMA_IP}"
         ports:
           main:
-            port: 10686
-            targetPort: 10686
+            port: "10686"
+            targetPort: "10686"
             protocol: http
       api:
         enabled: true
@@ -79,8 +80,8 @@ spec:
         loadBalancerIP: "${OLLAMA_IP}"
         ports:
           api:
-            port: 11434
-            targetPort: 11434
+            port: "11434"
+            targetPort: "11434"
             protocol: http
 
     ollama:
@@ -104,16 +105,16 @@ spec:
                   enabled: true
                   type: http
                   path: /api/version
-                  port: 11434
+                  port: "11434"
                 readiness:
                   enabled: true
                   type: http
                   path: /api/version
-                  port: 11434
+                  port: "11434"
                 startup:
                   enabled: true
                   type: tcp
-                  port: 11434
+                  port: "11434"
       ui:
         enabled: true
         type: Deployment
@@ -128,16 +129,16 @@ spec:
                   enabled: true
                   type: http
                   path: /
-                  port: 10686
+                  port: "10686"
                 readiness:
                   enabled: true
                   type: http
                   path: /
-                  port: 10686
+                  port: "10686"
                 startup:
                   enabled: true
                   type: tcp
-                  port: 10686
+                  port: "10686"
               env:
                 - name: PORT
                   value: "10686"
