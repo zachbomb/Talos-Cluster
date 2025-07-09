@@ -47,12 +47,12 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
 
     resources:
-      limits:
-        cpu: 250m
-        memory: 256Mi
       requests:
+        memory: 1024Mi
         cpu: 50m
-        memory: 128Mi
+      limits:
+        memory: 4Gi
+        cpu: 500m
 
     service:
       main:
