@@ -34,14 +34,21 @@ spec:
           containers:
             main:
               env:
-                HOMEPAGE_ALLOWED_HOSTS: "localhost,127.0.0.1,homepage.${BASE_DOMAIN}"
+                - name: HOMEPAGE_ALLOWED_HOSTS
+                  value: "localhost,127.0.0.1,homepage.${BASE_DOMAIN}"
+                - name: UMASK
+                  value: "0022"
+                - name: runAsUser
+                  value: "1000"
+                - name: runAsGroup
+                  value: "1000"
 
     ingress:
       main:
         enabled: true
         ingressClassName: internal
         hosts:
-          - host: homepage.${BASE_DOMAIN}
+          - host: "homepage.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -57,8 +64,8 @@ spec:
 
     rbac:
       main:
-        clusterWide: true
         enabled: true
+        clusterWide: true
         primary: true
         rules:
           - apiGroups: [""]
@@ -78,30 +85,27 @@ spec:
             verbs: [get]
 
     securityContext:
-      container:
-        UMASK: "0022"
-        runAsGroup: 1000
-        runAsUser: 1000
+      # Pod-level only; container-level removed to avoid parsing error
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+
+    serviceAccount:
+      main:
+        enabled: true
+        primary: true
 
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${HOMEPAGE_IP}
+        loadBalancerIP: "${HOMEPAGE_IP}"
         ports:
           main:
             enabled: true
             port: 10352
             targetPort: 3000
             protocol: http
-
-    serviceAccount:
-      main:
-        enabled: true
-        primary: true
 
     persistence:
       config:
@@ -123,7 +127,7 @@ spec:
         enabled: true
         service:
           type: LoadBalancer
-          loadBalancerIP: ${HOMEPAGE_IP}
+          loadBalancerIP: "${HOMEPAGE_IP}"
           ports:
             codeserver:
               port: 12321
@@ -131,7 +135,7 @@ spec:
           enabled: true
           ingressClassName: internal
           hosts:
-            - host: homepage-code.${BASE_DOMAIN}
+            - host: "homepage-code.${BASE_DOMAIN}"
               paths:
                 - path: /
                   pathType: Prefix
@@ -142,158 +146,6 @@ spec:
             enabled: false
             middlewares:
               - name: local
-                namespace: traefik
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 4Gi
-        cpu: 500mapiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: homepage
-  namespace: networking
-spec:
-  interval: 15m
-  timeout: 10m
-  releaseName: homepage
-  chart:
-    spec:
-      chart: homepage
-      version: 11.0.8
-      sourceRef:
-        kind: HelmRepository
-        name: truecharts
-        namespace: flux-system
-
-  values:
-    TZ: America/Los_Angeles
-
-    credentials:
-      s3:
-        type: s3
-        url: "${S3URL}"
-        bucket: "${S3PREFIX}-homepage"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
-
-    workload:
-      main:
-        podSpec:
-          containers:
-            main:
-              env:
-                - name: HOMEPAGE_ALLOWED_HOSTS
-                  value: "homepage.${BASE_DOMAIN}"
-
-    ingress:
-      main:
-        enabled: true
-        ingressClassName: internal
-        hosts:
-          - host: homepage.${BASE_DOMAIN}
-            paths:
-              - path: /
-                pathType: Prefix
-        certManager:
-          enabled: true
-          certificateIssuer: wethecommon-prod-cert
-
-    podOptions:
-      dnsConfig:
-        options:
-          - name: ndots
-            value: "3"
-
-    rbac:
-      main:
-        enabled: true
-        clusterWide: true
-        primary: true
-        rules:
-          - apiGroups: [""]
-            resources: [namespaces, pods, nodes]
-            verbs: [get, list]
-          - apiGroups: [extensions, networking.k8s.io]
-            resources: [ingresses]
-            verbs: [get, list]
-          - apiGroups: [traefik.containo.us, traefik.io]
-            resources: [ingressroutes]
-            verbs: [get, list]
-          - apiGroups: [metrics.k8s.io]
-            resources: [nodes, pods]
-            verbs: [get, list]
-          - apiGroups: [apiextensions.k8s.io]
-            resources: [customresourcedefinitions/status]
-            verbs: [get]
-
-    securityContext:
-      container:
-        runAsUser: 1000
-        runAsGroup: 1000
-        UMASK: "0022"
-      pod:
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-
-    serviceAccount:
-      main:
-        enabled: true
-        primary: true
-
-    service:
-      main:
-        enabled: true
-        type: LoadBalancer
-        loadBalancerIP: ${HOMEPAGE_IP}
-        ports:
-          main:
-            enabled: true
-            port: 10352
-            targetPort: 3000
-            protocol: http
-
-    persistence:
-      config:
-        enabled: true
-        mountPath: /app/config
-        volsync:
-          - name: config
-            type: restic
-            credentials: s3
-            dest:
-              enabled: false
-            src:
-              enabled: true
-              trigger:
-                schedule: "10 0 * * *"
-
-    addons:
-      codeserver:
-        enabled: true
-        service:
-          type: LoadBalancer
-          loadBalancerIP: ${HOMEPAGE_IP}
-          ports:
-            codeserver:
-              port: 12321
-        ingress:
-          enabled: true
-          ingressClassName: internal
-          hosts:
-            - host: homepage-code.${BASE_DOMAIN}
-              paths:
-                - path: /
-                  pathType: Prefix
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-          traefik:
-            enabled: false
-            middlewares:
-                name: local
                 namespace: traefik
 
     resources:
