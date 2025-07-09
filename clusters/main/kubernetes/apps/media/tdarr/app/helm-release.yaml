@@ -126,14 +126,7 @@ spec:
       main:
         podSpec:
           runtimeClassName: nvidia
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        nvi
-        memory: 4Gi
-        cpu: 500m
+
     autoscaling:
       vpa:
         enabled: true
