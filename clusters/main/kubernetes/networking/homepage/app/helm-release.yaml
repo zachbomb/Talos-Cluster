@@ -143,3 +143,10 @@ spec:
             middlewares:
               - name: local
                 namespace: traefik
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
