@@ -24,11 +24,6 @@ spec:
     remediation:
       retries: 3
   values:
-    portal:
-      open:
-        enabled: false
-    global:
-      stopAll: false
     credentials:
       s3:
         type: s3
@@ -37,65 +32,79 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
+
     ingress:
       main:
         enabled: true
         ingressClassName: internal
-        integrations:
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-          homepage:
-            description: Subtitle Downloader/Manager
-            enabled: true
-            group: -*rrs
-            icon: ""
-            name: Bazarr
-            widget:
-              custom:
-               key: c3a71d2c87e63d7e0538397ea88bf834
-              enabled: true
         hosts:
           - host: bazarr.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        certManager:
+          enabled: true
+          certificateIssuer: wethecommon-prod-cert
+        homepage:
+          enabled: true
+          name: Bazarr
+          group: -*rrs
+          description: Subtitle Downloader/Manager
+          icon: ""
+          widget:
+            enabled: true
+            custom:
+              key: c3a71d2c87e63d7e0538397ea88bf834
+
     service:
       main:
         enabled: true
-        loadBalancerIP: ${BAZARR_IP}
         type: LoadBalancer
+        loadBalancerIP: ${BAZARR_IP}
         ports:
           main:
+            enabled: true
             port: 6767
-            protocol: http
             targetPort: 6767
+            protocol: http
+
     workload:
       main:
         podSpec:
           initContainers:
             initconfig:
               enabled: false
+
     persistence:
       config:
+        enabled: true
+        mountPath: /config
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "40 0 * * *"
+
       media:
         enabled: true
         type: nfs
-        path: /mnt/Pibbs-Horde/media/data
         server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
         mountPath: /media
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+    autoscaling:
+      vpa:
+        enabled: true
