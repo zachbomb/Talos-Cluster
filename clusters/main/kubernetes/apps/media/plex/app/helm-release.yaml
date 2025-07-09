@@ -199,7 +199,13 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: plex
               topologyKey: kubernetes.io/hostname
-
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
     autoscaling:
       vpa:
         enabled: true
