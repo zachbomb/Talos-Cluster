@@ -109,17 +109,31 @@ spec:
                 startup:   { enabled: true, type: tcp,   port: "10686" }
 
               env:
-                PORT: "10686"
-                OLLAMA_BASE_URL: "http://ollama-api:11434"
-                ENABLE_SIGNUP: "true"
-                DEFAULT_USER_ROLE: "pending"
-                WHISPER_MODEL: "base"
-                RAG_EMBEDDING_MODEL: "all-MiniLM-L6-v2"
-                RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cpu"
-                WEBUI_SECRET_KEY:
-                  secretKeyRef:
-                    name: ollama-secrets
-                    key: WEBUI_SECRET_KEY
+                - name: PORT
+                  value: "10686"
+                - name: OLLAMA_BASE_URL
+                  value: "http://ollama-api:11434"
+                - name: ENABLE_SIGNUP
+                  value: "true"
+                - name: DEFAULT_USER_ROLE
+                  value: "pending"
+                - name: WHISPER_MODEL
+                  value: "base"
+                - name: RAG_EMBEDDING_MODEL
+                  value: "all-MiniLM-L6-v2"
+                - name: RAG_EMBEDDING_MODEL_DEVICE_TYPE
+                  value: "cpu"
+                - name: WEBUI_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ollama-secrets
+                      key: WEBUI_SECRET_KEY
+
+    configmap:
+      tcportal-open:
+        enabled: true
+        data:
+          placeholder: "enabled"
 
     persistence:
       config:
