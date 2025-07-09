@@ -5,27 +5,28 @@ metadata:
   name: plex
   namespace: media
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: plex
-            version: 20.0.7
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    timeout: 20m
-    maxHistory: 3
-    install:
-        createNamespace: true
-        remediation:
-          retries: 3
-    upgrade:
-        cleanupOnFail: true
-        remediation:
-          retries: 3
-    uninstall:
-        keepHistory: false
+  interval: 15m
+  chart:
+    spec:
+      chart: plex
+      version: 20.0.7
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  timeout: 20m
+  maxHistory: 3
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+
   values:
     credentials:
       s3:
@@ -58,13 +59,13 @@ spec:
         server: 192.168.10.123
         mountPath: /media
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       movies:
         enabled: true
         type: nfs
@@ -199,6 +200,7 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: plex
               topologyKey: kubernetes.io/hostname
+
     resources:
       requests:
         memory: 1024Mi
@@ -206,6 +208,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+
     autoscaling:
       vpa:
         enabled: true
