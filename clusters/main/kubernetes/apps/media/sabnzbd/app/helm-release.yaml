@@ -5,7 +5,6 @@ metadata:
   name: sabnzbd
   namespace: media
 spec:
-<<<<<<< HEAD
   interval: 15m
   timeout: 20m
   releaseName: sabnzbd
@@ -17,63 +16,6 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-=======
-    interval: 15m
-    chart:
-        spec:
-            chart: sabnzbd
-            version: 22.0.8
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: sabnzbd
-    values:
-        credentials:
-            s3:
-                type: s3
-                url: "${S3URL}"
-                bucket: "${S3PREFIX}-sabnzbd"
-                accessKey: "${S3ID}"
-                secretKey: "${S3KEY}"
-                encrKey: "${S3KEY}"
-        TZ: America/Los_Angeles
-        addons:
-            codeserver:
-                enabled: false
-            netshoot:
-                enabled: false
-            vpn:
-                type: disabled
-        exportarrImage:
-            pullPolicy: IfNotPresent
-            repository: ghcr.io/onedr0p/exportarr
-            tag: v2.2.0@sha256:320b0ea7399f4b9af4741dcdddd7d40c05c36b0359679305d8a54df4e97065df
-        ingress:
-            main:
-                enabled: true
-                ingressClassName: internal
-                integrations:
-                    traefik:
-                        enabled: false
-                        middlewares:
-                         - name: local
-                           namespace: traefik
-                    certManager:
-                        certificateIssuer: wethecommon-prod-cert
-                        enabled: true
-                    homepage:
-                        description: Usenet Downloader
-                        enabled: true
-                        group: Media Downloaders
-                        icon: ""
-                        name: SabNZBD
-                        widget:
-                            custom:
-                                url: http://192.168.10.230:10097
-                                key: t9t500obl7q793q1nse3jftag6xx2347
-                            enabled: true
->>>>>>> refs/remotes/origin/main
 
   install:
     createNamespace: true
