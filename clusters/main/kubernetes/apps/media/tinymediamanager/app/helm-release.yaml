@@ -160,3 +160,6 @@ spec:
           # optional: runtime class, probes, etc.
 
     resources: {}
+    autoscaling:
+      vpa:
+        enabled: true
