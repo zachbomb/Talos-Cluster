@@ -1,5 +1,3 @@
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -7,6 +5,8 @@ metadata:
   namespace: nginx-external
 spec:
   interval: 15m
+  timeout: 20m
+  maxHistory: 3
   chart:
     spec:
       chart: ingress-nginx
@@ -15,9 +15,7 @@ spec:
         kind: HelmRepository
         name: home-ops-mirror
         namespace: flux-system
-      interval: 15m
-  timeout: 20m
-  maxHistory: 3
+
   install:
     createNamespace: true
     remediation:
@@ -28,6 +26,7 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+
   values:
     controller:
       replicaCount: 2
@@ -54,7 +53,7 @@ spec:
         enable-ocsp: "true"
         enable-real-ip: "true"
         force-ssl-redirect: "true"
-        hide-headers: Server,X-Powered-By
+        hide-headers: Server,X‑Powered‑By
         hsts-max-age: "31449600"
         keep-alive-requests: 10000
         keep-alive: 120
@@ -76,10 +75,14 @@ spec:
       terminationGracePeriodSeconds: 120
       publishService:
         enabled: false
-      resources:
-        requests:
-          cpu: 100m
-        limits:
-          memory: 500Mi
+
+    resources:
+      requests:
+        cpu: 50m
+        memory: 1024Mi
+      limits:
+        cpu: 500m
+        memory: 4Gi
+
     defaultBackend:
       enabled: false
