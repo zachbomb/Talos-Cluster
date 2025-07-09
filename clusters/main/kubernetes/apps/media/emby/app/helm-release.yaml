@@ -185,4 +185,5 @@ spec:
     workload:
         main:
             podSpec:
-                runtimeClassName: default 
+                enabled: false
+                runtimeClassName: nvidia
