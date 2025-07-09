@@ -1,4 +1,3 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -7,6 +6,9 @@ metadata:
   namespace: home
 spec:
   interval: 15m
+  timeout: 20m
+  releaseName: tandoor-recipes
+
   chart:
     spec:
       chart: tandoor-recipes
@@ -15,9 +17,18 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-  timeout: 20m
-  releaseName: tandoor-recipes
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+
   values:
+    TZ: America/Los_Angeles
+
     credentials:
       s3:
         type: s3
@@ -26,44 +37,57 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
+
     ingress:
       main:
         enabled: true
         ingressClassName: internal
-        integrations:
-          traefik:
-            enabled: false
-            middlewares:
-             - name: local
-               namespace: traefik
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-          homepage:
-            description: Recipe Organizer
-            enabled: true
-            group: Lifestyle & Home
-            icon: ""
-            name: Tandoor
-            widget:
-              enabled: false
         hosts:
           - host: "tandoor.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
+        integrations:
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Tandoor
+            description: Recipe Organizer
+            group: Lifestyle & Home
+            icon: ""
+            widget:
+              enabled: false
+
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${TANDOOR_IP}
+        ports:
+          main:
+            port: 10029
+            targetPort: 10029
+            protocol: http
+
     persistence:
       config:
         enabled: true
         mountPath: /config
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
       media:
         enabled: true
         mountPath: /opt/recipes/mediafiles
@@ -75,24 +99,14 @@ spec:
               enabled: true
             src:
               enabled: true
-        static:
-          enabled: true
-          mountPath: /opt/recipes/staticfiles
-          volsync:
-            - name: static
-              type: restic
-              credentials: s3
-              dest:
-                enabled: true
-              src:
-                enabled: true
-    service:
-      main:
+      static:
         enabled: true
-        loadBalancerIP: ${TANDOOR_IP}
-        ports:
-          main:
-            port: 10029
-            targetPort: 10029
-        type: LoadBalancer
-
+        mountPath: /opt/recipes/staticfiles
+        volsync:
+          - name: static
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true

@@ -1,97 +1,67 @@
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: ollama
-  namespace: ollama  # Replace with your namespace if needed
+  namespace: ollama
 spec:
+  releaseName: ollama
   interval: 15m
   timeout: 10m
+
   chart:
     spec:
-      chart: ollama  # Replace with the correct chart name in the Helm repository
-      version: 7.19.12  # Replace with the correct chart version
+      chart: ollama
+      version: 7.19.12
       sourceRef:
         kind: HelmRepository
-        name: truecharts  # Assuming you are using the TrueCharts repository
+        name: truecharts
         namespace: flux-system
-  releaseName: ollama
+
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+
   values:
     credentials:
-      s3:
-        type: s3
-        url: "${S3URL}"  # Ensure this value is provided or set via Secret/ConfigMap
-        bucket: "${S3PREFIX}-ollama"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+      s3: { type: s3, url: "${S3URL}", bucket: "${S3PREFIX}-ollama", accessKey: "${S3ID}", secretKey: "${S3KEY}", encrKey: "${S3KEY}" }
+
     ingress:
       main:
         enabled: true
         ingressClassName: internal
-        integrations:
-          traefik:
-            enabled: true
-            middlewares:
-              - name: local
-                namespace: traefik
-          certManager:
-            certificateIssuer: wethecommon-prod-cert
-            enabled: true
-          homepage:
-            description: AI Language Model
-            enabled: true
-            group: Lifestyle & Home
-            icon: ""
-            name: Ollama
-            widget:
-              enabled: false
         hosts:
-          - host: "ollama.${BASE_DOMAIN}"  # Ensure this is set properly or replaced with actual domain
+          - host: "ollama.${BASE_DOMAIN}"
             paths:
-              - path: /
-                pathType: Prefix
-      api:
-        enabled: false
-        targetSelector:
-          api: api
+              - path: /, pathType: Prefix
+        integrations:
+          traefik: { enabled: true, middlewares: [{ name: local, namespace: traefik }] }
+          certManager: { enabled: true, certificateIssuer: wethecommon-prod-cert }
+          homepage: { enabled: true, name: Ollama, description: AI Language Model, group: Lifestyle & Home, widget: { enabled: false } }
+
     service:
       main:
         enabled: true
-        loadBalancerIP: "${OLLAMA_IP}"  # Ensure this environment variable is set
-        targetSelector: ui
-        ports:
-          main:
-            enabled: true
-            port: 10686
-            targetPort: 10686
-            protocol: http
-            targetSelector: ui
         type: LoadBalancer
+        loadBalancerIP: "${OLLAMA_IP}"
+        ports:
+          main: { port: 10686, targetPort: 10686, protocol: http }
       api:
         enabled: true
-        loadBalancerIP: "${OLLAMA_IP}"  # Ensure this environment variable is set
-        targetSelector: main
-        ports:
-          api:
-            enabled: true
-            protocol: http
-            targetPort: 11434
-            port: 11434
-            targetSelector: main
         type: LoadBalancer
+        loadBalancerIP: "${OLLAMA_IP}"
+        ports:
+          api: { port: 11434, targetPort: 11434, protocol: http }
+
     ollama:
-      registration:
-        enabled: true
-        def_user_role: "pending"
-      stable_diffusion:
-        base_url: ""  # Update this value if necessary
-      whisper:
-        model: "base"
-      rag:
-        model_device_type: "cpu"
-        model: "all-MiniLM-L6-v2"
+      registration: { enabled: true, def_user_role: pending }
+      whisper: { model: base }
+      rag: { model_device_type: cpu, model: all-MiniLM-L6-v2 }
+
     workload:
       main:
         podSpec:
@@ -99,73 +69,46 @@ spec:
             main:
               imageSelector: image
               probes:
-                liveness:
-                  enabled: true
-                  type: http
-                  path: /api/version
-                  port: 11434  # Ensure the correct port for the main API
-                readiness:
-                  enabled: true
-                  type: http
-                  path: /api/version
-                  port: 11434  # Ensure the correct port for the main API
-                startup:
-                  enabled: true
-                  type: tcp
-                  port: 11434  # Ensure the correct port for the main API
+                liveness:  { enabled: true, type: http, path: /api/version, port: 11434 }
+                readiness: { enabled: true, type: http, path: /api/version, port: 11434 }
+                startup:   { enabled: true, type: tcp, port: 11434 }
       ui:
         enabled: true
         type: Deployment
         podSpec:
           containers:
             ui:
-              primary: true
-              enabled: true
               imageSelector: uiImage
-              resources:
-                excludeExtra: true
               probes:
-                liveness:
-                  enabled: true
-                  type: http
-                  path: /
-                  port: 10686  # Ensure the correct port for the UI
-                readiness:
-                  enabled: true
-                  type: http
-                  path: /
-                  port: 10686  # Ensure the correct port for the UI
-                startup:
-                  enabled: true
-                  type: tcp
-                  port: 10686  # Ensure the correct port for the UI
+                liveness:  { enabled: true, type: http, path: /, port: 10686 }
+                readiness: { enabled: true, type: http, path: /, port: 10686 }
+                startup:   { enabled: true, type: tcp, port: 10686 }
               env:
-                PORT: 10686
-                OLLAMA_BASE_URL: 'http://ollama-api:11434'  # Correct this URL if necessary
-                WEBUI_SECRET_KEY:
-                  secretKeyRef:
-                    name: ollama-secrets
-                    key: WEBUI_SECRET_KEY
-                AUTOMATIC1111_BASE_URL: ""  # Add any relevant URL if needed
-                ENABLE_SIGNUP: true
-                DEFAULT_USER_ROLE: "pending"
-                WHISPER_MODEL: "base"
-                RAG_EMBEDDING_MODEL: "all-MiniLM-L6-v2"
-                RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cpu"
-                WEBUI_AUTH_TRUSTED_EMAIL_HEADER: ""  # Add if required
+                - name: PORT, value: "10686"
+                - name: OLLAMA_BASE_URL, value: 'http://ollama-api:11434'
+                - name: WEBUI_SECRET_KEY, valueFrom: { secretKeyRef: { name: ollama-secrets, key: WEBUI_SECRET_KEY } }
+                - name: ENABLE_SIGNUP, value: "true"
+                - name: DEFAULT_USER_ROLE, value: "pending"
+                - name: WHISPER_MODEL, value: "base"
+                - name: RAG_EMBEDDING_MODEL, value: "all-MiniLM-L6-v2"
+                - name: RAG_EMBEDDING_MODEL_DEVICE_TYPE, value: "cpu"
+
     persistence:
       config:
         enabled: true
-        targetSelector:
-          main:
-            main:
-              mountPath: "/root/.ollama"  # Ensure the correct path for config persistence
+        mountPath: /root/.ollama
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest: { enabled: true }
+            src: { enabled: true }
       data:
         enabled: true
-        targetSelector:
-          ui:
-            ui:
-              mountPath: "/app/backend/data"  # Ensure the correct path for data persistence
-    portal:
-      open:
-        enabled: true
+        mountPath: /app/backend/data
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            dest: { enabled: true }
+            src: { enabled: true }
