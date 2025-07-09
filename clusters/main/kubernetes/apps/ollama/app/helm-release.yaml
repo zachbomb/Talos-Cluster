@@ -20,13 +20,11 @@ spec:
 
   install:
     createNamespace: true
-    remediation:
-      retries: 3
+    remediation: { retries: 3 }
 
   upgrade:
     cleanupOnFail: true
-    remediation:
-      retries: 3
+    remediation: { retries: 3 }
 
   values:
     credentials:
@@ -70,26 +68,17 @@ spec:
         type: LoadBalancer
         loadBalancerIP: "${OLLAMA_IP}"
         ports:
-          main:
-            port: "10686"
-            targetPort: "10686"
-            protocol: http
+          main: { port: "10686", targetPort: "10686", protocol: http }
       api:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: "${OLLAMA_IP}"
         ports:
-          api:
-            port: "11434"
-            targetPort: "11434"
-            protocol: http
+          api: { port: "11434", targetPort: "11434", protocol: http }
 
     ollama:
-      registration:
-        enabled: true
-        def_user_role: "pending"
-      whisper:
-        model: "base"
+      registration: { enabled: true, def_user_role: "pending" }
+      whisper: { model: "base" }
       rag:
         model_device_type: "cpu"
         model: "all-MiniLM-L6-v2"
@@ -101,20 +90,10 @@ spec:
             main:
               imageSelector: image
               probes:
-                liveness:
-                  enabled: true
-                  type: http
-                  path: /api/version
-                  port: "11434"
-                readiness:
-                  enabled: true
-                  type: http
-                  path: /api/version
-                  port: "11434"
-                startup:
-                  enabled: true
-                  type: tcp
-                  port: "11434"
+                liveness:  { enabled: true, type: http, path: /api/version, port: "11434" }
+                readiness: { enabled: true, type: http, path: /api/version, port: "11434" }
+                startup:   { enabled: true, type: tcp,   port: "11434" }
+
       ui:
         enabled: true
         type: Deployment
@@ -125,40 +104,22 @@ spec:
               enabled: true
               imageSelector: uiImage
               probes:
-                liveness:
-                  enabled: true
-                  type: http
-                  path: /
-                  port: "10686"
-                readiness:
-                  enabled: true
-                  type: http
-                  path: /
-                  port: "10686"
-                startup:
-                  enabled: true
-                  type: tcp
-                  port: "10686"
+                liveness:  { enabled: true, type: http, path: /, port: "10686" }
+                readiness: { enabled: true, type: http, path: /, port: "10686" }
+                startup:   { enabled: true, type: tcp,   port: "10686" }
+
               env:
-                - name: PORT
-                  value: "10686"
-                - name: OLLAMA_BASE_URL
-                  value: "http://ollama-api:11434"
-                - name: ENABLE_SIGNUP
-                  value: "true"
-                - name: DEFAULT_USER_ROLE
-                  value: "pending"
-                - name: WHISPER_MODEL
-                  value: "base"
-                - name: RAG_EMBEDDING_MODEL
-                  value: "all-MiniLM-L6-v2"
-                - name: RAG_EMBEDDING_MODEL_DEVICE_TYPE
-                  value: "cpu"
-                - name: WEBUI_SECRET_KEY
-                  valueFrom:
-                    secretKeyRef:
-                      name: ollama-secrets
-                      key: WEBUI_SECRET_KEY
+                PORT: "10686"
+                OLLAMA_BASE_URL: "http://ollama-api:11434"
+                ENABLE_SIGNUP: "true"
+                DEFAULT_USER_ROLE: "pending"
+                WHISPER_MODEL: "base"
+                RAG_EMBEDDING_MODEL: "all-MiniLM-L6-v2"
+                RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cpu"
+                WEBUI_SECRET_KEY:
+                  secretKeyRef:
+                    name: ollama-secrets
+                    key: WEBUI_SECRET_KEY
 
     persistence:
       config:
@@ -168,10 +129,8 @@ spec:
           - name: config
             type: restic
             credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
+            src: { enabled: true }
+            dest: { enabled: true }
       data:
         enabled: true
         mountPath: /app/backend/data
@@ -179,11 +138,8 @@ spec:
           - name: data
             type: restic
             credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
+            src: { enabled: true }
+            dest: { enabled: true }
 
     autoscaling:
-      vpa:
-        enabled: true
+      vpa: { enabled: true }
