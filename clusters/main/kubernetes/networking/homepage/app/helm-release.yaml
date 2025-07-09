@@ -1,5 +1,3 @@
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -7,8 +5,8 @@ metadata:
   namespace: networking
 spec:
   interval: 15m
-  releaseName: homepage
   timeout: 10m
+  releaseName: homepage
   chart:
     spec:
       chart: homepage
@@ -17,8 +15,10 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
+
   values:
     TZ: America/Los_Angeles
+
     credentials:
       s3:
         type: s3
@@ -40,12 +40,14 @@ spec:
       main:
         enabled: true
         ingressClassName: internal
-        integrations:
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
         hosts:
           - host: homepage.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        certManager:
+          enabled: true
+          certificateIssuer: wethecommon-prod-cert
 
     podOptions:
       dnsConfig:
@@ -75,9 +77,6 @@ spec:
             resources: [customresourcedefinitions/status]
             verbs: [get]
 
-    release_name: homepage
-    resources: {}
-
     securityContext:
       container:
         UMASK: "0022"
@@ -94,14 +93,16 @@ spec:
         loadBalancerIP: ${HOMEPAGE_IP}
         ports:
           main:
+            enabled: true
             port: 10352
-            protocol: http
             targetPort: 3000
+            protocol: http
 
     serviceAccount:
       main:
         enabled: true
         primary: true
+
     persistence:
       config:
         enabled: true
@@ -128,17 +129,17 @@ spec:
               port: 12321
         ingress:
           enabled: true
+          ingressClassName: internal
           hosts:
             - host: homepage-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix
-          integrations:
-            certManager:
-              certificateIssuer: wethecommon-prod-cert
-              enabled: true
-            traefik:
-              enabled: false
-              middlewares:
-                - name: local
-                  namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
