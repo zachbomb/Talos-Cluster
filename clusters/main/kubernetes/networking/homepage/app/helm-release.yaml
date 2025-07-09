@@ -34,21 +34,14 @@ spec:
           containers:
             main:
               env:
-                - name: HOMEPAGE_ALLOWED_HOSTS
-                  value: "localhost,127.0.0.1,homepage.${BASE_DOMAIN}"
-                - name: UMASK
-                  value: "0022"
-                - name: runAsUser
-                  value: "1000"
-                - name: runAsGroup
-                  value: "1000"
+                HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}
 
     ingress:
       main:
         enabled: true
         ingressClassName: internal
         hosts:
-          - host: "homepage.${BASE_DOMAIN}"
+          - host: homepage.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -64,8 +57,8 @@ spec:
 
     rbac:
       main:
-        enabled: true
         clusterWide: true
+        enabled: true
         primary: true
         rules:
           - apiGroups: [""]
@@ -85,27 +78,30 @@ spec:
             verbs: [get]
 
     securityContext:
-      # Pod-level only; container-level removed to avoid parsing error
+      container:
+        UMASK: "0022"
+        runAsGroup: 1000
+        runAsUser: 1000
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
-    serviceAccount:
-      main:
-        enabled: true
-        primary: true
 
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${HOMEPAGE_IP}"
+        loadBalancerIP: ${HOMEPAGE_IP}
         ports:
           main:
             enabled: true
             port: 10352
             targetPort: 3000
             protocol: http
+
+    serviceAccount:
+      main:
+        enabled: true
+        primary: true
 
     persistence:
       config:
@@ -127,7 +123,7 @@ spec:
         enabled: true
         service:
           type: LoadBalancer
-          loadBalancerIP: "${HOMEPAGE_IP}"
+          loadBalancerIP: ${HOMEPAGE_IP}
           ports:
             codeserver:
               port: 12321
@@ -135,7 +131,7 @@ spec:
           enabled: true
           ingressClassName: internal
           hosts:
-            - host: "homepage-code.${BASE_DOMAIN}"
+            - host: homepage-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix
@@ -147,11 +143,10 @@ spec:
             middlewares:
               - name: local
                 namespace: traefik
-
     resources:
       requests:
-        cpu: 50m
         memory: 1024Mi
+        cpu: 50m
       limits:
-        cpu: 500m
         memory: 4Gi
+        cpu: 500m
