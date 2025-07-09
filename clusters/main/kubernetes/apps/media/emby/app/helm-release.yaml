@@ -181,8 +181,4 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
-    workload:
-      main:
-        podSpec:
-          runtimeClassName: intel-gpu
+  
