@@ -293,7 +293,7 @@ spec:
           traefik:
             enabled: false
             middlewares:
-              - name: local
+                name: local
                 namespace: traefik
 
     resources:
