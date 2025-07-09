@@ -34,3 +34,5 @@ spec:
             main:
               env:
                 TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
+    podOptions:
+      hostUsers: true
