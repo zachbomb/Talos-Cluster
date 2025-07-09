@@ -44,8 +44,6 @@ spec:
         enabled: false
       netshoot:
         enabled: false
-      vpn:
-        type: disabled
 
     exportarrImage:
       pullPolicy: IfNotPresent
