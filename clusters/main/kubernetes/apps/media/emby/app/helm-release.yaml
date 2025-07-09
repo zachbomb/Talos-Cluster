@@ -4,6 +4,7 @@ metadata:
   name: emby
   namespace: media
 spec:
+<<<<<<< HEAD
   interval: 15m
   releaseName: emby
   chart:
@@ -14,6 +15,149 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
+=======
+    interval: 15m
+    chart:
+        spec:
+            chart: emby
+            version: 23.0.9
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+    releaseName: emby
+    values:
+        credentials:
+            s3:
+                type: s3
+                url: "${S3URL}"
+                bucket: "${S3PREFIX}-emby"
+                accessKey: "${S3ID}"
+                secretKey: "${S3KEY}"
+                encrKey: "${S3KEY}"
+        TZ: America/Los_Angeles
+        ingress:
+            main:
+                enabled: true
+                ingressClassName: internal
+                integrations:
+                    traefik:
+                        enabled: false
+                        middlewares:
+                         - name: local
+                           namespace: traefik
+                    certManager:
+                        enabled: true
+                        certificateIssuer: wethecommon-prod-cert
+                    homepage:
+                        description: Media Player
+                        enabled: true
+                        group: Media Players
+                        icon: ""
+                        name: Emby
+                        widget:
+                            custom:
+                                key: 10ec9bcd842045d6988cebab0bedc6fc
+                            enabled: true
+                hosts:
+                    - host: "emby.${BASE_DOMAIN}"
+                      paths:
+                        - path: /
+                          pathType: Prefix
+        persistence:
+            config:
+                enabled: true
+                mountPath: /config
+                volsync:
+                - name: config
+                  type: restic
+                  credentials: s3
+                  dest:
+                    enabled: true
+                  src:
+                    enabled: true
+            media:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data
+                server: 192.168.10.123
+                mountPath: /media
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            movies:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/media/movies
+                server: 192.168.10.123
+                mountPath: /movies
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            tv:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/media/tv
+                server: 192.168.10.123
+                mountPath: /tv
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            music:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/media/music
+                server: 192.168.10.123
+                mountPath: /music
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+            downloads:
+                enabled: true
+                type: nfs
+                path: /mnt/Pibbs-Horde/media/data/usenet
+                server: 192.168.10.123
+                mountPath: /usenet
+                mountOptions:
+                 - nfsvers=4
+                 - tcp
+                 - intr
+                 - hard
+                 - noatime
+                 - nodiratime
+                 - nolock
+#            backup:
+#                enabled: true
+#                mountPath: /config/Backups
+#                volsync:
+#                    - name: b2
+#                      type: restic
+#                      credentials: s3
+#                      dest:
+#                        enabled: true
+#                      src:
+#                        enabled: true
+>>>>>>> refs/remotes/origin/main
 
   install:
     createNamespace: true
