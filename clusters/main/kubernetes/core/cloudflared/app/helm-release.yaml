@@ -23,10 +23,12 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
+
   values:
     portal:
       open:
         enabled: false
+
     workload:
       main:
         podSpec:
@@ -34,5 +36,24 @@ spec:
             main:
               env:
                 TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
-    podOptions:
-      hostUsers: true
+
+    securityContext:
+      container:
+        runAsUser: 1000
+        runAsGroup: 1000
+        UMASK: "0022"
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+    service:
+      main:
+        enabled: false
