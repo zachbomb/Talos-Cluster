@@ -1,148 +1,162 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-    name: tinymediamanager
-    namespace: media
+  name: tinymediamanager
+  namespace: media
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: tinymediamanager
-            version: 13.0.8
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: tinymediamanager
-    values:
-        credentials:
-            s3:
-                type: s3
-                url: "${S3URL}"
-                bucket: "${S3PREFIX}-tinymediamanager"
-                accessKey: "${S3ID}"
-                secretKey: "${S3KEY}"
-                encrKey: "${S3KEY}"
-        TZ: America/Los_Angeles
-        ingress:
-            main:
-                enabled: true
-                ingressClassName: internal
-                integrations:
-                
-                    traefik:
-                        enabled: false
-                        middlewares:
-                         - name: local
-                           namespace: traefik
-                    certManager:
-                        certificateIssuer: wethecommon-prod-cert
-                        enabled: true
-                    homepage:
-                        description: Metadata Management
-                        enabled: true
-                        group: Content Management
-                        icon: ""
-                        name: TinyMediaManager
-                        widget:
-                            custom:
-                                key: ""
-                            enabled: false
-                hosts:
-                    - host: "tinymediamanager.${BASE_DOMAIN}"
-                      paths:
-                        - path: /
-                          pathType: Prefix
+  interval: 15m
+  timeout: 20m
+  releaseName: tinymediamanager
 
-        persistence:
-            data:
-                enabled: true
-                readOnly: false
-                main:
-                    mountPath: /data
-                    volsync:
-                     - name: config
-                       type: restic
-                       credentials: s3
-                       dest:
-                         enabled: true
-                         cacheCapacity: 100Gi
-                       src:
-                         enabled: true
-                         cacheCapacity: 100Gi
-            media:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data
-                server: 192.168.10.123
-                mountPath: /media
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            movies:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/movies
-                server: 192.168.10.123
-                mountPath: /movies
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            tv:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/tv
-                server: 192.168.10.123
-                mountPath: /tv
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
+  chart:
+    spec:
+      chart: tinymediamanager
+      version: 13.0.8
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
 
-        release_name: tinymediamanager
-        resources: {}
-        securityContext:
-            container:
-                PUID: 1000
-                UMASK: "0022"
-                readOnlyRootFilesystem: false
-                runAsGroup: 0
-                runAsNonRoot: false
-                runAsUser: 0
-            pod:
-                fsGroup: 1000
-                fsGroupChangePolicy: OnRootMismatch
-        service:
-            main:
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+
+  values:
+    TZ: America/Los_Angeles
+
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-tinymediamanager"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+          - host: "tinymediamanager.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: TinyMediaManager
+            group: Content Management
+            description: Metadata Management
+            icon: ""
+            widget:
+              enabled: false
+              custom:
+                key: ""
+
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${TINYMEDIAMANAGER_IP}
+        ports:
+          main:
+            port: 10179
+            targetPort: 4000
+            protocol: http
+
+    persistence:
+      data:
+        enabled: true
+        readOnly: false
+        main:
+          mountPath: /data
+          volsync:
+            - name: config
+              type: restic
+              credentials: s3
+              dest:
                 enabled: true
-                loadBalancerIP: ${TINYMEDIAMANAGER_IP}
-                ports:
-                    main:
-                        port: 10179
-                        targetPort: 4000
-                type: LoadBalancer
-        workload:
+                cacheCapacity: 100Gi
+              src:
+                enabled: true
+                cacheCapacity: 100Gi
+      media:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      movies:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        mountPath: /movies
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      tv:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+    securityContext:
+      container:
+        runAsUser: 1000
+        runAsGroup: 1000
+        UMASK: "0022"
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    workload:
+      main:
+        podSpec:
+          containers:
             main:
-                podSpec:
-                    containers:
-                        main:
-                            env:
-                                PASSWORD: ""
-                replicas: 1
-                type: Deployment
+              env:
+                PASSWORD: ""
+          # optional: runtime class, probes, etc.
+
+    resources: {}
