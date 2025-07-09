@@ -21,6 +21,7 @@ spec:
     createNamespace: true
     remediation:
       retries: 3
+
   upgrade:
     cleanupOnFail: true
     remediation:
@@ -28,7 +29,13 @@ spec:
 
   values:
     credentials:
-      s3: { type: s3, url: "${S3URL}", bucket: "${S3PREFIX}-ollama", accessKey: "${S3ID}", secretKey: "${S3KEY}", encrKey: "${S3KEY}" }
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-ollama"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
 
     ingress:
       main:
@@ -37,11 +44,24 @@ spec:
         hosts:
           - host: "ollama.${BASE_DOMAIN}"
             paths:
-              - path: /, pathType: Prefix
+              - path: /
+                pathType: Prefix
         integrations:
-          traefik: { enabled: true, middlewares: [{ name: local, namespace: traefik }] }
-          certManager: { enabled: true, certificateIssuer: wethecommon-prod-cert }
-          homepage: { enabled: true, name: Ollama, description: AI Language Model, group: Lifestyle & Home, widget: { enabled: false } }
+          traefik:
+            enabled: true
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Ollama
+            description: AI Language Model
+            group: Lifestyle & Home
+            widget:
+              enabled: false
 
     service:
       main:
@@ -49,18 +69,29 @@ spec:
         type: LoadBalancer
         loadBalancerIP: "${OLLAMA_IP}"
         ports:
-          main: { port: 10686, targetPort: 10686, protocol: http }
+          main:
+            port: 10686
+            targetPort: 10686
+            protocol: http
       api:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: "${OLLAMA_IP}"
         ports:
-          api: { port: 11434, targetPort: 11434, protocol: http }
+          api:
+            port: 11434
+            targetPort: 11434
+            protocol: http
 
     ollama:
-      registration: { enabled: true, def_user_role: pending }
-      whisper: { model: base }
-      rag: { model_device_type: cpu, model: all-MiniLM-L6-v2 }
+      registration:
+        enabled: true
+        def_user_role: "pending"
+      whisper:
+        model: "base"
+      rag:
+        model_device_type: "cpu"
+        model: "all-MiniLM-L6-v2"
 
     workload:
       main:
@@ -69,29 +100,64 @@ spec:
             main:
               imageSelector: image
               probes:
-                liveness:  { enabled: true, type: http, path: /api/version, port: 11434 }
-                readiness: { enabled: true, type: http, path: /api/version, port: 11434 }
-                startup:   { enabled: true, type: tcp, port: 11434 }
+                liveness:
+                  enabled: true
+                  type: http
+                  path: /api/version
+                  port: 11434
+                readiness:
+                  enabled: true
+                  type: http
+                  path: /api/version
+                  port: 11434
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 11434
       ui:
         enabled: true
         type: Deployment
         podSpec:
           containers:
             ui:
+              primary: true
+              enabled: true
               imageSelector: uiImage
               probes:
-                liveness:  { enabled: true, type: http, path: /, port: 10686 }
-                readiness: { enabled: true, type: http, path: /, port: 10686 }
-                startup:   { enabled: true, type: tcp, port: 10686 }
+                liveness:
+                  enabled: true
+                  type: http
+                  path: /
+                  port: 10686
+                readiness:
+                  enabled: true
+                  type: http
+                  path: /
+                  port: 10686
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 10686
               env:
-                - name: PORT, value: "10686"
-                - name: OLLAMA_BASE_URL, value: 'http://ollama-api:11434'
-                - name: WEBUI_SECRET_KEY, valueFrom: { secretKeyRef: { name: ollama-secrets, key: WEBUI_SECRET_KEY } }
-                - name: ENABLE_SIGNUP, value: "true"
-                - name: DEFAULT_USER_ROLE, value: "pending"
-                - name: WHISPER_MODEL, value: "base"
-                - name: RAG_EMBEDDING_MODEL, value: "all-MiniLM-L6-v2"
-                - name: RAG_EMBEDDING_MODEL_DEVICE_TYPE, value: "cpu"
+                - name: PORT
+                  value: "10686"
+                - name: OLLAMA_BASE_URL
+                  value: "http://ollama-api:11434"
+                - name: WEBUI_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ollama-secrets
+                      key: WEBUI_SECRET_KEY
+                - name: ENABLE_SIGNUP
+                  value: "true"
+                - name: DEFAULT_USER_ROLE
+                  value: "pending"
+                - name: WHISPER_MODEL
+                  value: "base"
+                - name: RAG_EMBEDDING_MODEL
+                  value: "all-MiniLM-L6-v2"
+                - name: RAG_EMBEDDING_MODEL_DEVICE_TYPE
+                  value: "cpu"
 
     persistence:
       config:
@@ -101,8 +167,10 @@ spec:
           - name: config
             type: restic
             credentials: s3
-            dest: { enabled: true }
-            src: { enabled: true }
+            dest:
+              enabled: true
+            src:
+              enabled: true
       data:
         enabled: true
         mountPath: /app/backend/data
@@ -110,5 +178,7 @@ spec:
           - name: data
             type: restic
             credentials: s3
-            dest: { enabled: true }
-            src: { enabled: true }
+            dest:
+              enabled: true
+            src:
+              enabled: true
