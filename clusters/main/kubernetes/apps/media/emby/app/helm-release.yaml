@@ -1,172 +1,188 @@
----
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-    name: emby
-    namespace: media
+  name: emby
+  namespace: media
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: emby
-            version: 23.0.8
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: emby
-    values:
-        credentials:
-            s3:
-                type: s3
-                url: "${S3URL}"
-                bucket: "${S3PREFIX}-emby"
-                accessKey: "${S3ID}"
-                secretKey: "${S3KEY}"
-                encrKey: "${S3KEY}"
-        TZ: America/Los_Angeles
-        ingress:
-            main:
-                enabled: true
-                ingressClassName: internal
-                integrations:
-                    traefik:
-                        enabled: false
-                        middlewares:
-                         - name: local
-                           namespace: traefik
-                    certManager:
-                        enabled: true
-                        certificateIssuer: wethecommon-prod-cert
-                    homepage:
-                        description: Media Player
-                        enabled: true
-                        group: Media Players
-                        icon: ""
-                        name: Emby
-                        widget:
-                            custom:
-                                key: 10ec9bcd842045d6988cebab0bedc6fc
-                            enabled: true
-                hosts:
-                    - host: "emby.${BASE_DOMAIN}"
-                      paths:
-                        - path: /
-                          pathType: Prefix
-        persistence:
-            config:
-                enabled: true
-                mountPath: /config
-                volsync:
-                - name: config
-                  type: restic
-                  credentials: s3
-                  dest:
-                    enabled: true
-                  src:
-                    enabled: true
-            media:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data
-                server: 192.168.10.123
-                mountPath: /media
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            movies:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/movies
-                server: 192.168.10.123
-                mountPath: /movies
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            tv:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/tv
-                server: 192.168.10.123
-                mountPath: /tv
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            music:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/music
-                server: 192.168.10.123
-                mountPath: /music
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            downloads:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/usenet
-                server: 192.168.10.123
-                mountPath: /usenet
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-#            backup:
-#                enabled: true
-#                mountPath: /config/Backups
-#                volsync:
-#                    - name: b2
-#                      type: restic
-#                      credentials: s3
-#                      dest:
-#                        enabled: true
-#                      src:
-#                        enabled: true
+  interval: 15m
+  releaseName: emby
+  chart:
+    spec:
+      chart: emby
+      version: 23.0.8
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
 
-        release_name: emby
-        resources:
-            limits:
-                gpu.intel.com/i915: 1
-        securityContext:
-            container:
-                UMASK: "0022"
-                readOnlyRootFilesystem: false
-                runAsGroup: 1000
-                runAsUser: 1000
-            pod:
-                fsGroup: 1000
-                fsGroupChangePolicy: OnRootMismatch
-        service:
-            main:
-                enabled: true
-                loadBalancerIP: ${EMBY_IP}
-                ports:
-                    main:
-                        port: 10079
-                        targetPort: 8096
-                type: LoadBalancer
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+
+  values:
+    TZ: America/Los_Angeles
+
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-emby"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Emby
+            group: Media Players
+            description: Media Player
+            icon: ""
+            widget:
+              enabled: true
+              custom:
+                key: 10ec9bcd842045d6988cebab0bedc6fc
+        hosts:
+          - host: "emby.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${EMBY_IP}
+        ports:
+          main:
+            port: 10079
+            targetPort: 8096
+            protocol: http
+
+    podOptions:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "3"
+
+    persistence:
+      config:
+        enabled: true
+        mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "15 0 * * *"
+      media:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      movies:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        mountPath: /movies
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      tv:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      music:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/music
+        mountPath: /music
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      downloads:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/usenet
+        mountPath: /usenet
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+    resources:
+      limits:
+        gpu.intel.com/i915: 1
+
+    securityContext:
+      container:
+        runAsUser: 1000
+        runAsGroup: 1000
+        UMASK: "0022"
+        readOnlyRootFilesystem: false
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    workload:
+      main:
+        podSpec:
+          runtimeClassName: intel-gpu
