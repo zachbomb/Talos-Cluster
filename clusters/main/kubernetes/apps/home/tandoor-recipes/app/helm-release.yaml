@@ -110,3 +110,6 @@ spec:
               enabled: true
             src:
               enabled: true
+    autoscaling:
+      vpa:
+        enabled: true
