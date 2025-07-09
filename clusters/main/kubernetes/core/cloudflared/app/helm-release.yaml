@@ -1,64 +1,36 @@
----
-# yaml-language-server: $schema=https://kubernetes-schemas.zinn.ca/helm.toolkit.fluxcd.io/helmrelease_v2beta1.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-    name: cloudflared
-    namespace: cloudflared
+  name: cloudflared
+  namespace: cloudflared
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: cloudflared
-            version: 13.6.0
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: cloudflared
-    values:
-        podOptions:
-            hostUsers: true
-        TZ: America/Los_Angeles
-        addons:
-            codeserver:
-                enabled: false
-            netshoot:
-                enabled: false
-            vpn:
-                type: disabled
-        release_name: cloudflared
-        resources: {}
-        securityContext:
-            container:
-                UMASK: "0022"
-                runAsGroup: 1000
-                runAsUser: 1000
-            pod:
-                fsGroupChangePolicy: OnRootMismatch
-        service:
+  interval: 5m
+  chart:
+    spec:
+      chart: cloudflared
+      version: 14.0.7
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    portal:
+      open:
+        enabled: false
+    workload:
+      main:
+        podSpec:
+          containers:
             main:
-                enabled: false
-                ports:
-                    main:
-                        enabled: false
-        workload:
-            main:
-                podSpec:
-                    containers:
-                        main:
-                            args:
-                                - tunnel
-                                - --no-autoupdate
-                                - run
-                            env:
-                                TUNNEL_TOKEN: ${CLOUDFLARE_TOKEN}
-                            probes:
-                                liveness:
-                                    enabled: false
-                                readiness:
-                                    enabled: false
-                                startup:
-                                    enabled: false
-                replicas: 1
-                type: Deployment
+              env:
+                TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
