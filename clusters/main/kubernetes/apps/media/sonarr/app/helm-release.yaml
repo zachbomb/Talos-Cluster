@@ -165,5 +165,7 @@ spec:
                       src:
                         enabled: true
                         cacheCapacity: 10Gi
-
+        autoscaling:
+            vpa:
+                enabled: true
 
