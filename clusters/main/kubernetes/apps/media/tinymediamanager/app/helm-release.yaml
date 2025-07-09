@@ -159,7 +159,13 @@ spec:
                 PASSWORD: ""
           # optional: runtime class, probes, etc.
 
-    resources: {}
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
     autoscaling:
       vpa:
         enabled: true
