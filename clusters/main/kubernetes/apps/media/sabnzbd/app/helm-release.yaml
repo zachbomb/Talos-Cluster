@@ -1,192 +1,238 @@
----
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-    name: sabnzbd
-    namespace: media
+  name: sabnzbd
+  namespace: media
 spec:
-    interval: 15m
-    chart:
-        spec:
-            chart: sabnzbd
-            version: 22.0.7
-            sourceRef:
-                kind: HelmRepository
-                name: truecharts
-                namespace: flux-system
-    releaseName: sabnzbd
-    values:
-        credentials:
-            s3:
-                type: s3
-                url: "${S3URL}"
-                bucket: "${S3PREFIX}-sabnzbd"
-                accessKey: "${S3ID}"
-                secretKey: "${S3KEY}"
-                encrKey: "${S3KEY}"
-        TZ: America/Los_Angeles
-        addons:
-            codeserver:
-                enabled: false
-            netshoot:
-                enabled: false
-            vpn:
-                type: disabled
-        exportarrImage:
-            pullPolicy: IfNotPresent
-            repository: ghcr.io/onedr0p/exportarr
-            tag: v2.2.0@sha256:320b0ea7399f4b9af4741dcdddd7d40c05c36b0359679305d8a54df4e97065df
-        ingress:
-            main:
-                enabled: true
-                ingressClassName: internal
-                integrations:
-                    traefik:
-                        enabled: false
-                        middlewares:
-                         - name: local
-                           namespace: traefik
-                    certManager:
-                        certificateIssuer: wethecommon-prod-cert
-                        enabled: true
-                    homepage:
-                        description: Usenet Downloader
-                        enabled: true
-                        group: Media Downloaders
-                        icon: ""
-                        name: SabNZBD
-                        widget:
-                            custom:
-                                url: http://192.168.10.230:10097
-                                key: t9t500obl7q793q1nse3jftag6xx2347
-                            enabled: true
+  interval: 15m
+  timeout: 20m
+  releaseName: sabnzbd
+  chart:
+    spec:
+      chart: sabnzbd
+      version: 22.0.7
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
 
-                hosts:
-                    - host: "sabnzbd.${BASE_DOMAIN}"
-                      paths:
-                        - path: /
-                          pathType: Prefix
-        metrics:
-            main:
-                apiKey: ""
-                enabled: false
-                endpoints:
-                    - path: /metrics
-                      port: metrics
-                targetSelector: metrics
-                type: servicemonitor
-        persistence:
-            config:
-                enabled: true
-                mountPath: /config
-                volsync:
-                - name: config
-                  type: restic
-                  credentials: s3
-                  dest:
-                    enabled: true
-                    cacheCapacity: 100Gi        
-                  src:
-                    enabled: true
-                    cacheCapacity: 100Gi
-            media:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data
-                server: 192.168.10.123
-                mountPath: /media
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            movies:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/movies
-                server: 192.168.10.123
-                mountPath: /movies
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            tv:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/tv
-                server: 192.168.10.123
-                mountPath: /tv
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            music:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/media/music
-                server: 192.168.10.123
-                mountPath: /music
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            downloads:
-                enabled: true
-                type: nfs
-                path: /mnt/Pibbs-Horde/media/data/usenet
-                server: 192.168.10.123
-                mountPath: /usenet
-                mountOptions:
-                 - nfsvers=4
-                 - tcp
-                 - intr
-                 - hard
-                 - noatime
-                 - nodiratime
-                 - nolock
-            backup:
-                enabled: true
-                mountPath: /backups
-                volsync:
-                - name: b2
-                  type: restic
-                  credentials: s3
-                  dest:
-                    enabled: true
-                  src:
-                    enabled: true
-        release_name: sabnzbd
-        resources: {}
-        securityContext:
-            container:
-                UMASK: "0022"
-                runAsGroup: 1000
-                runAsUser: 1000
-            pod:
-                fsGroup: 1000
-                fsGroupChangePolicy: OnRootMismatch
-        service:
-            main:
-                enabled: true
-                loadBalancerIP: ${SABNZBD_IP}
-                ports:
-                    main:
-                        port: 10097
-                type: LoadBalancer
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
 
+  values:
+    TZ: America/Los_Angeles
+
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-sabnzbd"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+
+    addons:
+      codeserver:
+        enabled: false
+      netshoot:
+        enabled: false
+      vpn:
+        type: disabled
+
+    exportarrImage:
+      pullPolicy: IfNotPresent
+      repository: ghcr.io/onedr0p/exportarr
+      tag: v2.2.0@sha256:320b0ea7399f4b9af4741dcdddd7d40c05c36b0359679305d8a54df4e97065df
+
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+          - host: "sabnzbd.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: SabNZBD
+            group: Media Downloaders
+            description: Usenet Downloader
+            icon: ""
+            widget:
+              enabled: true
+              custom:
+                url: http://192.168.10.230:10097
+                key: t9t500obl7q793q1nse3jftag6xx2347
+
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${SABNZBD_IP}
+        ports:
+          main:
+            enabled: true
+            port: 10097
+            protocol: http
+
+    podOptions:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "3"
+
+    metrics:
+      main:
+        enabled: false
+        apiKey: ""
+        type: servicemonitor
+        endpoints:
+          - path: /metrics
+            port: metrics
+        targetSelector: metrics
+
+    persistence:
+      config:
+        enabled: true
+        mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 100Gi
+            src:
+              enabled: true
+              cacheCapacity: 100Gi
+
+      media:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+      movies:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        mountPath: /movies
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+      tv:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+      music:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/music
+        mountPath: /music
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+      downloads:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/usenet
+        mountPath: /usenet
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+
+      backup:
+        enabled: true
+        mountPath: /backups
+        volsync:
+          - name: b2
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "4 2 * * *"
+
+    resources: {}
+
+    securityContext:
+      container:
+        UMASK: "0022"
+        runAsGroup: 1000
+        runAsUser: 1000
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false
