@@ -57,3 +57,5 @@ spec:
     service:
       main:
         enabled: false
+    podOptions:
+      hostUsers: true
