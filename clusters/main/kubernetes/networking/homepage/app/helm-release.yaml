@@ -136,14 +136,14 @@ spec:
             nginx:
               enabled: true
               ingressClassName: nginx
+            certManager:
+              enabled: true
+              certificateIssuer: wethecommon-prod-cert
           hosts:
             - host: homepage-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
 
     resources:
       requests:
