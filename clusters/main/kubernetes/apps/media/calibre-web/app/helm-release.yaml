@@ -24,11 +24,15 @@ spec:
     remediation:
       retries: 3
   values:
+    TZ: America/Los_Angeles
+
     portal:
       open:
         enabled: false
+
     global:
       stopAll: false
+
     credentials:
       s3:
         type: s3
@@ -37,50 +41,55 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
+
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        hosts:
+          - host: calibre-web.${BASE_DOMAIN}
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
           homepage:
-            description: Book Manager
             enabled: true
-            group: Content Management
-            icon: ""
             name: Calibre-Web
+            group: Content Management
+            description: Book Manager
+            icon: ""
             widget:
+              enabled: true
               custom:
                 url: http://192.168.10.235:8083
                 username: zach
                 password: mtj1bqa*MNT4fxr4hra
-              enabled: true
-        hosts:
-          - host: calibre-web.${BASE_DOMAIN}
+
     service:
       main:
         enabled: true
-        loadBalancerIP: ${CALIBRE_IP}
         type: LoadBalancer
+        loadBalancerIP: ${CALIBRE_IP}
         ports:
           main:
             port: 8083
-            protocol: http
             targetPort: 8083
+            protocol: http
+
     persistence:
       config:
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
       media:
         enabled: true
         type: nfs
@@ -88,13 +97,13 @@ spec:
         server: 192.168.10.123
         mountPath: /media
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       books:
         enabled: true
         type: nfs
@@ -102,13 +111,13 @@ spec:
         server: 192.168.10.123
         mountPath: /books
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       comics:
         enabled: true
         type: nfs
@@ -116,13 +125,13 @@ spec:
         server: 192.168.10.123
         mountPath: /comics
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       downloads:
         enabled: true
         type: nfs
@@ -130,16 +139,29 @@ spec:
         server: 192.168.10.123
         mountPath: /usenet
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       backup:
         enabled: true
         mountPath: /backups
+
     metrics:
       main:
         enabled: false
+
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 50m
+      limits:
+        memory: 2Gi
+        cpu: 500m
+
+    autoscaling:
+      vpa:
+        enabled: true
