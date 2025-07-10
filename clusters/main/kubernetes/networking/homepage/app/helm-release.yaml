@@ -132,10 +132,10 @@ spec:
               port: 12321
         ingress:
           enabled: true
-          ingressClassName: nginx
           integrations:
             nginx:
               enabled: true
+              ingressClassName: nginx
           hosts:
             - host: homepage-code.${BASE_DOMAIN}
               paths:

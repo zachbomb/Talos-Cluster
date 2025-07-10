@@ -160,18 +160,22 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-        certManager:
-          enabled: true
-          certificateIssuer: wethecommon-prod-cert
-        homepage:
-          enabled: true
-          name: Plex
-          description: Media Player
-          group: Media Players
-          widget:
+        integrations:
+          nginx:
             enabled: true
-            custom:
-              key: 5XpDX8VXyzTRkeoJ65RY
+            ingressClassName: internal
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Plex
+            description: Media Player
+            group: Media Players
+            widget:
+              enabled: true
+              custom:
+                key: 5XpDX8VXyzTRkeoJ65RYXpDX8VXyzTRkeoJ65RY
 
     service:
       main:
