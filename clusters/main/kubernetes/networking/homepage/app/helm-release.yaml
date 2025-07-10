@@ -145,6 +145,10 @@ spec:
                 - path: /
                   pathType: Prefix
 
+    autoscaling:
+      vpa:
+        enabled: true
+
     resources:
       requests:
         memory: 1024Mi
