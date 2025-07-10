@@ -53,7 +53,7 @@ spec:
             name: Mylar
             widget:
               custom:
-               key: 54ae2f2b77fe7b739155e3111c5b9474
+                key: 54ae2f2b77fe7b739155e3111c5b9474
               enabled: true
         hosts:
           - host: mylar.${BASE_DOMAIN}
@@ -127,3 +127,15 @@ spec:
     metrics:
       main:
         enabled: false
+
+    autoscaling:
+      vpa:
+        enabled: true
+
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m

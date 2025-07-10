@@ -42,6 +42,9 @@ spec:
         enabled: true
         ingressClassName: internal
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
@@ -72,15 +75,15 @@ spec:
         enabled: true
         mountPath: /config
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
       media:
         enabled: true
         type: nfs
@@ -88,13 +91,13 @@ spec:
         server: 192.168.10.123
         mountPath: /media
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       comics:
         enabled: true
         type: nfs
@@ -102,13 +105,13 @@ spec:
         server: 192.168.10.123
         mountPath: /comics
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       downloads:
         enabled: true
         type: nfs
@@ -116,13 +119,24 @@ spec:
         server: 192.168.10.123
         mountPath: /usenet
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
     metrics:
       main:
         enabled: false
+    autoscaling:
+      vpa:
+        enabled: true
+
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
