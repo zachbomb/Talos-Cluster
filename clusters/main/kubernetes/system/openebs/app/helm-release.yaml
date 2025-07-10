@@ -37,13 +37,22 @@ spec:
       enabled: false        
     engines:
       local:
-        # The lvm-localpv backend contains a duplicate of snapshot controller which will cause conflicts
         lvm:
           enabled: false
-        # The ZFS backend contains a duplicate of snapshot controller which will cause conflicts
         zfs:
           enabled: false
       replicated:
-        # The Mayastor backend contains a duplicate of snapshot controller which will cause conflicts
         mayastor:
           enabled: false
+    workload:
+      main:
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 4Gi
+            cpu: 500m
