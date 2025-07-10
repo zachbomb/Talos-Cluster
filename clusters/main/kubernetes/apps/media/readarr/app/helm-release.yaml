@@ -40,7 +40,8 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        hosts:
+          - host: readarr.${BASE_DOMAIN}
         integrations:
           certManager:
             enabled: true
@@ -53,10 +54,11 @@ spec:
             name: Readarr
             widget:
               custom:
-               key: 146042a1bae846f9b5e70c4beb521c76
+                key: 146042a1bae846f9b5e70c4beb521c76
               enabled: true
-        hosts:
-          - host: readarr.${BASE_DOMAIN}
+          nginx:
+            enabled: true
+            ingressClassName: internal
     service:
       main:
         enabled: true
@@ -70,15 +72,15 @@ spec:
     persistence:
       config:
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
       media:
         enabled: true
         type: nfs
@@ -86,13 +88,13 @@ spec:
         server: 192.168.10.123
         mountPath: /media
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       books:
         enabled: true
         type: nfs
@@ -100,13 +102,13 @@ spec:
         server: 192.168.10.123
         mountPath: /books
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       downloads:
         enabled: true
         type: nfs
@@ -114,16 +116,19 @@ spec:
         server: 192.168.10.123
         mountPath: /usenet
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       backup:
         enabled: true
         mountPath: /backups
     metrics:
       main:
         enabled: false
+    autoscaling:
+      vpa:
+        enabled: true
