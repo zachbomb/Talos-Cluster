@@ -42,13 +42,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: "emby.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
@@ -182,7 +184,6 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-        # GPU Intel i915 device assigned
         gpu.intel.com/i915: 1
 
     autoscaling:

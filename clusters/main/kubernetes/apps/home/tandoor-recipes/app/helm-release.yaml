@@ -41,13 +41,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: "tandoor.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
@@ -110,6 +112,7 @@ spec:
               enabled: true
             src:
               enabled: true
+
     autoscaling:
       vpa:
         enabled: true

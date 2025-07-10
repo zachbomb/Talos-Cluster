@@ -43,13 +43,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: "tinymediamanager.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
@@ -157,7 +159,6 @@ spec:
             main:
               env:
                 PASSWORD: ""
-          # optional: runtime class, probes, etc.
 
     resources:
       requests:
@@ -166,6 +167,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+
     autoscaling:
       vpa:
         enabled: true
