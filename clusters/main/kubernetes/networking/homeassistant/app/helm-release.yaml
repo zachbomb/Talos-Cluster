@@ -26,16 +26,16 @@ spec:
               - path: /
                 pathType: Prefix
         integrations:
-            traefik:
-                enabled: false
-                middlewares:
-                    - name: local
-                      namespace: traefik
-            certManager:
-                enabled: true
-                certificateIssuer: wethecommon-prod-cert
-            homepage:
-                enabled: false
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: false
     service:
       main:
         enabled: true
@@ -53,3 +53,13 @@ spec:
         podSpec:
           containers:
             main: {}
+    autoscaling:
+      vpa:
+        enabled: true
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 100m
+      limits:
+        memory: 4Gi
+        cpu: 1000m
