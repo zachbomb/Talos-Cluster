@@ -91,15 +91,21 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-        certManager:
-          enabled: true
-          certificateIssuer: wethecommon-prod-cert
-        homepage:
-          enabled: true
-          icon: https://tunarr.com/assets/tunarr.png
-          name: Tunarr
-          description: Custom IPTV-like server
-          group: Media Players
+        integrations:
+          traefik:
+            enabled: true
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            icon: https://tunarr.com/assets/tunarr.png
+            name: Tunarr
+            description: Custom IPTV-like server
+            group: Media Players
 
     persistence:
       config:
@@ -264,11 +270,18 @@ spec:
               port: 12321
         ingress:
           enabled: true
+          ingressClassName: internal
+          integrations:
+            traefik:
+              enabled: true
+              middlewares:
+                - name: local
+                  namespace: traefik
+            certManager:
+              enabled: true
+              certificateIssuer: wethecommon-prod-cert
           hosts:
             - host: tunarr-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert

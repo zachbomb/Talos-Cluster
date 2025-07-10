@@ -185,6 +185,7 @@ spec:
     resources:
       limits:
         nvidia.com/gpu: 1
+
     autoscaling:
       vpa:
         enabled: true

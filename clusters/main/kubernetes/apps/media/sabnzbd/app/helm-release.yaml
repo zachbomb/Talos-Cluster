@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -53,13 +52,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: "sabnzbd.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
         integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
@@ -218,6 +219,10 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+
+    autoscaling:
+      vpa:
+        enabled: true
 
     securityContext:
       container:

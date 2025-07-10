@@ -24,11 +24,6 @@ spec:
     remediation:
       retries: 3
   values:
-    portal:
-      open:
-        enabled: false
-    global:
-      stopAll: false
     credentials:
       s3:
         type: s3
@@ -37,58 +32,67 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
+
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        hosts:
+          - host: "calibre.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
           homepage:
-            description: Book Manager
             enabled: true
+            name: Calibre
+            description: Book Manager
             group: Content Management
             icon: ""
-            name: Calibre
             widget:
-              custom:
-               key: ""
               enabled: false
-        hosts:
-          - host: calibre.${BASE_DOMAIN}
+              custom:
+                key: ""
+
     service:
       main:
         enabled: true
-        loadBalancerIP: ${CALIBRE_IP}
         type: LoadBalancer
+        loadBalancerIP: ${CALIBRE_IP}
         ports:
           main:
             port: 8084
-            protocol: http
             targetPort: 8080
+            protocol: http
+
       webserver:
         enabled: true
-        loadBalancerIP: ${CALIBRE_IP}
         type: LoadBalancer
+        loadBalancerIP: ${CALIBRE_IP}
         ports:
           webserver:
             enabled: true
             port: 8081
-            protocol: http
             targetPort: 8081
+            protocol: http
+
     persistence:
       config:
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
       media:
         enabled: true
         type: nfs
@@ -96,13 +100,13 @@ spec:
         server: 192.168.10.123
         mountPath: /media
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       books:
         enabled: true
         type: nfs
@@ -110,13 +114,13 @@ spec:
         server: 192.168.10.123
         mountPath: /books
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       comics:
         enabled: true
         type: nfs
@@ -124,13 +128,13 @@ spec:
         server: 192.168.10.123
         mountPath: /comics
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       downloads:
         enabled: true
         type: nfs
@@ -138,16 +142,29 @@ spec:
         server: 192.168.10.123
         mountPath: /usenet
         mountOptions:
-         - nfsvers=4
-         - tcp
-         - intr
-         - hard
-         - noatime
-         - nodiratime
-         - nolock
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       backup:
         enabled: true
         mountPath: /backups
+
     metrics:
       main:
         enabled: false
+
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
+
+    autoscaling:
+      vpa:
+        enabled: true

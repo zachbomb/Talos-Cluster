@@ -5,6 +5,7 @@ metadata:
   namespace: media
 spec:
   interval: 15m
+  timeout: 20m
   releaseName: emby
   chart:
     spec:
@@ -20,6 +21,7 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
+
   upgrade:
     crds: CreateReplace
     remediation:
@@ -41,6 +43,11 @@ spec:
       main:
         enabled: true
         ingressClassName: internal
+        hosts:
+          - host: "emby.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
         integrations:
           traefik:
             enabled: false
@@ -60,11 +67,6 @@ spec:
               enabled: true
               custom:
                 key: 10ec9bcd842045d6988cebab0bedc6fc
-        hosts:
-          - host: "emby.${BASE_DOMAIN}"
-            paths:
-              - path: /
-                pathType: Prefix
 
     service:
       main:
@@ -97,6 +99,7 @@ spec:
               enabled: true
               trigger:
                 schedule: "15 0 * * *"
+
       media:
         enabled: true
         type: nfs
@@ -111,6 +114,7 @@ spec:
           - noatime
           - nodiratime
           - nolock
+
       movies:
         enabled: true
         type: nfs
@@ -125,6 +129,7 @@ spec:
           - noatime
           - nodiratime
           - nolock
+
       tv:
         enabled: true
         type: nfs
@@ -139,6 +144,7 @@ spec:
           - noatime
           - nodiratime
           - nolock
+
       music:
         enabled: true
         type: nfs
@@ -153,6 +159,7 @@ spec:
           - noatime
           - nodiratime
           - nolock
+
       downloads:
         enabled: true
         type: nfs
@@ -175,7 +182,12 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+        # GPU Intel i915 device assigned
         gpu.intel.com/i915: 1
+
+    autoscaling:
+      vpa:
+        enabled: true
 
     securityContext:
       container:
@@ -186,9 +198,16 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-   
+
     workload:
-        main:
-            podSpec:
-                enabled: false
-                runtimeClassName: nvidia
+      main:
+        podSpec:
+          containers:
+            main:
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false
