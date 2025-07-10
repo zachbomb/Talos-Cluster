@@ -44,22 +44,25 @@ spec:
           main:
             enabled: true
             ingressClassName: internal
+            hosts:
+              - host: recyclarr.${BASE_DOMAIN}
             integrations:
+              nginx:
+                enabled: true
+                ingressClassName: internal
               certManager:
                 enabled: true
                 certificateIssuer: wethecommon-prod-cert
-            hosts:
-              - host: recyclarr.${BASE_DOMAIN}
         service:
           main:
             enabled: true
             loadBalancerIP: ${RECYCLARR_IP}
+            type: LoadBalancer
             ports:
               main:
                 port: 8181
                 protocol: http
                 targetPort: 8181
-              type: LoadBalancer
     workload:
       main:
         podSpec:
@@ -69,12 +72,15 @@ spec:
     persistence:
       config:
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
+    autoscaling:
+      vpa:
+        enabled: true

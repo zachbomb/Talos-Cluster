@@ -56,12 +56,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
-        certManager:
-          enabled: true
-          certificateIssuer: wethecommon-prod-cert
         hosts:
           - host: doplarr.${BASE_DOMAIN}
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
 
     service:
       main:
@@ -70,9 +73,14 @@ spec:
         type: LoadBalancer
         ports:
           main:
-            enabled:
+            enabled: true
             port: 8080
             protocol: http
             targetPort: 8080
+
     podOptions:
       hostUsers: true
+
+    autoscaling:
+      vpa:
+        enabled: true
