@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -5,7 +6,6 @@ metadata:
   namespace: networking
 spec:
   interval: 15m
-  timeout: 10m
   chart:
     spec:
       chart: external-service
@@ -16,19 +16,6 @@ spec:
         namespace: flux-system
   releaseName: proxmox
   values:
-
-    autoscaling:
-      vpa:
-        enabled: true
-
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 4Gi
-        cpu: 500m
-
     service:
       main:
         enabled: true
@@ -39,20 +26,22 @@ spec:
             enabled: true
             protocol: https
             port: 8006
-
     ingress:
       main:
         enabled: true
+        ingressClassName: internal
+        annotations:
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+          nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+          nginx.ingress.kubernetes.io/ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/proxy-ssl-verify: "false"  # <-- Skip TLS verification
+          nginx.ingress.kubernetes.io/proxy-ssl-name: "proxmox.${BASE_DOMAIN}"  # Optional: Use hostname to match cert CN/SAN
+        hosts:
+          - host: proxmox.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
         integrations:
-          nginx:
-            enabled: true
-            ingressClassName: internal
-            annotations:
-              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-              nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-              nginx.ingress.kubernetes.io/ssl-redirect: "true"
-              nginx.ingress.kubernetes.io/proxy-ssl-verify: "false"
-              nginx.ingress.kubernetes.io/proxy-ssl-name: "proxmox.${BASE_DOMAIN}"
           traefik:
             enabled: false
             middlewares:
@@ -63,8 +52,3 @@ spec:
             certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: false
-        hosts:
-          - host: proxmox.${BASE_DOMAIN}
-            paths:
-              - path: /
-                pathType: Prefix
