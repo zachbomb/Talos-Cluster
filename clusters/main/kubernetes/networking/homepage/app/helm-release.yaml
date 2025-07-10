@@ -135,7 +135,7 @@ spec:
           integrations:
             nginx:
               enabled: true
-              ingressClassName: nginx
+              ingressClassName: internal
             certManager:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
