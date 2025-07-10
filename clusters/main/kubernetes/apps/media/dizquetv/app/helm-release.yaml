@@ -36,8 +36,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
+        hosts:
+          - host: "dizquetv.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
@@ -55,11 +62,6 @@ spec:
               custom:
                 key: ""
               enabled: false
-        hosts:
-          - host: "dizquetv.${BASE_DOMAIN}"
-            paths:
-              - path: /
-                pathType: Prefix
     persistence:
       config:
         main:
@@ -143,7 +145,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
     securityContext:
       container:
         PUID: 1000
@@ -151,115 +152,6 @@ spec:
         privileged: false
         readOnlyRootFilesystem: false
         runAsGroup: 1000
-        runAsUser: 1000
-      pod:
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-
-    service:
-      main:
+    autoscaling:
+      vpa:
         enabled: true
-        loadBalancerIP: ${DIZQUETV_IP}
-        ports:
-          main:
-            port: 10071
-            targetPort: 8000
-        type: LoadBalancer
-
-    workload:
-      main:
-        args:
-          - "--unlock"
-        podSpec:
-          runtimeClassName: "nvidia"
-          initContainers:
-            install-ffmpeg:
-              enabled: true
-              type: install
-              image: jrottenberg/ffmpeg:7.1-nvidia
-              command:
-                - sh
-                - -c
-                - cp /usr/bin/ffmpeg /ffmpeg-bin/ffmpeg
-              volumeMounts:
-                - name: ffmpeg-bin
-                  mountPath: /ffmpeg-bin
-          containers:
-            main:
-              image: vexorian/dizquetv:latest-nvidia
-              workingDir: /backups
-              volumeMounts:
-                - name: ffmpeg-bin
-                  mountPath: /ffmpeg-bin
-              probes:
-                liveness:
-                  type: http
-                  path: /
-                  port: 8000
-                readiness:
-                  type: http
-                  path: /
-                  port: 8000
-                startup:
-                  type: http
-                  path: /
-                  port: 8000
-            ffmpeg-sidecar:
-              enabled: true
-              image: jrottenberg/ffmpeg:7.1-nvidia
-              command:
-                - sh
-                - -c
-                - |
-                  until [ -f /usr/bin/ffmpeg ]; do sleep 1; done
-                  cp /usr/bin/ffmpeg /ffmpeg-bin/ffmpeg
-                  echo "ffmpeg binary copied to shared volume"
-                  sleep infinity
-              volumeMounts:
-                - name: ffmpeg-bin
-                  mountPath: /ffmpeg-bin
-              probes:
-                liveness:
-                  type: http
-                  path: /
-                  port: 8000
-                readiness:
-                  type: http
-                  path: /
-                  port: 8000
-                startup:
-                  type: http
-                  path: /
-                  port: 8000
-          volumes:
-            ffmpeg-bin:
-              emptyDir: {}
-    resources:
-      limits:
-        nvidia.com/gpu: 1
-
-    addons:
-      codeserver:
-        enabled: true
-        service:
-          type: LoadBalancer
-          loadBalancerIP: ${DIZQUETV_IP}
-          ports:
-            codeserver:
-              port: 12321
-        ingress:
-          enabled: true
-          hosts:
-            - host: dizquetv-code.${BASE_DOMAIN}
-              paths:
-                - path: /
-                  pathType: Prefix
-          integrations:
-            certManager:
-              certificateIssuer: wethecommon-prod-cert
-              enabled: true
-            traefik:
-              enabled: false
-              middlewares:
-                - name: local
-                  namespace: traefik
