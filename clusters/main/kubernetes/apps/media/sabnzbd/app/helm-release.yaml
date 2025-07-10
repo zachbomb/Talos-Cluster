@@ -59,8 +59,7 @@ spec:
                 pathType: Prefix
         integrations:
           nginx:
-            enabled: false
-            ingressClassName: internal
+            enabled: true
           traefik:
             enabled: false
             middlewares:
