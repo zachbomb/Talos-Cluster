@@ -154,7 +154,6 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: "plex.${BASE_DOMAIN}"
             paths:
