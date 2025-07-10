@@ -6,6 +6,10 @@ metadata:
   namespace: kube-system
 spec:
   interval: 15m
+  timeout: 20m
+  maxHistory: 3
+  driftDetection:
+    mode: warn
   chart:
     spec:
       chart: metrics-server
@@ -15,10 +19,6 @@ spec:
         name: home-ops-mirror
         namespace: flux-system
       interval: 15m
-  timeout: 20m
-  maxHistory: 3
-  driftDetection:
-    mode: warn
   install:
     createNamespace: true
     remediation:
@@ -29,3 +29,15 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    workload:
+      main:
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 4Gi
+            cpu: 500m
