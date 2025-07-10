@@ -40,14 +40,17 @@ spec:
       main:
         enabled: true
         ingressClassName: internal
+        integrations:
+          nginx:
+            enabled: true
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
         hosts:
           - host: homepage.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
-        certManager:
-          enabled: true
-          certificateIssuer: wethecommon-prod-cert
 
     podOptions:
       dnsConfig:
@@ -129,7 +132,10 @@ spec:
               port: 12321
         ingress:
           enabled: true
-          ingressClassName: internal
+          ingressClassName: nginx
+          integrations:
+            nginx:
+              enabled: true
           hosts:
             - host: homepage-code.${BASE_DOMAIN}
               paths:
@@ -138,11 +144,7 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-          traefik:
-            enabled: false
-            middlewares:
-              - name: local
-                namespace: traefik
+
     resources:
       requests:
         memory: 1024Mi
