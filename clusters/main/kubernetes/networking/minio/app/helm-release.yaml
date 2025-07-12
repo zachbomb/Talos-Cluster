@@ -45,11 +45,11 @@ spec:
     service:
       main:
         enabled: true
-        externalIP: 192.168.10.122
+        externalIP: 192.168.10.123
         ports:
           main:
             enabled: true
-            port: 9000
+            port: 9002
             protocol: https
         type: ExternalIP
         useSlice: false
