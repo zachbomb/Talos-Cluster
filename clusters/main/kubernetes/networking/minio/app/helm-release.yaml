@@ -50,7 +50,7 @@ spec:
           main:
             enabled: true
             port: 9002
-            protocol: https
+            protocol: http
         type: ExternalIP
         useSlice: false
     workload:
