@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: external-service
-      version: 16.1.0
+      version: 16.0.8
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -45,12 +45,12 @@ spec:
     service:
       main:
         enabled: true
-        externalIP: 192.168.10.123
+        externalIP: 192.168.10.122
         ports:
           main:
             enabled: true
             port: 9000
-            protocol: http
+            protocol: https
         type: ExternalIP
         useSlice: false
     workload:
