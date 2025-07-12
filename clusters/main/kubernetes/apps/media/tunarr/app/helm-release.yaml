@@ -11,7 +11,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 15.2.1
+      version: 15.1.10
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -256,7 +256,7 @@ spec:
         cpu: 50m
       limits:
         nvidia.com/gpu: 2
-        memory: 4Gi
+        memory: 6Gi
         cpu: 500m
 
     addons:
