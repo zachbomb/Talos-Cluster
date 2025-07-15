@@ -212,7 +212,4 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-
-    autoscaling:
-      vpa:
-        enabled: true
+        nvidia.com/gpu: 1
