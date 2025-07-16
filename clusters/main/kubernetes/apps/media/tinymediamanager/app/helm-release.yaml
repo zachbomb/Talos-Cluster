@@ -151,7 +151,8 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
+    podOptions:
+      hostUsers: true
     workload:
       main:
         podSpec:
