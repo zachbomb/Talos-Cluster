@@ -31,12 +31,12 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    installCRDs: true
     dns01RecursiveNameservers: "1.1.1.1:53,1.0.0.1:53"
     dns01RecursiveNameserversOnly: false
-    installCRDs: true
     enableCertificateOwnerRef: true
 
-    controller:
+    certManager:
       resources:
         requests:
           memory: 1024Mi
@@ -44,3 +44,21 @@ spec:
         limits:
           memory: 2Gi
           cpu: 500m
+
+    webhook:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 50m
+        limits:
+          memory: 256Mi
+          cpu: 200m
+
+    cainjector:
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 50m
+        limits:
+          memory: 256Mi
+          cpu: 200m
