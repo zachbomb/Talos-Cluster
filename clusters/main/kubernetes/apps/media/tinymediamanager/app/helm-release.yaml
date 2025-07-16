@@ -141,18 +141,6 @@ spec:
           - nodiratime
           - nolock
 
-    securityContext:
-      enabled: true
-      container:
-        runAsUser: 1000
-        runAsGroup: 1000
-        UMASK: "0022"
-        readOnlyRootFilesystem: false
-        runAsNonRoot: false
-      pod:
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
-
     workload:
       main:
         podSpec:
@@ -172,5 +160,4 @@ spec:
     autoscaling:
       vpa:
         enabled: true
-
 
