@@ -67,7 +67,7 @@ spec:
               enabled: true
               custom:
                 username: zach
-                password: WZM-jvt1fxq*njk1qak
+                password: ${NZBGET_API}
 
     service:
       main:

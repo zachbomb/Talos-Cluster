@@ -63,7 +63,7 @@ spec:
             widget:
               custom:
                 url: http://192.168.10.224:8181/
-                key: 88be0b2b2e7e4d88a3e01aa96887752e
+                key: ${TAUTULLI_API}
                 user: "true"
               enabled: true
         hosts:

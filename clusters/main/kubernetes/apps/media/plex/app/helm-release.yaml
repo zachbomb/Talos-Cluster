@@ -139,7 +139,7 @@ spec:
       additionalAdvertiseURL: ""
       disableGDM: false
       requireHTTPS: false
-      serverIP: 192.168.10.177
+      serverIP: 192.168.10.204
 
     securityContext:
       container:
@@ -175,7 +175,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: XJfpW4pqGwbysmjXG1Ed
+                key: ${PLEX_API}
 
     service:
       main:

@@ -70,7 +70,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: b8c72124548a4b4ea50a698c6a2b0391
+                key: ${SONARR_API}
 
     service:
       main:

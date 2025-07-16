@@ -57,7 +57,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: c3a71d2c87e63d7e0538397ea88bf834
+                key: ${BAZARR_API}
 
     service:
       main:
