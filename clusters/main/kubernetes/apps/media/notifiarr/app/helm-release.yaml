@@ -5,7 +5,6 @@ metadata:
   namespace: media
 spec:
   interval: 5m
-  timeout: 20m
   chart:
     spec:
       chart: notifiarr
@@ -15,26 +14,24 @@ spec:
         name: truecharts
         namespace: flux-system
       interval: 5m
-
+  timeout: 20m
   install:
     createNamespace: true
     crds: CreateReplace
     remediation:
       retries: 3
-
   upgrade:
     crds: CreateReplace
     remediation:
       retries: 3
-
   values:
     notifiarr:
-      # Do not set `apikey` here when using environment variable.
-      # It would conflict with or override the env var injection.
-
+      # This will be your password for your first-time login.
+      # Use the username 'admin' and the API key as password to log in.
+      # After login you must change your password from the UI
+      apikey: "038cb3b1-195b-4ed7-8c14-d0d99c03a0b9"
     global:
       stopAll: false
-
     credentials:
       s3:
         type: s3
@@ -43,7 +40,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -53,8 +49,7 @@ spec:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
         hosts:
-          - host: "notifiarr.${BASE_DOMAIN}"
-
+          - host: notifiarr.${BASE_DOMAIN}
     service:
       main:
         enabled: true
@@ -65,31 +60,24 @@ spec:
             port: 5454
             protocol: http
             targetPort: 5454
-
     workload:
       main:
         podSpec:
-          containers:
-            main:
-              env:
-                DN_API_KEY: "${NOTIFIARR_API}"
           initContainers:
             initconfig:
               enabled: false
-
     persistence:
       config:
         volsync:
-          - name: config
-            type: restic
-            credentials: s3
-            dest:
-              enabled: true
-            src:
-              enabled: true
-              trigger:
-                schedule: "40 0 * * *"
-
+        - name: config
+          type: restic
+          credentials: s3
+          dest:
+            enabled: true
+          src:
+            enabled: true
+            trigger:
+              schedule: 40 0 * * *
       machine-id:
         enabled: false
 
