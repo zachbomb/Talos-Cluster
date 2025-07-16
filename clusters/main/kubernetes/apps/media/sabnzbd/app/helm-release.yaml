@@ -78,7 +78,7 @@ spec:
               enabled: true
               custom:
                 url: http://192.168.10.230:10097
-                key: t9t500obl7q793q1nse3jftag6xx2347
+                key: ${SABNZBD_API}
 
     service:
       main:

@@ -68,7 +68,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: 10ec9bcd842045d6988cebab0bedc6fc
+                key: ${EMBY_API}
 
     service:
       main:

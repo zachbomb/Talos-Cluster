@@ -50,7 +50,7 @@ spec:
               enabled: true
               custom:
                 url: http://192.168.10.207:5055
-                key: MTc0NzQ2NTY0NDE1OWFiZjhlMjRmLTMyY2QtNDA2MS1iOWQzLTQ1YzMxYzY4OTk0Zg==
+                key: ${OVERSEERR_API}
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
