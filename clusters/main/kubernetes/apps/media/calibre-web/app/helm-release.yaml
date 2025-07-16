@@ -65,7 +65,7 @@ spec:
               custom:
                 url: http://192.168.10.235:8083
                 username: zach
-                password: mtj1bqa*MNT4fxr4hra
+                password: ${CALIBRE_WEB_API}
 
     service:
       main:
