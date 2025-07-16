@@ -29,7 +29,7 @@ spec:
       # This will be your password for your first-time login.
       # Use the username 'admin' and the API key as password to log in.
       # After login you must change your password from the UI
-      apikey: "${NOTIFIARR_API}"
+      apikey: ${NOTIFIARR_API}"
     global:
       stopAll: false
     credentials:
