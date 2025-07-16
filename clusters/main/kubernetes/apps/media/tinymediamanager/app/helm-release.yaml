@@ -94,10 +94,10 @@ spec:
               credentials: s3
               dest:
                 enabled: true
-                cacheCapacity: 100Gi
+                cacheCapacity: 10Gi
               src:
                 enabled: true
-                cacheCapacity: 100Gi
+                cacheCapacity: 10Gi
       media:
         enabled: true
         type: nfs
@@ -142,6 +142,7 @@ spec:
           - nolock
 
     securityContext:
+      enabled: true
       container:
         runAsUser: 1000
         runAsGroup: 1000
@@ -151,8 +152,10 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+
     podOptions:
       hostUsers: true
+
     workload:
       main:
         podSpec:
