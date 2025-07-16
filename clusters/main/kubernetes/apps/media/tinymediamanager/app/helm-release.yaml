@@ -153,9 +153,6 @@ spec:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
 
-    podOptions:
-      hostUsers: true
-
     workload:
       main:
         podSpec:
@@ -175,3 +172,5 @@ spec:
     autoscaling:
       vpa:
         enabled: true
+
+
