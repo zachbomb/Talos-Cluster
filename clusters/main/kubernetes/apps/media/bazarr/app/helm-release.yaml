@@ -57,7 +57,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ***REMOVED***
+                key: ${BAZARR_API}
 
     service:
       main:

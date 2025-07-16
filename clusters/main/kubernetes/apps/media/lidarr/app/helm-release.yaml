@@ -78,7 +78,7 @@ spec:
                         name: Lidarr
                         widget:
                             custom:
-                                key: ***REMOVED***
+                                key: ${LIDARR_API}
                             enabled: true
                 hosts:
                     - host: "lidarr.${BASE_DOMAIN}"

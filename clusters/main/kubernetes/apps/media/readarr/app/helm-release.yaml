@@ -54,7 +54,7 @@ spec:
             name: Readarr
             widget:
               custom:
-                key: ***REMOVED***
+                key: ${READARR_API}
               enabled: true
           nginx:
             enabled: true

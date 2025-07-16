@@ -98,7 +98,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ***REMOVED***
+                key: ${RADARR_API}
 
     persistence:
       config:

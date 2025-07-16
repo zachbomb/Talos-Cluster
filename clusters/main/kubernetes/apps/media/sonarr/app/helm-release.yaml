@@ -70,7 +70,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ***REMOVED***
+                key: ${SONARR_API}
 
     service:
       main:
