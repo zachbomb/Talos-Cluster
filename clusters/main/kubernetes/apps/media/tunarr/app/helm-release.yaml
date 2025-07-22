@@ -110,7 +110,7 @@ spec:
     persistence:
       config:
         enabled: true
-        mountPath: /root
+        mountPath: /root/config
         volsync:
           - name: config
             type: restic
