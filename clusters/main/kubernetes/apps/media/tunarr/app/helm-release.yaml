@@ -122,7 +122,7 @@ spec:
 
       streams:
         enabled: true
-        mountPath: /streams
+        mountPath: /tunarr/streams
         volsync:
           - name: streams
             type: restic
