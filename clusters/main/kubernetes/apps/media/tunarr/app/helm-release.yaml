@@ -108,12 +108,9 @@ spec:
             group: Media Players
 
     persistence:
-      root:
-        enabled: true
-        mountPath: /root
       config:
         enabled: true
-        mountPath: /.config
+        mountPath: /root/.config
         volsync:
           - name: config
             type: restic
@@ -137,7 +134,7 @@ spec:
 
       local:
         enabled: true
-        mountPath: /tunarr/.local
+        mountPath: /root/.local
         volsync:
           - name: local
             type: restic
