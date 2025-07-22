@@ -134,7 +134,7 @@ spec:
 
       local:
         enabled: true
-        mountPath: /.local
+        mountPath: /tunarr/.local
         volsync:
           - name: local
             type: restic
