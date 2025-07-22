@@ -42,7 +42,7 @@ spec:
       main:
         args:
           - "--database"
-          - "/root/.config/tunarr.db"
+          - "/config"
           - "--port"
           - "8000"
         podSpec:
