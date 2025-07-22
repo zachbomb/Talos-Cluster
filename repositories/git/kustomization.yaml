@@ -5,3 +5,4 @@ kind: Kustomization
 resources:
   - this-repo.yaml
   - truecharts.yaml
+  - trueforge.yaml
