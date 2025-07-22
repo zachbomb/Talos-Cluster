@@ -35,16 +35,14 @@ spec:
       TZ: America/Los_Angeles
       TUNARR__TV_DIR: /tv
       TUNARR__MOVIES_DIR: /movies
-      TUNARR__CONFIG_DIR: /config
       TUNARR__PORT: "8000"
 
     workload:
       main:
         args:
-          - "--database"
-          - "/config"
           - "--port"
           - "8000"
+
         podSpec:
           runtimeClassName: "nvidia"
 
