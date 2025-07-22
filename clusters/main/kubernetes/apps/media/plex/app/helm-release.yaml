@@ -25,7 +25,7 @@ spec:
       version: 20.1.0
       sourceRef:
         kind: HelmRepository
-        name: trueforge
+        name: truecharts
         namespace: flux-system
 
   values:
