@@ -108,6 +108,9 @@ spec:
             group: Media Players
 
     persistence:
+      root:
+        enabled: true
+        mountPath: /root
       config:
         enabled: true
         mountPath: /.config
