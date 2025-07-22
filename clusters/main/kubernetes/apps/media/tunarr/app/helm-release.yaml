@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -32,16 +33,16 @@ spec:
 
     env:
       TZ: America/Los_Angeles
-      TUNARR_TV_DIR: /tv
-      TUNARR_MOVIES_DIR: /movies
-      TUNARR_CONFIG_DIR: /config
-      TUNARR_PORT: "8000"
+      TUNARR__TV_DIR: /tv
+      TUNARR__MOVIES_DIR: /movies
+      TUNARR__CONFIG_DIR: /config
+      TUNARR__PORT: "8000"
 
     workload:
       main:
         args:
           - "--database"
-          - "/config/tunarr.db"
+          - "/root/.config/tunarr.db"
           - "--port"
           - "8000"
         podSpec:
@@ -109,13 +110,13 @@ spec:
     persistence:
       config:
         enabled: true
-        mountPath: /config
+        mountPath: /root
         volsync:
           - name: config
             type: restic
             credentials: s3
             src:
-              enabled: false
+              enabled: true
             dest:
               enabled: true
 
@@ -133,7 +134,7 @@ spec:
 
       local:
         enabled: true
-        mountPath: /root/.local
+        mountPath: /.local
         volsync:
           - name: local
             type: restic
