@@ -116,7 +116,7 @@ spec:
             type: restic
             credentials: s3
             src:
-              enabled: true
+              enabled: false
             dest:
               enabled: true
 
