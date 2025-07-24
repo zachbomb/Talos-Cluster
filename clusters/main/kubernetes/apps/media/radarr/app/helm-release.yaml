@@ -92,7 +92,7 @@ spec:
           homepage:
             enabled: true
             name: Radarr
-            group: Movie Downloaders/Managers
+            group: -*rrs
             description: Movie Downloader/Manager
             icon: ""
             widget:
