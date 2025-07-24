@@ -10,7 +10,7 @@ spec:
   url: ssh://git@github.com/chrisbenincasa/tunarr.git
   timeout: 10m
   ref:
-    branch: master
+    branch: dev
   secretRef:
     name: deploy-key
   ignore: |
