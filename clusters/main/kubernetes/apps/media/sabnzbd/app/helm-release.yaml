@@ -76,8 +76,9 @@ spec:
         type: LoadBalancer
         loadBalancerIP: ${SABNZBD_IP}
         ports:
-          http:
+          main:
             port: 10097
+            protocol: http
         annotations: {}
         labels: {}
 
@@ -194,8 +195,9 @@ spec:
             type: LoadBalancer
             loadBalancerIP: ${SABNZBD_IP}
             ports:
-              http:
+              codeserver:
                 port: 12321
+                protocol: http
         ingress:
           main:
             enabled: true
