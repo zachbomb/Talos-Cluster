@@ -39,35 +39,36 @@ spec:
         encrKey: "${S3KEY}"
 
     ingress:
-      enabled: true
-      hosts:
-        - host: "sabnzbd.${BASE_DOMAIN}"
-          paths:
-            - path: /
-              pathType: Prefix
-      integrations:
-        nginx:
-          enabled: true
-          ingressClassName: internal
-        traefik:
-          enabled: false
-          middlewares:
-            - name: local
-              namespace: traefik
-        certManager:
-          enabled: true
-          certificateIssuer: wethecommon-prod-cert
-      homepage:
+      main:
         enabled: true
-        name: SabNZBD
-        group: Media Downloaders
-        description: Usenet Downloader
-        icon: ""
-        widget:
+        hosts:
+          - host: "sabnzbd.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+        homepage:
           enabled: true
-          custom:
-            url: http://192.168.10.230:10097
-            key: ${SABNZBD_API}
+          name: SabNZBD
+          group: Media Downloaders
+          description: Usenet Downloader
+          icon: ""
+          widget:
+            enabled: true
+            custom:
+              url: http://192.168.10.230:10097
+              key: ${SABNZBD_API}
 
     service:
       type: LoadBalancer
@@ -201,7 +202,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
 
-    resources: {}      # rely on common-2025 defaults unless overrides needed
+    resources: {} # rely on common-2025 defaults unless overrides needed
 
     autoscaling:
       vpa:
