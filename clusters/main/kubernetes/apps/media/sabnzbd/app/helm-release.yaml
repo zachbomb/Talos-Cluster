@@ -67,12 +67,12 @@ spec:
           widget:
             enabled: true
             custom:
-              url: http://192.168.10.230:10097
-              key: ${SABNZBD_API}
+              url: "http://192.168.10.230:10097"
+              key: "${SABNZBD_API}"
 
     service:
       type: LoadBalancer
-      loadBalancerIP: ${SABNZBD_IP}
+      loadBalancerIP: "${SABNZBD_IP}"
       port: 10097
 
     persistence:
@@ -181,12 +181,12 @@ spec:
         service:
           enabled: true
           type: LoadBalancer
-          loadBalancerIP: ${SABNZBD_IP}
+          loadBalancerIP: "${SABNZBD_IP}"
           port: 12321
         ingress:
           enabled: true
           hosts:
-            - host: sabnzbd-code.${BASE_DOMAIN}
+            - host: "sabnzbd-code.${BASE_DOMAIN}"
               paths:
                 - path: /
                   pathType: Prefix
@@ -203,7 +203,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
 
-    resources: {} # rely on common-2025 defaults unless overrides needed
+    resources: {}
 
     autoscaling:
       vpa:
