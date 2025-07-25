@@ -75,6 +75,8 @@ spec:
       type: LoadBalancer
       loadBalancerIP: "${SABNZBD_IP}"
       port: 10097
+      annotations: {}
+      labels: {}
 
     persistence:
       config:
@@ -177,6 +179,11 @@ spec:
     addons:
       netshoot:
         enabled: false
+        service:
+          enabled: false
+          annotations: {}
+          labels: {}
+
       codeserver:
         enabled: true
         service:
@@ -184,6 +191,8 @@ spec:
           type: LoadBalancer
           loadBalancerIP: "${SABNZBD_IP}"
           port: 12321
+          annotations: {}
+          labels: {}
         ingress:
           enabled: true
           hosts:
@@ -221,6 +230,10 @@ spec:
 
     workload:
       main:
+        service:
+          enabled: false
+          annotations: {}
+          labels: {}
         podSpec:
           containers:
             main:
