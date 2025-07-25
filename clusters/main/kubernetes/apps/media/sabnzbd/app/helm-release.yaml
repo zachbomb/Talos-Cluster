@@ -38,74 +38,41 @@ spec:
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
 
-    addons:
-      codeserver:
-        enabled: false
-      netshoot:
-        enabled: false
-
-    exportarrImage:
-      pullPolicy: IfNotPresent
-      repository: ghcr.io/onedr0p/exportarr
-      tag: v2.2.0@sha256:320b0ea7399f4b9af4741dcdddd7d40c05c36b0359679305d8a54df4e97065df
-
     ingress:
-      main:
+      enabled: true
+      hosts:
+        - host: "sabnzbd.${BASE_DOMAIN}"
+          paths:
+            - path: /
+              pathType: Prefix
+      integrations:
+        nginx:
+          enabled: true
+          ingressClassName: internal
+        traefik:
+          enabled: false
+          middlewares:
+            - name: local
+              namespace: traefik
+        certManager:
+          enabled: true
+          certificateIssuer: wethecommon-prod-cert
+      homepage:
         enabled: true
-        hosts:
-          - host: "sabnzbd.${BASE_DOMAIN}"
-            paths:
-              - path: /
-                pathType: Prefix
-        integrations:
-          nginx:
-            enabled: true
-          traefik:
-            enabled: false
-            middlewares:
-              - name: local
-                namespace: traefik
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-          homepage:
-            enabled: true
-            name: SabNZBD
-            group: Media Downloaders
-            description: Usenet Downloader
-            icon: ""
-            widget:
-              enabled: true
-              custom:
-                url: http://192.168.10.230:10097
-                key: ${SABNZBD_API}
+        name: SabNZBD
+        group: Media Downloaders
+        description: Usenet Downloader
+        icon: ""
+        widget:
+          enabled: true
+          custom:
+            url: http://192.168.10.230:10097
+            key: ${SABNZBD_API}
 
     service:
-      main:
-        enabled: true
-        type: LoadBalancer
-        loadBalancerIP: ${SABNZBD_IP}
-        ports:
-          main:
-            enabled: true
-            port: 10097
-            protocol: http
-
-    podOptions:
-      dnsConfig:
-        options:
-          - name: ndots
-            value: "3"
-
-    metrics:
-      main:
-        enabled: false
-        apiKey: ""
-        type: servicemonitor
-        endpoints:
-          - path: /metrics
-            port: metrics
-        targetSelector: metrics
+      type: LoadBalancer
+      loadBalancerIP: ${SABNZBD_IP}
+      port: 10097
 
     persistence:
       config:
@@ -121,7 +88,6 @@ spec:
             src:
               enabled: true
               cacheCapacity: 100Gi
-
       media:
         enabled: true
         type: nfs
@@ -136,7 +102,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       movies:
         enabled: true
         type: nfs
@@ -151,7 +116,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       tv:
         enabled: true
         type: nfs
@@ -166,7 +130,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       music:
         enabled: true
         type: nfs
@@ -181,7 +144,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       downloads:
         enabled: true
         type: nfs
@@ -196,7 +158,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       backup:
         enabled: true
         mountPath: /backups
@@ -211,13 +172,36 @@ spec:
               trigger:
                 schedule: "4 2 * * *"
 
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 4Gi
-        cpu: 500m
+    addons:
+      netshoot:
+        enabled: false
+      codeserver:
+        enabled: true
+        service:
+          type: LoadBalancer
+          loadBalancerIP: ${SABNZBD_IP}
+          port: 12321
+        ingress:
+          enabled: true
+          hosts:
+            - host: sabnzbd-code.${BASE_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+          integrations:
+            nginx:
+              enabled: true
+              ingressClassName: internal
+            traefik:
+              enabled: false
+              middlewares:
+                - name: local
+                  namespace: traefik
+            certManager:
+              enabled: true
+              certificateIssuer: wethecommon-prod-cert
+
+    resources: {}      # rely on common-2025 defaults unless overrides needed
 
     autoscaling:
       vpa:
@@ -226,8 +210,8 @@ spec:
     securityContext:
       container:
         UMASK: "0022"
-        runAsGroup: 1000
         runAsUser: 1000
+        runAsGroup: 1000
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
