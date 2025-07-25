@@ -179,6 +179,7 @@ spec:
       codeserver:
         enabled: true
         service:
+          enabled: true
           type: LoadBalancer
           loadBalancerIP: ${SABNZBD_IP}
           port: 12321
