@@ -177,24 +177,17 @@ spec:
                 schedule: "4 2 * * *"
 
     addons:
-      netshoot:
-        enabled: false
-        service:
-          enabled: false
-          annotations: {}
-          labels: {}
-
       codeserver:
         enabled: true
         service:
           enabled: true
           type: LoadBalancer
-          loadBalancerIP: "${SABNZBD_IP}"
+          loadBalancerIP: ${SABNZBD_IP}
           port: 12321
         ingress:
           enabled: true
           hosts:
-            - host: "sabnzbd-code.${BASE_DOMAIN}"
+            - host: sabnzbd-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix
@@ -202,11 +195,6 @@ spec:
             nginx:
               enabled: true
               ingressClassName: internal
-            traefik:
-              enabled: false
-              middlewares:
-                - name: local
-                  namespace: traefik
             certManager:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
