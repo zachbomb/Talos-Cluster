@@ -191,8 +191,6 @@ spec:
           type: LoadBalancer
           loadBalancerIP: "${SABNZBD_IP}"
           port: 12321
-          annotations: {}
-          labels: {}
         ingress:
           enabled: true
           hosts:
