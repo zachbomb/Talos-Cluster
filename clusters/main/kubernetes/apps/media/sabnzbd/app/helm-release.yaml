@@ -71,6 +71,7 @@ spec:
               key: "${SABNZBD_API}"
 
     service:
+      enabled: true
       type: LoadBalancer
       loadBalancerIP: "${SABNZBD_IP}"
       port: 10097
