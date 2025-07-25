@@ -42,7 +42,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: "sabnzbd.${BASE_DOMAIN}"
+          - host: sabnzbd.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -73,7 +73,7 @@ spec:
     service:
       enabled: true
       type: LoadBalancer
-      loadBalancerIP: "${SABNZBD_IP}"
+      loadBalancerIP: {SABNZBD_IP}
       port: 10097
       annotations: {}
       labels: {}
