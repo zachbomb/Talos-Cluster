@@ -35,8 +35,10 @@ spec:
 
     service:
       tcp:
+        enabled: true
         loadBalancerIP: ${TRAEFIK_IP}
       dashboard:
+        enabled: true
         loadBalancerIP: ${TRAEFIK_DASH_IP}
 
     ingress:
