@@ -8,3 +8,4 @@ resources:
   - cloudflared/ks.yaml
   - kyverno-policies/ks.yaml
   - traefik/ks.yaml
+  - crowdsec/ks.yaml
