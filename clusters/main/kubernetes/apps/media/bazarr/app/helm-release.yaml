@@ -51,8 +51,8 @@ spec:
           homepage:
             enabled: true
             name: Bazarr
-            description: -*rrs
-            group: Subtitle Downloaders/Managers
+            description: Subtitle Downloader/Manager
+            group: -*rrs
             icon: ""
             widget:
               enabled: true
