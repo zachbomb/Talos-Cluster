@@ -1,4 +1,3 @@
-# traefik-release.yaml
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -31,10 +30,33 @@ spec:
   values:
     global:
       stopAll: false
+
     defaultCertificate: wethecommon-wildcard-cert
+
     service:
       tcp:
         loadBalancerIP: ${TRAEFIK_IP}
+      dashboard:
+        loadBalancerIP: ${TRAEFIK_DASH_IP}
+
+    ingress:
+      dashboard:
+        enabled: true
+        hosts:
+          - host: traefik-dash.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+            forceTLS: true
+            middlewares:
+              - name: secure-chain
+                namespace: traefik
+
     middlewares:
       ipWhiteList:
         - name: local
@@ -47,6 +69,7 @@ spec:
             - 192.168.3.0/24
             - 192.168.9.0/24
             - 192.168.8.0/24
+
       chain:
         - name: secure-chain
           chain:
@@ -55,9 +78,11 @@ spec:
                 namespace: traefik
               - name: local
                 namespace: traefik
+
     autoscaling:
       vpa:
         enabled: true
+
     resources:
       requests:
         memory: 1024Mi
