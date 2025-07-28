@@ -58,17 +58,17 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-        homepage:
-          enabled: true
-          name: SabNZBD
-          group: Media Downloaders
-          description: Usenet Downloader
-          icon: ""
-          widget:
+          homepage:
             enabled: true
-            custom:
-              url: "http://192.168.10.230:10097"
-              key: "${SABNZBD_API}"
+            name: SabNZBD
+            group: Media Downloaders
+            description: Usenet Downloader
+            icon: ""
+            widget:
+              enabled: true
+              custom:
+                url: "http://192.168.10.230:10097"
+                key: "${SABNZBD_API}"
 
     service:
       main:
