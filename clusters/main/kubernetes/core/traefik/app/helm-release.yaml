@@ -55,6 +55,7 @@ spec:
         loadBalancerIP: ${TRAEFIK_DASH_IP}
         ports:
           dashboard:
+            enabled: true
             port: 9090
             targetPort: 9090
             protocol: http
