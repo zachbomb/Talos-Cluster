@@ -67,7 +67,7 @@ spec:
               enabled: false
               
     ingress:
-      dashboard:
+      main:
         enabled: true
         hosts:
           - host: traefik-dash.${BASE_DOMAIN}
