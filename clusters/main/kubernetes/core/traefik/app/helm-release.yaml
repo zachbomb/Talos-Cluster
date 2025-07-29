@@ -37,7 +37,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${TRAEFIK_IP}
+        loadBalancerIP: ${TRAEFIK_DASH_IP}
         ports:
           main:
             port: 9000
@@ -55,7 +55,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: traefik-dash.${BASE_DOMAIN}
+          - host: traefik-dashboard.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
