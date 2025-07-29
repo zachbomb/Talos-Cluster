@@ -31,6 +31,9 @@ spec:
     global:
       stopAll: false
 
+    dashboard:
+      enabled: true
+
     defaultCertificate: wethecommon-wildcard-cert
 
     service:
@@ -68,6 +71,9 @@ spec:
             middlewares:
               - name: secure-chain
                 namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
 
     middlewares:
       ipWhiteList:
