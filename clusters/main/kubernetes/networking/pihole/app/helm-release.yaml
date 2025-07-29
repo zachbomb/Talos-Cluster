@@ -35,7 +35,7 @@ spec:
         hosts:
           - host: pihole.${BASE_DOMAIN}
             paths:
-              - path: /admin
+              - path: /
                 pathType: Prefix
 #        tls:
 #          hosts:
