@@ -41,6 +41,15 @@ spec:
       repository: ghcr.io/onedr0p/exportarr
       tag: v2.2.0@sha256:320b0ea7399f4b9af4741dcdddd7d40c05c36b0359679305d8a54df4e97065df
 
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${SONARR_IP}
+        ports:
+          main:
+            port: 8989
+
     ingress:
       main:
         enabled: true
@@ -71,15 +80,6 @@ spec:
               enabled: true
               custom:
                 key: ${SONARR_API}
-
-    service:
-      main:
-        enabled: true
-        type: LoadBalancer
-        loadBalancerIP: ${SONARR_IP}
-        ports:
-          main:
-            port: 8989
 
     metrics:
       main:
