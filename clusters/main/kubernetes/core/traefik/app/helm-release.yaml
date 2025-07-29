@@ -106,7 +106,7 @@ spec:
       crowdsec-certs:
         enabled: true
         type: secret
-        objectname: crowdsec-bouncer-tls
+        objectName: crowdsec-bouncer-tls
         mountPath: /etc/traefik/crowdsec
         readOnly: true
 
