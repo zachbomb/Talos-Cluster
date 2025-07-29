@@ -58,7 +58,13 @@ spec:
             port: 9090
             targetPort: 9090
             protocol: http
-
+            # -- Forwarded Headers should never be enabled on Main entrypoint
+            forwardedHeaders:
+              enabled: true
+            # -- Proxy Protocol should never be enabled on Main entrypoint
+            proxyProtocol:
+              enabled: false
+              
     ingress:
       dashboard:
         enabled: true
