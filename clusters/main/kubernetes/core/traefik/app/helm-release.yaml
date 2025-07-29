@@ -37,22 +37,20 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${TRAEFIK_IP
+        loadBalancerIP: ${TRAEFIK_IP}
         ports:
           main:
             port: 9000
             targetPort: 9000
             protocol: http
-            # -- Forwarded Headers should never be enabled on Main entrypoint
             forwardedHeaders:
               enabled: true
-            # -- Proxy Protocol should never be enabled on Main entrypoint
             proxyProtocol:
               enabled: false
       tcp:
         enabled: true
         loadBalancerIP: ${TRAEFIK_IP}
-              
+
     ingress:
       main:
         enabled: true
@@ -84,6 +82,17 @@ spec:
             - 192.168.9.0/24
             - 192.168.8.0/24
 
+      bouncer:
+        - name: bouncer
+          crowdsecMode: live
+          crowdsecLapiHost: crowdsec.crowdsec.svc.cluster.local:8080
+          crowdsecLapiScheme: https
+          crowdsecLapiTLSInsecureVerify: false
+          crowdsecLapiTLSCertFile: /etc/traefik/crowdsec/cert.pem
+          crowdsecLapiTLSKeyFile: /etc/traefik/crowdsec/key.pem
+          crowdsecLapiTLSCaCertFile: /etc/traefik/crowdsec/ca.pem
+          crowdsecLapiKey: "${CROWDSEC_LAPI_KEY}"
+
       chain:
         - name: secure-chain
           chain:
@@ -93,14 +102,14 @@ spec:
               - name: local
                 namespace: traefik
 
-    autoscaling:
-      vpa:
+    persistence:
+      crowdsec-certs:
         enabled: true
+        type: secret
+        name: crowdsec-bouncer-tls
+        mountPath: /etc/traefik/crowdsec
+        readOnly: true
 
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 4Gi
-        cpu: 500m
+    env:
+      - name: TZ
+        value: America/Los_Angeles
