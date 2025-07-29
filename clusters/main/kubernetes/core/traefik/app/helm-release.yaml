@@ -36,14 +36,25 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: ${TRAEFIK_DASH_IP}
+        ports:
+          main:
+            port: 9000
+            targetPort: 9000
+            protocol: http
       tcp:
         enabled: true
         loadBalancerIP: ${TRAEFIK_IP}
-        
+      dashboard:
+        enabled:
+        loadBalancerIP: ${TRAEFIK_DASH_IP}
+        ports:
+          dashboard:
+            port: 9090
+            targetPort: 9090
+            protocol: http
 
     ingress:
-      main:
+      dashboard:
         enabled: true
         hosts:
           - host: traefik-dash.${BASE_DOMAIN}
