@@ -36,6 +36,8 @@ spec:
     service:
       main:
         enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${TRAEFIK_IP
         ports:
           main:
             port: 9000
@@ -50,21 +52,6 @@ spec:
       tcp:
         enabled: true
         loadBalancerIP: ${TRAEFIK_IP}
-      dashboard:
-        enabled: true
-        loadBalancerIP: ${TRAEFIK_DASH_IP}
-        ports:
-          dashboard:
-            enabled: true
-            port: 9090
-            targetPort: 9090
-            protocol: http
-            # -- Forwarded Headers should never be enabled on Main entrypoint
-            forwardedHeaders:
-              enabled: true
-            # -- Proxy Protocol should never be enabled on Main entrypoint
-            proxyProtocol:
-              enabled: false
               
     ingress:
       main:
