@@ -46,7 +46,7 @@ spec:
             forwardedHeaders:
               enabled: true
             proxyProtocol:
-              enabled: false
+              enabled: true
       tcp:
         enabled: true
         loadBalancerIP: ${TRAEFIK_IP}
