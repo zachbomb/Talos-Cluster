@@ -183,11 +183,13 @@ spec:
               enabled: true
             src:
               enabled: true
-
-    resources:
-      limits:
-        nvidia.com/gpu: 1
-
     autoscaling:
       vpa:
         enabled: true
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
