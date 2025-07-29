@@ -74,6 +74,9 @@ spec:
               middlewares:
                 - name: secure-chain
                   namespace: traefik
+            certManager:
+              enabled: true
+              certificateIssuer: wethecommon-prod-cert
       env:
         - name: DISABLE_ONLINE_API
           value: "false"
