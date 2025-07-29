@@ -51,7 +51,7 @@ spec:
         enabled: true
         loadBalancerIP: ${TRAEFIK_IP}
       dashboard:
-        enabled:
+        enabled: true
         loadBalancerIP: ${TRAEFIK_DASH_IP}
         ports:
           dashboard:
