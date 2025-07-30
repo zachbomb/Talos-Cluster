@@ -100,6 +100,11 @@ spec:
             port: 10352
             targetPort: 3000
             protocol: http
+          codeserver:
+            enabled: true
+            port: 12321
+            targetPort: 12321
+            protocol: http
 
     serviceAccount:
       main:
@@ -125,13 +130,11 @@ spec:
       codeserver:
         enabled: true
         service:
-          type: LoadBalancer
-          loadBalancerIP: "${HOMEPAGE_IP}"
-          ports:
-            codeserver:
-              port: 12321
+          enabled: false
         ingress:
           enabled: true
+          targetSelector:
+            main: codeserver
           integrations:
             nginx:
               enabled: true

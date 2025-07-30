@@ -79,6 +79,9 @@ spec:
           main:
             port: 8000
             targetPort: 8000
+          codeserver:
+            port: 12321
+            targetPort: 12321
 
     ingress:
       main:
@@ -261,14 +264,11 @@ spec:
       codeserver:
         enabled: true
         service:
-          enabled: true
-          type: LoadBalancer
-          loadBalancerIP: "${TUNARR_IP}"
-          ports:
-            codeserver:
-              port: 12321
+          enabled: false  # Don't create a separate service
         ingress:
           enabled: true
+          targetSelector:
+            main: codeserver
           ingressClassName: internal
           integrations:
             traefik:

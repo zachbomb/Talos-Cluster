@@ -79,8 +79,9 @@ spec:
           main:
             port: 10097
             protocol: http
-        annotations: {}
-        labels: {}
+          codeserver:
+            port: 12321
+            targetPort: 12321
 
     persistence:
       config:
@@ -190,30 +191,26 @@ spec:
       codeserver:
         enabled: true
         service:
-          main:
-            enabled: true
-            type: LoadBalancer
-            loadBalancerIP: ${SABNZBD_IP}
-            ports:
-              codeserver:
-                port: 12321
-                protocol: http
+          enabled: false  # Don't create a separate service
         ingress:
-          main:
-            enabled: true
-            hosts:
-              - host: sabnzbd-code.${BASE_DOMAIN}
-                paths:
-                  - path: /
-                    pathType: Prefix
-            integrations:
-              nginx:
-                enabled: true
-                ingressClassName: internal
-              certManager:
-                enabled: true
-                certificateIssuer: wethecommon-prod-cert
-
+          enabled: true
+          targetSelector:
+            main: codeserver
+          ingressClassName: internal
+          integrations:
+            traefik:
+              enabled: true
+              middlewares:
+                - name: local
+                  namespace: traefik
+            certManager:
+              enabled: true
+              certificateIssuer: wethecommon-prod-cert
+          hosts:
+            - host: sabnzbd-code.${BASE_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
     resources:
       requests:
         memory: 1024Mi

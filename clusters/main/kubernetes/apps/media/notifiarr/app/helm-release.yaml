@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: notifiarr
-      version: 7.2.0
+      version: 7.1.0
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -62,6 +62,9 @@ spec:
             port: 5454
             protocol: http
             targetPort: 5454
+          codeserver:
+            port: 12321
+            targetPort: 12321
     workload:
       main:
         podSpec:
@@ -87,11 +90,7 @@ spec:
       codeserver:
         enabled: true
         service:
-          type: LoadBalancer
-          loadBalancerIP: ${NOTIFIARR_IP}
-          ports:
-            codeserver:
-              port: 12321
+          enabled: false
         ingress:
           enabled: true
           integrations:
