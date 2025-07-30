@@ -74,7 +74,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${TUNARR_IP}"
+        loadBalancerIP: ${TUNARR_IP}
         ports:
           main:
             enabled: true
