@@ -70,7 +70,7 @@ TDARR_IP: ENC[AES256_GCM,data:jG2C77Vjk/eqIdFrkwE=,iv:DWB4UKxnwIbX1dJTYlCPoi4KA4
 CALIBRE_IP: ENC[AES256_GCM,data:21lVmKQPC2S80+jHtxw=,iv:thjDyrAb6jxT4ZpOL0tlu01UTq9t5+S6niy/mAnnuVE=,tag:bJ+ZtpOFUhuwq8YUqbxr9A==,type:str]
 SONARR_IP: ENC[AES256_GCM,data:OmgYsWxxZDEJiPHgl3A=,iv:IvR9j0YN4VniIhHJOP1yuLN4viXQIgthYSyTt5V3WBw=,tag:0/KycSL3uz3EQA0Owm1P+Q==,type:str]
 SONARR_API: ENC[AES256_GCM,data:w/y/ZoHF29Op4XzVwhl13OJ1OHjz6ViN7FLKZgfkjD4=,iv:728HlQ+LqLqFUaxnpNjCPUyimlsZM+0WTc0K1Mo3PEM=,tag:n9aeL2WrUMMqD6q1h0NqPw==,type:str]
-WIZARR_IP: ENC[AES256_GCM,data:5ht9wEX2IpM8uC//auQ=,iv:cUA4xGKDA7yYvimnEst5H1I/Y4fAzlraXK0XvB3ctpg=,tag:8WhtMs/BaVwHNhvqqjJoIw==,type:str]
+DIZQUETV_IP: ENC[AES256_GCM,data:5ht9wEX2IpM8uC//auQ=,iv:cUA4xGKDA7yYvimnEst5H1I/Y4fAzlraXK0XvB3ctpg=,tag:8WhtMs/BaVwHNhvqqjJoIw==,type:str]
 RECYCLARR_IP: ENC[AES256_GCM,data:pW+3OSdfNI8Na8tpOn4=,iv:LIIKJ2mb2UzMbui0PzOZZtQChAhhtj0eNk5eX4zvEsU=,tag:99QyroZtMjUpO06FM0caIw==,type:str]
 KAPOWARR_IP: ENC[AES256_GCM,data:YiA0ajENa4OcChL3pns=,iv:fROSdPtJXpb0pdpandamJeYzJbfj+8qrErXS42xYlr8=,tag:rFQMrsUMzJ4DbsHRJ/NGBw==,type:str]
 POSTERR_IP: ENC[AES256_GCM,data:pF2UxECmw6YpvV1ORxw=,iv:h73qPhdXxcn0qCy3UUvmeWWoe//cXBhGDmS9gLUiuzA=,tag:youebk4thOx9b7gRGW8o1w==,type:str]
