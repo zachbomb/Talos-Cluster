@@ -71,7 +71,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${CALIBRE_WEB_IP}
+        loadBalancerIP: "${CALIBRE_WEB_IP}"
         ports:
           main:
             port: 8083
