@@ -77,9 +77,11 @@ spec:
         loadBalancerIP: "${TUNARR_IP}"
         ports:
           main:
+            enabled: true
             port: 8000
             targetPort: 8000
           codeserver:
+            enabled: true
             port: 12321
             targetPort: 12321
 
