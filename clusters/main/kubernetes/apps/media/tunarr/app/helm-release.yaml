@@ -74,7 +74,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${TUNARR_IP}
+        loadBalancerIP: "${TUNARR_IP}"
         ports:
           main:
             port: 8000
@@ -263,7 +263,7 @@ spec:
         service:
           enabled: true
           type: LoadBalancer
-          loadBalancerIP: ${TUNARR_IP}
+          loadBalancerIP: "${TUNARR_IP}"
           ports:
             codeserver:
               port: 12321
