@@ -93,7 +93,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${HOMEPAGE_IP}
+        loadBalancerIP: "${HOMEPAGE_IP}"
         ports:
           main:
             enabled: true
@@ -126,7 +126,7 @@ spec:
         enabled: true
         service:
           type: LoadBalancer
-          loadBalancerIP: ${HOMEPAGE_IP}
+          loadBalancerIP: "${HOMEPAGE_IP}"
           ports:
             codeserver:
               port: 12321
