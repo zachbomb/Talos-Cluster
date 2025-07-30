@@ -7,6 +7,9 @@ metadata:
   namespace: crowdsec
 spec:
   interval: 15m
+  timeout: 20m
+  maxHistory: 3
+
   chart:
     spec:
       chart: crowdsec
@@ -16,20 +19,22 @@ spec:
         name: crowdsec
         namespace: flux-system
       interval: 15m
-  timeout: 20m
-  maxHistory: 3
+
   install:
     createNamespace: true
     crds: CreateReplace
     remediation:
       retries: 3
+
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
     remediation:
       retries: 3
+
   uninstall:
     keepHistory: false
+
   values:
     TZ: America/Los_Angeles
     container_runtime: containerd
@@ -88,9 +93,24 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
+      service:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: "${CROWDSEC_IP}"
+        ports:
+          http:
+            port: 8080
+            targetPort: 8080
+            protocol: TCP
+          https:
+            port: 8443
+            targetPort: 8443
+            protocol: TCP
+
     autoscaling:
       vpa:
         enabled: true
+
     resources:
       requests:
         memory: 1024Mi
