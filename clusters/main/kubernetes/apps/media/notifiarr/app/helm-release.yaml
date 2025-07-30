@@ -64,6 +64,7 @@ spec:
             protocol: http
             targetPort: 5454
           codeserver:
+            enabled: true
             port: 12321
             targetPort: 12321
     workload:

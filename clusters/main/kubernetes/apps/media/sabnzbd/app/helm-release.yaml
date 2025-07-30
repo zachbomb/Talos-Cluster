@@ -81,6 +81,7 @@ spec:
             port: 10097
             protocol: http
           codeserver:
+            enabled: true
             port: 12321
             targetPort: 12321
 
