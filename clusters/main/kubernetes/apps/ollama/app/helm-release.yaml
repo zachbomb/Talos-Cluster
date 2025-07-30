@@ -72,15 +72,13 @@ spec:
         type: LoadBalancer
         loadBalancerIP: ${OLLAMA_IP}
         ports:
-          ui:
+          main:
             enabled: true
-            name: ui
             port: 10686
             targetPort: 10686
             protocol: tcp
           api:
             enabled: true
-            name: api
             port: 11434
             targetPort: 11434
             protocol: tcp
