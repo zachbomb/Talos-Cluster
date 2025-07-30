@@ -70,7 +70,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${OLLAMA_IP}"
+        loadBalancerIP: ${OLLAMA_IP}
         ports:
           main:
             port: 10686
@@ -79,7 +79,7 @@ spec:
       api:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${OLLAMA_IP}"
+        loadBalancerIP: ${OLLAMA_IP}
         ports:
           api:
             port: 11434
