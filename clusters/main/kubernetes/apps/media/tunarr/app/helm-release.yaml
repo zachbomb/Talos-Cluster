@@ -261,6 +261,7 @@ spec:
       codeserver:
         enabled: true
         service:
+          enabled: true
           type: LoadBalancer
           loadBalancerIP: ${TUNARR_IP}
           ports:
