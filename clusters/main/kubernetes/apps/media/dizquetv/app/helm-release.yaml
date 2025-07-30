@@ -33,6 +33,15 @@ spec:
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
     TZ: America/Los_Angeles
+    service:
+      main:
+        enabled: true
+        LoadBalancerIP: ${DIZQUETV_IP}
+        type: LoadBalancer
+        ports:
+          main:
+            enabled: true
+            port: 8080
     ingress:
       main:
         enabled: true
