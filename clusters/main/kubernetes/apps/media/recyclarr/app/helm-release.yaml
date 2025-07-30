@@ -44,9 +44,11 @@ spec:
         type: LoadBalancer
         ports:
           main:
-            port: 8181
-            protocol: http
-            targetPort: 8181
+            enabled: true
+            port: 8080
+          codeserver:
+            enabled: true
+            port: 8181         
     addons:
       codeserver:
         enabled: true
@@ -64,8 +66,7 @@ spec:
                 enabled: true
                 certificateIssuer: wethecommon-prod-cert
         service:
-          main:
-            enabled: false
+          enabled: false
     workload:
       main:
         podSpec:
