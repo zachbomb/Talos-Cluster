@@ -29,7 +29,7 @@ spec:
   chart:
     spec:
       chart: longhorn
-      version: 1.9.1
+      version: 1.9.0
       sourceRef:
         kind: HelmRepository
         name: home-ops-mirror
@@ -67,5 +67,5 @@ spec:
             memory: 1024Mi
             cpu: 50m
           limits:
-            memory: 2Gi
+            memory: 4Gi
             cpu: 500m
