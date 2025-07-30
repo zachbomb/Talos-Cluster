@@ -59,6 +59,7 @@ spec:
         type: LoadBalancer
         ports:
           main:
+            enabled: true
             port: 5454
             protocol: http
             targetPort: 5454
