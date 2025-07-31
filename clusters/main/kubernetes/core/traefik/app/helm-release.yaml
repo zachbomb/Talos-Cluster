@@ -28,9 +28,6 @@ spec:
         name: truecharts
         namespace: flux-system
   values:
-    global:
-      stopAll: false
-
     dashboard:
       enabled: true
 
@@ -42,22 +39,32 @@ spec:
         type: LoadBalancer
         loadBalancerIP: ${TRAEFIK_IP}
         ports:
+          main:
+            enabled: true
+            port: 9000
+            targetPort: 9000
+            protocol: tcp
           web:
             enabled: true
             port: 80
-            protocol: TCP
+            protocol: tcp
+            forwardedHeaders:
+              enabled: true
           websecure:
             enabled: true
             port: 443
-            protocol: TCP
+            protocol: tcp
+            forwardedHeaders:
+              enabled: true
           tcp:
             enabled: true
             port: 9001            # Example TCP port, adjust as needed
-            protocol: TCP
-          main:
-            port: 9000
-            targetPort: 9000
-            protocol: TCP
+            protocol: tcp
+            forwardedHeaders:
+              enabled: true
+      tcp:
+        enabled: false
+
 
     additionalArguments:
       - "--entrypoints.web.address=:80"
