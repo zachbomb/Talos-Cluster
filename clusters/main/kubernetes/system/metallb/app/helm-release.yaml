@@ -5,37 +5,22 @@ metadata:
   namespace: metallb
 spec:
   interval: 5m
-  timeout: 20m
-  maxHistory: 3
-
-  driftDetection:
-    mode: warn
-
   chart:
     spec:
       chart: metallb
-      version: 0.14.9
+      version: 0.15.2
       sourceRef:
         kind: HelmRepository
-        name: home-ops-mirror
+        name: metallb
         namespace: flux-system
       interval: 5m
-
   install:
     createNamespace: true
-    crds: CreateReplace
     remediation:
       retries: 3
-
   upgrade:
-    crds: CreateReplace
     remediation:
       retries: 3
-    cleanupOnFail: true
-
-  uninstall:
-    keepHistory: false
-
   values:
     speaker:
       ignoreExcludeLB: true
