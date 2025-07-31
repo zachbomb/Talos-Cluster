@@ -42,19 +42,27 @@ spec:
         type: LoadBalancer
         loadBalancerIP: ${TRAEFIK_IP}
         ports:
-          main:
-            port: 9000
-            targetPort: 9000
-            protocol: http
           web:
             enabled: true
             port: 80
-            protocol: http
-            redirectTo: websecure
+            protocol: TCP
           websecure:
             enabled: true
             port: 443
-            protocol: https
+            protocol: TCP
+          tcp:
+            enabled: true
+            port: 9001            # Example TCP port, adjust as needed
+            protocol: TCP
+          main:
+            port: 9000
+            targetPort: 9000
+            protocol: TCP
+
+    additionalArguments:
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.tcp.address=:9001"
 
     ingressRoute:
       dashboard:
@@ -117,6 +125,7 @@ spec:
     env:
       - name: TZ
         value: America/Los_Angeles
+
     workload:
       main:
         autoscaling:
