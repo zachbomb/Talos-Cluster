@@ -40,7 +40,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${TRAEFIK_DASH_IP}
+        loadBalancerIP: ${TRAEFIK_IP}
         ports:
           main:
             port: 9000
@@ -50,9 +50,34 @@ spec:
               enabled: true
             proxyProtocol:
               enabled: false
+          web:
+            enabled: true
+            port: 80
+            protocol: http
+            redirectTo: websecure
+            forwardedHeaders:
+              enabled: false
+              trustedIPs: []
+              insecureMode: false
+            proxyProtocol:
+              enabled: false
+              trustedIPs: []
+              insecureMode: false
+
+          websecure:
+            enabled: true
+            port: 443
+            protocol: https
+            forwardedHeaders:
+              enabled: false
+              trustedIPs: []
+              insecureMode: false
+            proxyProtocol:
+              enabled: false
+              trustedIPs: []
+              insecureMode: false
       tcp:
-        enabled: true
-        loadBalancerIP: ${TRAEFIK_IP}
+        enabled: false
 
     ingress:
       main:
