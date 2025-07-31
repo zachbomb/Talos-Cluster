@@ -43,3 +43,15 @@ spec:
         avoidBuggyIPs: true
         addresses:
           - ${METALLB_RANGE}
+    workload:
+      main:
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 2Gi
+            cpu: 500m
