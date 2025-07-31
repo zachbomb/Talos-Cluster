@@ -121,7 +121,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
           hosts:
-            - host: sabnzbd-code.${BASE_DOMAIN}
+            - host: notifiarr-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix
