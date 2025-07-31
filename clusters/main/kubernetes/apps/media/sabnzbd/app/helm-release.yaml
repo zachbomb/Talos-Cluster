@@ -74,7 +74,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${SABNZBD_IP}
+        loadBalancerIP: "${SABNZBD_IP}"
         ports:
           main:
             enabled: true
@@ -198,13 +198,12 @@ spec:
           enabled: true
           targetSelector:
             main: codeserver
-          ingressClassName: internal
           integrations:
             nginx:
               enabled: true
               ingressClassName: internal
             traefik:
-              enabled: true
+              enabled: false
               middlewares:
                 - name: local
                   namespace: traefik
