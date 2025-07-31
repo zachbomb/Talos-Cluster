@@ -114,14 +114,6 @@ spec:
               - name: local
                 namespace: traefik
 
-    persistence:
-      crowdsec-certs:
-        enabled: true
-        type: secret
-        objectName: crowdsec-bouncer-tls
-        mountPath: /etc/traefik/crowdsec
-        readOnly: true
-
     env:
       - name: TZ
         value: America/Los_Angeles
