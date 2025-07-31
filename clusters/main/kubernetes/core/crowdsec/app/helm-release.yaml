@@ -64,20 +64,21 @@ spec:
           enabled: true
           host: crowdsec.${BASE_DOMAIN}
           integrations:
-            nginx:
+            certManager:
               enabled: true
+              certificateIssuer: wethecommon-prod-cert
+            nginx:
+              enabled: false
               ingressClassName: internal
             traefik:
               enabled: true
               entrypoints:
                 - websecure
-              forceTLS: true
+              forceTLS: false
               middlewares:
                 - name: secure-chain
                   namespace: traefik
-            certManager:
-              enabled: true
-              certificateIssuer: wethecommon-prod-cert
+
       env:
         - name: DISABLE_ONLINE_API
           value: "false"
