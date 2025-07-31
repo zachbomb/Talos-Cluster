@@ -1,18 +1,21 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "github>truecharts/public//.github/renovate/main.json5"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    'github>truecharts/public//.github/renovate/main.json5',
   ],
-  "regexManagers": [
+  customManagers: [
     {
-      "description": "Track kubectl image used in SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE env var",
-      "fileMatch": ["^clusters/.*\\.yaml$"],
-      "matchStrings": [
-        "SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE:\\s*(?<depName>registry\\.k8s\\.io/kubectl):(?<currentValue>[\\w.-]+)"
+      customType: 'regex',
+      description: 'Track kubectl image used in SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE env var',
+      managerFilePatterns: [
+        '/^clusters/.*\\.yaml$/',
       ],
-      "datasourceTemplate": "docker",
-      "versioningTemplate": "docker"
-    }
-  ]
+      matchStrings: [
+        'SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE:\\s*(?<depName>registry\\.k8s\\.io/kubectl):(?<currentValue>[\\w.-]+)',
+      ],
+      datasourceTemplate: 'docker',
+      versioningTemplate: 'docker',
+    },
+  ],
 }
