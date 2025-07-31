@@ -3,5 +3,16 @@
   "extends": [
     "config:recommended",
     "github>truecharts/public//.github/renovate/main.json5"
+  ],
+  "regexManagers": [
+    {
+      "description": "Track kubectl image used in SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE env var",
+      "fileMatch": ["^clusters/.*\\.yaml$"],
+      "matchStrings": [
+        "SYSTEM_UPGRADE_JOB_KUBECTL_IMAGE:\\s*(?<depName>registry\\.k8s\\.io/kubectl):(?<currentValue>[\\w.-]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
   ]
 }
