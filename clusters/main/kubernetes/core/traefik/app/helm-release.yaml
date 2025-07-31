@@ -78,7 +78,11 @@ spec:
               insecureMode: false
       tcp:
         enabled: false
-
+    ingressRoute:
+      dashboard:
+        enabled: true
+        annotations: {}
+        labels: {}
     ingress:
       main:
         enabled: true
