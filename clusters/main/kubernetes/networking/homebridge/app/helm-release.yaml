@@ -19,17 +19,10 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
-        hosts:
-          - host: homebridge.${BASE_DOMAIN}
-            paths:
-              - path: /
-                pathType: Prefix
-#        tls:
-#          hosts:
-#            - homebridge.${BASE_DOMAIN}
-#          secretName: homebridge-tls
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
@@ -40,6 +33,15 @@ spec:
             certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: false
+        hosts:
+          - host: homebridge.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+#        tls:
+#          hosts:
+#            - homebridge.${BASE_DOMAIN}
+#          secretName: homebridge-tls
     release_name: homebridge
     service:
       main:
