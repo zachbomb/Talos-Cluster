@@ -46,16 +46,27 @@ spec:
       main:
         enabled: true
         ingressClassName: internal
+        hosts:
+          - host: notifiarr.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-        hosts:
-          - host: notifiarr.${BASE_DOMAIN}
     service:
       main:
         enabled: true
-        loadBalancerIP: ${NOTIFIARR_IP}
+        loadBalancerIP: "${NOTIFIARR_IP}"
         type: LoadBalancer
         ports:
           main:

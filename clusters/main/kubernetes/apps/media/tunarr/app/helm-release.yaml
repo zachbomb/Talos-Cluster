@@ -95,8 +95,11 @@ spec:
               - path: /
                 pathType: Prefix
         integrations:
-          traefik:
+          nginx:
             enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
             middlewares:
               - name: local
                 namespace: traefik
