@@ -43,6 +43,11 @@ spec:
           nginx:
             enabled: true
             ingressClassName: internal
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
@@ -139,6 +144,11 @@ spec:
             nginx:
               enabled: true
               ingressClassName: internal
+            traefik:
+              enabled: false
+              middlewares:
+                - name: local
+                  namespace: traefik
             certManager:
               enabled: true
               certificateIssuer: wethecommon-prod-cert

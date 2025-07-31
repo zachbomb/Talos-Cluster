@@ -30,12 +30,6 @@ spec:
 
     TZ: America/Los_Angeles
 
-    addons:
-      codeserver:
-        enabled: false
-      netshoot:
-        enabled: false
-
     exportarrImage:
       pullPolicy: IfNotPresent
       repository: ghcr.io/onedr0p/exportarr
