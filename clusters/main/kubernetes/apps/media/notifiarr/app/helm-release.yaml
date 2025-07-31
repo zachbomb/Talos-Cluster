@@ -93,6 +93,8 @@ spec:
         enabled: true
         service:
           enabled: false
+          targetSelector:
+            main: codeserver
         ingress:
           enabled: true
           integrations:
