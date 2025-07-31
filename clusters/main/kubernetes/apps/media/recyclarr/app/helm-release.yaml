@@ -52,21 +52,31 @@ spec:
     addons:
       codeserver:
         enabled: true
+        service:
+          enabled: false
         ingress:
           main:
             enabled: true
-            ingressClassName: internal
-            hosts:
-              - host: recyclarr.${BASE_DOMAIN}
+            targetSelector:
+              main: codeserver
             integrations:
               nginx:
                 enabled: true
                 ingressClassName: internal
+            traefik:
+              enabled: false
+              middlewares:
+                - name: local
+                  namespace: traefik
               certManager:
                 enabled: true
                 certificateIssuer: wethecommon-prod-cert
-        service:
-          enabled: false
+            hosts:
+              - host: recyclarr.${BASE_DOMAIN}
+                paths:
+                  - path: /
+                    pathType: Prefix
+
     workload:
       main:
         podSpec:

@@ -276,6 +276,9 @@ spec:
             main: codeserver
           ingressClassName: internal
           integrations:
+            nginx:
+              enabled: true
+              ingressClassName: internal
             traefik:
               enabled: false
               middlewares:

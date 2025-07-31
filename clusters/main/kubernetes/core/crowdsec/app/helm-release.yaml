@@ -71,6 +71,9 @@ spec:
           enabled: true
           host: crowdsec.${BASE_DOMAIN}
           integrations:
+            nginx:
+              enabled: true
+              ingressClassName: internal
             traefik:
               enabled: true
               entrypoints:

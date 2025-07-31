@@ -19,7 +19,6 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: minio.${BASE_DOMAIN}
             paths:
@@ -30,8 +29,11 @@ spec:
               - minio.${BASE_DOMAIN}
             secretName: minio-tls  # 🔓 Enable TLS at Ingress level
         integrations:
-          traefik:
+          nginx:
             enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
             middlewares:
               - name: local
                 namespace: traefik
