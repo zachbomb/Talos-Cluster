@@ -51,7 +51,7 @@ spec:
             enabled: true
             ingressClassName: internal
           traefik:
-            enabled: true
+            enabled: false
             middlewares:
               - name: local
                 namespace: traefik

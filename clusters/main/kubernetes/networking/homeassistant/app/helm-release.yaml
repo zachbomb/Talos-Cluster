@@ -19,13 +19,15 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: homeassistant.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
         integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
           traefik:
             enabled: false
             middlewares:
