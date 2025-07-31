@@ -69,17 +69,15 @@ spec:
             port: 8084
             targetPort: 8080
             protocol: http
-
-      webserver:
-        enabled: true
-        type: LoadBalancer
-        loadBalancerIP: ${CALIBRE_IP}
-        ports:
           webserver:
             enabled: true
             port: 8081
-            targetPort: 8081
             protocol: http
+            targetPort: 8081
+
+      webserver:
+        enabled: false
+
 
     persistence:
       config:
