@@ -112,7 +112,10 @@ spec:
             name: Tunarr
             description: Custom IPTV-like server
             group: Media Players
-
+            widget:
+              custom:
+                key: ""
+              enabled: false
     persistence:
       config:
         enabled: true
