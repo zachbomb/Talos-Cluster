@@ -28,7 +28,7 @@ spec:
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 0.21.4-nvidia
+      tag: v0.21.4-nvidia
       pullPolicy: Always
 
     env:
