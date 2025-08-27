@@ -28,7 +28,7 @@ spec:
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 0.21.10
+      tag: 0.21.11
       pullPolicy: Always
 
     env:
