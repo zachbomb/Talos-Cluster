@@ -33,18 +33,14 @@ spec:
       upgradeJob:
         enabled: true
         forceConflicts: true
-
     cleanPrometheusOperatorObjectNames: true
-
     alertmanager:
       enabled: false
-
     kubeEtcd:
       enabled: true
       service:
         selector:
           component: kube-apiserver
-
     kubeControllerManager:
       enabled: true
       service:
@@ -54,7 +50,6 @@ spec:
         enabled: true
         https: true
         insecureSkipVerify: true
-
     kubeScheduler:
       enabled: true
       service:
@@ -64,10 +59,8 @@ spec:
         enabled: true
         https: true
         insecureSkipVerify: true
-
     kubeProxy:
       enabled: false
-
     prometheus:
       ingress:
         enabled: false
@@ -100,7 +93,6 @@ spec:
               resources:
                 requests:
                   storage: 60Gi
-
     prometheus-node-exporter:
       fullnameOverride: node-exporter
       prometheus:
@@ -112,7 +104,6 @@ spec:
               replacement: $1
               sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
-
     kube-state-metrics:
       fullnameOverride: kube-state-metrics
       metricLabelsAllowlist:
@@ -128,17 +119,14 @@ spec:
               replacement: $1
               sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
-
     grafana:
       enabled: false
       forceDeployDashboards: true
       defaultDashboardsEnabled: true
       forceDeployDatasources: true
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
