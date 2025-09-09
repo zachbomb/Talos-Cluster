@@ -33,5 +33,3 @@ spec:
             cpu: 500m
     securityContext:
       readOnlyRootFilesystem: false
-    podOptions:
-      hostUsers: true

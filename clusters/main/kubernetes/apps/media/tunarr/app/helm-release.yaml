@@ -273,5 +273,3 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
-    podOptions:
-      hostUsers: true
