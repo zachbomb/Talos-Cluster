@@ -31,14 +31,12 @@ spec:
   values:
     TZ: America/Los_Angeles
     container_runtime: containerd
-
     tls:
       enabled: true
       bouncer:
         reflector:
           namespaces:
             - traefik
-
     agent:
       acquisition:
         - namespace: traefik
@@ -56,7 +54,6 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
-
     lapi:
       dashboard:
         enabled: true
@@ -78,7 +75,6 @@ spec:
               middlewares:
                 - name: secure-chain
                   namespace: traefik
-
       env:
         - name: DISABLE_ONLINE_API
           value: "false"
@@ -103,11 +99,9 @@ spec:
             port: 8443
             targetPort: 8443
             protocol: TCP
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -115,3 +109,8 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
+    service: null

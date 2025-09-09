@@ -25,14 +25,11 @@ spec:
       retries: 3
   values:
     TZ: America/Los_Angeles
-
     portal:
       open:
         enabled: false
-
     global:
       stopAll: false
-
     credentials:
       s3:
         type: s3
@@ -41,7 +38,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -71,7 +67,6 @@ spec:
                 url: http://192.168.10.235:8083
                 username: zach
                 password: ${CALIBRE_WEB_API}
-
     service:
       main:
         enabled: true
@@ -82,7 +77,6 @@ spec:
             port: 8083
             targetPort: 8083
             protocol: http
-
     persistence:
       config:
         volsync:
@@ -154,11 +148,9 @@ spec:
       backup:
         enabled: true
         mountPath: /backups
-
     metrics:
       main:
         enabled: false
-
     resources:
       requests:
         memory: 512Mi
@@ -166,7 +158,10 @@ spec:
       limits:
         memory: 2Gi
         cpu: 500m
-
     autoscaling:
       vpa:
         enabled: true
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

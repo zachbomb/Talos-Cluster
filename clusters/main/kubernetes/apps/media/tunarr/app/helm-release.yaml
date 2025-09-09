@@ -24,33 +24,27 @@ spec:
   upgrade:
     remediation:
       retries: 3
-
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
       tag: 0.22.2
       pullPolicy: Always
-
     env:
       TZ: America/Los_Angeles
       TUNARR__TV_DIR: /tv
       TUNARR__MOVIES_DIR: /movies
       TUNARR__PORT: "8000"
-
     workload:
       main:
         args:
           - "--port"
           - "8000"
-
         podSpec:
           runtimeClassName: "nvidia"
-
     autoscaling:
       vpa:
         enabled: true
         mode: Auto
-
     scheduling:
       topologyKey: kubernetes.io/hostname
       affinity:
@@ -60,7 +54,6 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: tunarr
               topologyKey: kubernetes.io/hostname
-
     credentials:
       s3:
         type: s3
@@ -69,7 +62,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     service:
       main:
         enabled: true
@@ -84,7 +76,6 @@ spec:
             enabled: true
             port: 12321
             targetPort: 12321
-
     ingress:
       main:
         enabled: true
@@ -128,7 +119,6 @@ spec:
               enabled: true
             dest:
               enabled: true
-
       streams:
         enabled: true
         mountPath: /tunarr/streams
@@ -140,7 +130,6 @@ spec:
               enabled: true
             dest:
               enabled: true
-
       local:
         enabled: true
         mountPath: /root/.local
@@ -152,11 +141,9 @@ spec:
               enabled: true
             dest:
               enabled: true
-
       cache:
         enabled: true
         mountPath: /.cache
-
       media:
         enabled: true
         type: nfs
@@ -171,7 +158,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       movies:
         enabled: true
         type: nfs
@@ -186,7 +172,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       tv:
         enabled: true
         type: nfs
@@ -201,7 +186,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       xmltv:
         enabled: true
         type: nfs
@@ -216,7 +200,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       dizquetv:
         enabled: true
         type: nfs
@@ -231,7 +214,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       backups:
         enabled: true
         type: nfs
@@ -246,11 +228,9 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       transcoding:
         enabled: true
         mountPath: /.transcode
-
     securityContext:
       container:
         runAsUser: 1000
@@ -258,7 +238,6 @@ spec:
         readOnlyRootFilesystem: false
       pod:
         fsGroup: 1000
-
     resources:
       requests:
         memory: 1024Mi
@@ -267,12 +246,11 @@ spec:
         nvidia.com/gpu: 1
         memory: 8Gi
         cpu: 500m
-
     addons:
       codeserver:
         enabled: true
         service:
-          enabled: false  # Don't create a separate service
+          enabled: false # Don't create a separate service
         ingress:
           enabled: true
           targetSelector:
@@ -295,3 +273,5 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
+    podOptions:
+      hostUsers: true

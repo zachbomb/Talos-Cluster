@@ -65,3 +65,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 1000m
+    podOptions:
+      hostUsers: true

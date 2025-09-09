@@ -25,9 +25,7 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     TZ: America/Los_Angeles
-
     ingress:
       main:
         enabled: true
@@ -59,7 +57,6 @@ spec:
             middlewares:
               - name: local
                 namespace: traefik
-
     service:
       main:
         enabled: true
@@ -69,7 +66,6 @@ spec:
           main:
             port: 5055
             targetPort: 5055
-
     persistence:
       config:
         main:
@@ -139,7 +135,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
     securityContext:
       container:
         UMASK: "022"
@@ -149,7 +144,6 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     workload:
       main:
         type: Deployment
@@ -159,7 +153,6 @@ spec:
             main:
               env:
                 LOG_LEVEL: info
-
     resources:
       limits:
         cpu: 500m
@@ -167,7 +160,8 @@ spec:
       requests:
         cpu: 100m
         memory: 256Mi
-
     autoscaling:
       vpa:
         enabled: true
+    podOptions:
+      hostUsers: true

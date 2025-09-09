@@ -46,7 +46,6 @@ spec:
           server: 'https://acme-v02.api.letsencrypt.org/directory'
           type: "cloudflare"
           cfapitoken: "${DOMAIN_0_CLOUDFLARE_TOKEN}"
-
     clusterCertificates:
       replicationNamespaces: '.*'
       certificates:
@@ -56,11 +55,9 @@ spec:
           hosts:
             - ${DOMAIN_0}
             - '*.${DOMAIN_0}'
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -68,3 +65,8 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
+    service: null

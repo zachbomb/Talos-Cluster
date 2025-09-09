@@ -43,15 +43,15 @@ spec:
       main:
         replicas: 1
     blocking:
-      clientGroupsBlock:  []
+      clientGroupsBlock: []
     k8sgateway:
       domains:
-      - domain: "${DOMAIN_0}"
-        dnsChallenge:
-          enabled: false
-          domain: dns01.clouddns.com
+        - domain: "${DOMAIN_0}"
+          dnsChallenge:
+            enabled: false
+            domain: dns01.clouddns.com
     defaultUpstreams:
-    - "https://1.1.1.1/dns-query"
+      - "https://1.1.1.1/dns-query"
     bootstrapDns:
       ips: []
       upstream: "1.1.1.1"
@@ -68,11 +68,9 @@ spec:
     metrics:
       main:
         enabled: false
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -80,3 +78,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    podOptions:
+      hostUsers: true

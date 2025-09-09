@@ -8,7 +8,6 @@ spec:
   interval: 15m
   timeout: 20m
   releaseName: tandoor-recipes
-
   chart:
     spec:
       chart: tandoor-recipes
@@ -17,7 +16,6 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   install:
     createNamespace: true
     remediation:
@@ -25,10 +23,8 @@ spec:
   upgrade:
     remediation:
       retries: 3
-
   values:
     TZ: America/Los_Angeles
-
     credentials:
       s3:
         type: s3
@@ -37,7 +33,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -66,7 +61,6 @@ spec:
             icon: ""
             widget:
               enabled: false
-
     service:
       main:
         enabled: true
@@ -77,7 +71,6 @@ spec:
             port: 10029
             targetPort: 10029
             protocol: http
-
     persistence:
       config:
         enabled: true
@@ -112,7 +105,10 @@ spec:
               enabled: true
             src:
               enabled: true
-
     autoscaling:
       vpa:
         enabled: true
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

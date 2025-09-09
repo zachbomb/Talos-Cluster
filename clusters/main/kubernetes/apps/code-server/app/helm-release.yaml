@@ -29,11 +29,9 @@ spec:
   values:
     global:
       stopAll: false
-
     portal:
       open:
         enabled: false
-
     credentials:
       s3:
         type: s3
@@ -42,7 +40,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -63,11 +60,9 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -75,3 +70,8 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
+    service: null

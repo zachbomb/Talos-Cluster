@@ -26,7 +26,6 @@ spec:
             enabled: true
             protocol: http
             port: 9696
-
     ingress:
       main:
         enabled: true
@@ -47,11 +46,9 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -59,3 +56,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

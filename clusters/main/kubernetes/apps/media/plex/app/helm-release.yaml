@@ -27,7 +27,6 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   values:
     credentials:
       s3:
@@ -37,12 +36,9 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     TZ: America/Los_Angeles
-
     image:
       existingPullSecret: ""
-
     persistence:
       config:
         volsync:
@@ -134,13 +130,11 @@ spec:
               enabled: true
             src:
               enabled: true
-
     plex:
       additionalAdvertiseURL: ""
       disableGDM: false
       requireHTTPS: false
       serverIP: 192.168.10.204
-
     securityContext:
       container:
         runAsUser: 1000
@@ -149,9 +143,7 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     runtimeClassName: "nvidia"
-
     ingress:
       main:
         enabled: true
@@ -181,7 +173,6 @@ spec:
               enabled: true
               custom:
                 key: ${PLEX_API}
-
     service:
       main:
         enabled: true
@@ -193,13 +184,11 @@ spec:
             port: 32400
             targetPort: 32400
             protocol: http
-
     workload:
       main:
         podSpec:
           runtimeClassName: "nvidia"
         replicas: 1
-
     scheduling:
       topologyKey: kubernetes.io/hostname
       affinity:
@@ -209,7 +198,6 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: plex
               topologyKey: kubernetes.io/hostname
-
     resources:
       requests:
         memory: 1024Mi
@@ -218,3 +206,5 @@ spec:
         memory: 8Gi
         cpu: 500m
         nvidia.com/gpu: 1
+    podOptions:
+      hostUsers: true

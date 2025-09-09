@@ -36,7 +36,6 @@ spec:
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -44,3 +43,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
