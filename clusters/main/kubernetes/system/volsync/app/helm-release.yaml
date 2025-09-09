@@ -25,9 +25,15 @@ spec:
   values:
     podOptions:
       hostUsers: true
-    autoscaling:
-      vpa:
-        enabled: true
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      fsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
+    
+    # Resource limits
     resources:
       requests:
         memory: 1024Mi
