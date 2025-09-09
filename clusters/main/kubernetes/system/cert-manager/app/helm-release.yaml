@@ -24,13 +24,12 @@ spec:
     remediation:
       retries: 3
   values:
-    crds:
-      enabled: true
+    # CRDs are handled by the crds: CreateReplace above
+    installCRDs: false
+    
+    # DNS01 challenge configuration
     dns01RecursiveNameservers: "1.1.1.1:53,1.0.0.1:53"
     dns01RecursiveNameserversOnly: false
+    
+    # Enable certificate owner references
     enableCertificateOwnerRef: true
-    installCRDs: true
-    workload:
-      main: null
-    podOptions:
-      hostUsers: true
