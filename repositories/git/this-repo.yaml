@@ -8,6 +8,7 @@ metadata:
 spec:
   interval: 30m
   url: ssh://git@github.com/zachbomb/Talos-Cluster.git
+  timeout: 15m
   ref:
     branch: main
   secretRef:
