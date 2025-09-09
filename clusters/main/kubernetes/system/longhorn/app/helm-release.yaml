@@ -30,20 +30,25 @@ spec:
     defaultSettings:
       defaultReplicaCount: 1
       storageOverProvisioningPercentage: 100000
-      # storageReservedPercentageForDefaultDisk removed
+
     csi:
       attacherReplicaCount: 1
       provisionerReplicaCount: 1
       resizerReplicaCount: 1
       snapshotterReplicaCount: 1
+
     persistence:
       defaultClass: true
       defaultClassReplicaCount: 1
+
     longhornUI:
       replicas: 1
+
     service:
       ui:
         type: LoadBalancer
         loadBalancerIP: ${LONGHORN_IP}
         port: 80
 
+    admissionWebhook:
+      enabled: true
