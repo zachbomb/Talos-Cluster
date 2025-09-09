@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: "2025-09-09T09:07:49Z"
+  deletionTimestamp: "2025-09-09T17:49:05Z"
+  labels:
+    kubernetes.io/metadata.name: longhorn-system
+    kustomize.toolkit.fluxcd.io/name: longhorn
+    kustomize.toolkit.fluxcd.io/namespace: flux-system
+    pod-security.kubernetes.io/enforce: privileged
+  name: longhorn-system
+  resourceVersion: "562837"
+  uid: dc50846b-b791-4054-9d01-0ebef503df45
+spec:
+  finalizers:
+  - kubernetes
+status:
+  conditions:
+  - lastTransitionTime: "2025-09-09T17:59:22Z"
+    message: 'Discovery failed for some groups, 1 failing: unable to retrieve the
+      complete list of server APIs: metrics.k8s.io/v1beta1: stale GroupVersion discovery:
+      metrics.k8s.io/v1beta1'
+    reason: DiscoveryFailed
+    status: "True"
+    type: NamespaceDeletionDiscoveryFailure
+  - lastTransitionTime: "2025-09-09T17:49:10Z"
+    message: All legacy kube types successfully parsed
+    reason: ParsedGroupVersions
+    status: "False"
+    type: NamespaceDeletionGroupVersionParsingFailure
+  - lastTransitionTime: "2025-09-09T17:49:49Z"
+    message: 'Failed to delete all resource types, 2 remaining: Internal error occurred:
+      failed calling webhook "validator.longhorn.io": failed to call webhook: Post
+      "https://longhorn-admission-webhook.longhorn-system.svc:9502/v1/webhook/validation?timeout=10s":
+      service "longhorn-admission-webhook" not found, Internal error occurred: failed
+      calling webhook "validator.longhorn.io": failed to call webhook: Post "https://longhorn-admission-webhook.longhorn-system.svc:9502/v1/webhook/validation?timeout=10s":
+      service "longhorn-admission-webhook" not found'
+    reason: ContentDeletionFailed
+    status: "True"
+    type: NamespaceDeletionContentFailure
+  - lastTransitionTime: "2025-09-09T17:49:49Z"
+    message: 'Some resources are remaining: engineimages.longhorn.io has 1 resource
+      instances, engines.longhorn.io has 15 resource instances, nodes.longhorn.io
+      has 1 resource instances, volumeattachments.longhorn.io has 15 resource instances,
+      volumes.longhorn.io has 15 resource instances'
+    reason: SomeResourcesRemain
+    status: "True"
+    type: NamespaceContentRemaining
+  - lastTransitionTime: "2025-09-09T17:49:49Z"
+    message: 'Some content in the namespace has finalizers remaining: longhorn.io
+      in 47 resource instances'
+    reason: SomeFinalizersRemain
+    status: "True"
+    type: NamespaceFinalizersRemaining
+  phase: Terminating
