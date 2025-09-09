@@ -32,6 +32,10 @@ spec:
         enabled: true
         type: Deployment
         podSpec:
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             main:
               resources:
