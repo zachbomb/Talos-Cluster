@@ -79,7 +79,6 @@ spec:
         options:
           - name: ndots
             value: "3"
-      hostUsers: true
     persistence:
       config:
         enabled: true
