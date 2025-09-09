@@ -1,0 +1,62 @@
+{
+    "apiVersion": "v1",
+    "kind": "Namespace",
+    "metadata": {
+        "creationTimestamp": "2025-09-09T00:02:35Z",
+        "deletionTimestamp": "2025-09-09T01:27:57Z",
+        "labels": {
+            "kubernetes.io/metadata.name": "longhorn-system",
+            "kustomize.toolkit.fluxcd.io/name": "longhorn",
+            "kustomize.toolkit.fluxcd.io/namespace": "flux-system",
+            "pod-security.kubernetes.io/enforce": "privileged"
+        },
+        "name": "longhorn-system",
+        "resourceVersion": "156079",
+        "uid": "f09249e6-0826-41c3-9af7-787f26f49996"
+    },
+    "spec": {
+        "finalizers": [
+            "kubernetes"
+        ]
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastTransitionTime": "2025-09-09T08:17:03Z",
+                "message": "All resources successfully discovered",
+                "reason": "ResourcesDiscovered",
+                "status": "False",
+                "type": "NamespaceDeletionDiscoveryFailure"
+            },
+            {
+                "lastTransitionTime": "2025-09-09T01:28:03Z",
+                "message": "All legacy kube types successfully parsed",
+                "reason": "ParsedGroupVersions",
+                "status": "False",
+                "type": "NamespaceDeletionGroupVersionParsingFailure"
+            },
+            {
+                "lastTransitionTime": "2025-09-09T01:28:40Z",
+                "message": "Failed to delete all resource types, 3 remaining: Internal error occurred: failed calling webhook \"validator.longhorn.io\": failed to call webhook: Post \"https://longhorn-admission-webhook.longhorn-system.svc:9502/v1/webhook/validation?timeout=10s\": service \"longhorn-admission-webhook\" not found, Internal error occurred: failed calling webhook \"validator.longhorn.io\": failed to call webhook: Post \"https://longhorn-admission-webhook.longhorn-system.svc:9502/v1/webhook/validation?timeout=10s\": service \"longhorn-admission-webhook\" not found, Internal error occurred: failed calling webhook \"validator.longhorn.io\": failed to call webhook: Post \"https://longhorn-admission-webhook.longhorn-system.svc:9502/v1/webhook/validation?timeout=10s\": service \"longhorn-admission-webhook\" not found",
+                "reason": "ContentDeletionFailed",
+                "status": "True",
+                "type": "NamespaceDeletionContentFailure"
+            },
+            {
+                "lastTransitionTime": "2025-09-09T01:29:23Z",
+                "message": "Some resources are remaining: engineimages.longhorn.io has 1 resource instances, engines.longhorn.io has 15 resource instances, nodes.longhorn.io has 1 resource instances, volumeattachments.longhorn.io has 15 resource instances, volumes.longhorn.io has 15 resource instances",
+                "reason": "SomeResourcesRemain",
+                "status": "True",
+                "type": "NamespaceContentRemaining"
+            },
+            {
+                "lastTransitionTime": "2025-09-09T01:29:23Z",
+                "message": "Some content in the namespace has finalizers remaining: longhorn.io in 47 resource instances",
+                "reason": "SomeFinalizersRemain",
+                "status": "True",
+                "type": "NamespaceFinalizersRemaining"
+            }
+        ],
+        "phase": "Terminating"
+    }
+}
