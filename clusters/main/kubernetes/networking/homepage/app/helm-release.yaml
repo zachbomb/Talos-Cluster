@@ -15,10 +15,8 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   values:
     TZ: America/Los_Angeles
-
     credentials:
       s3:
         type: s3
@@ -27,7 +25,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     workload:
       main:
         podSpec:
@@ -35,7 +32,6 @@ spec:
             main:
               env:
                 HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}
-
     ingress:
       main:
         enabled: true
@@ -56,13 +52,12 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-
     podOptions:
       dnsConfig:
         options:
           - name: ndots
             value: "3"
-
+      hostUsers: true
     rbac:
       main:
         clusterWide: true
@@ -84,7 +79,6 @@ spec:
           - apiGroups: [apiextensions.k8s.io]
             resources: [customresourcedefinitions/status]
             verbs: [get]
-
     securityContext:
       container:
         UMASK: "0022"
@@ -93,7 +87,6 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     service:
       main:
         enabled: true
@@ -110,12 +103,10 @@ spec:
             port: 12321
             targetPort: 12321
             protocol: http
-
     serviceAccount:
       main:
         enabled: true
         primary: true
-
     persistence:
       config:
         enabled: true
@@ -130,7 +121,6 @@ spec:
               enabled: true
               trigger:
                 schedule: "10 0 * * *"
-
     addons:
       codeserver:
         enabled: true
@@ -157,11 +147,9 @@ spec:
               paths:
                 - path: /
                   pathType: Prefix
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi

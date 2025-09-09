@@ -38,6 +38,9 @@ spec:
           # internal-dns.alpha.kubernetes.io/hostname: internal.${DOMAIN_0}
           metallb.io/ip-allocated-from-pool: main
           metallb.io/loadBalancerIPs: ${NGINX_INTERNAL_IP}
+          internal-dns.alpha.kubernetes.io/hostname: internal.${BASE_DOMAIN}
+          lbipam.cilium.io/ips: ${NGINX_INTERNAL_IP}
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
       ingressClassByName: true
       watchIngressWithoutClass: true
       ingressClassResource:
@@ -45,7 +48,7 @@ spec:
         default: true
         controllerValue: k8s.io/internal
       config:
-        allow-snippet-annotations: true
+        allow-snippet-annotations: "true"
         annotations-risk-level: Critical
         client-body-buffer-size: 100M
         client-body-timeout: 120
@@ -60,17 +63,23 @@ spec:
         keep-alive: 120
         proxy-body-size: 0
         proxy-buffer-size: 16k
-        proxy-busy-buffers-size: 32k
+        proxy-busy-buffers-size: "32k"
         ssl-protocols: TLSv1.3 TLSv1.2
         use-forwarded-headers: "true"
+        proxy-buffers: "8 16k"
       metrics:
         enabled: true
         # serviceMonitor:
         #   enabled: true
         #   namespaceSelector:
         #     any: true
+
+        serviceMonitor:
+          enabled: true
+          namespaceSelector:
+            any: true
       extraArgs:
-        default-ssl-certificate: "clusterissuer/certificate-issuer-domain-0-wildcard"
+        default-ssl-certificate: "clusterissuer/certificate-issuer-wethecommon-wildcard-cert"
         publish-status-address: ${NGINX_INTERNAL_IP}
       terminationGracePeriodSeconds: 120
       publishService:
@@ -82,3 +91,15 @@ spec:
           memory: 500Mi
     defaultBackend:
       enabled: false
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
+    service: null

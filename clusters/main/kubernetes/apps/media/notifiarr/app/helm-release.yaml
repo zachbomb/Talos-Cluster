@@ -40,7 +40,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     TZ: America/Los_Angeles
     ingress:
       main:
@@ -87,18 +86,17 @@ spec:
     persistence:
       config:
         volsync:
-        - name: config
-          type: restic
-          credentials: s3
-          dest:
-            enabled: true
-          src:
-            enabled: true
-            trigger:
-              schedule: 40 0 * * *
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
       machine-id:
         enabled: false
-
     addons:
       codeserver:
         enabled: true
@@ -128,7 +126,6 @@ spec:
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -136,3 +133,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    podOptions:
+      hostUsers: true

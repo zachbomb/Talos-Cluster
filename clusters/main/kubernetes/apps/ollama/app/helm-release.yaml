@@ -8,7 +8,6 @@ spec:
   releaseName: ollama
   interval: 15m
   timeout: 10m
-
   chart:
     spec:
       chart: ollama
@@ -17,17 +16,14 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   install:
     createNamespace: true
     remediation:
       retries: 3
-
   upgrade:
     cleanupOnFail: true
     remediation:
       retries: 3
-
   values:
     credentials:
       s3:
@@ -37,7 +33,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -65,7 +60,6 @@ spec:
             group: Lifestyle & Home
             widget:
               enabled: false
-
     service:
       main:
         enabled: true
@@ -84,7 +78,6 @@ spec:
             protocol: tcp
       api:
         enabled: false
-
     ollama:
       registration:
         enabled: true
@@ -94,7 +87,6 @@ spec:
       rag:
         model_device_type: "cpu"
         model: "all-MiniLM-L6-v2"
-
     workload:
       main:
         podSpec:
@@ -116,7 +108,6 @@ spec:
                   enabled: true
                   type: tcp
                   port: 11434
-
       ui:
         enabled: true
         type: Deployment
@@ -153,13 +144,11 @@ spec:
                   secretKeyRef:
                     name: ollama-secrets
                     key: WEBUI_SECRET_KEY
-
     configmap:
       tcportal-open:
         enabled: true
         data:
           placeholder: "enabled"
-
     persistence:
       config:
         enabled: true
@@ -183,7 +172,8 @@ spec:
               enabled: true
             dest:
               enabled: true
-
     autoscaling:
       vpa:
         enabled: true
+    podOptions:
+      hostUsers: true

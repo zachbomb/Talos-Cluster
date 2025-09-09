@@ -15,18 +15,15 @@ spec:
         name: truecharts
         namespace: flux-system
       interval: 5m
-
   install:
     createNamespace: true
     crds: CreateReplace
     remediation:
       retries: 3
-
   upgrade:
     crds: CreateReplace
     remediation:
       retries: 3
-
   values:
     credentials:
       s3:
@@ -74,7 +71,6 @@ spec:
               enabled: true
               custom:
                 key: ""
-
     persistence:
       configs:
         volsync:
@@ -87,7 +83,6 @@ spec:
               enabled: true
               trigger:
                 schedule: "50 0 * * *"
-
       logs:
         volsync:
           - name: logs
@@ -99,7 +94,6 @@ spec:
               enabled: true
               trigger:
                 schedule: "50 0 * * *"
-
       server:
         volsync:
           - name: server
@@ -113,10 +107,8 @@ spec:
               cacheCapacity: 20Gi
               trigger:
                 schedule: "50 0 * * *"
-
       transcode-cache:
         type: emptyDir
-
       media:
         enabled: true
         type: nfs
@@ -131,7 +123,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
     resources:
       requests:
         memory: 1024Mi
@@ -140,12 +131,12 @@ spec:
         memory: 4Gi
         cpu: 500m
         nvidia.com/gpu: 1
-
     workload:
       main:
         podSpec:
           runtimeClassName: nvidia
-
     autoscaling:
       vpa:
         enabled: true
+    podOptions:
+      hostUsers: true

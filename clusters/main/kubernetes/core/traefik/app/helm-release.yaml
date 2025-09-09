@@ -30,9 +30,7 @@ spec:
   values:
     dashboard:
       enabled: true
-
     defaultCertificate: wethecommon-wildcard-cert
-
     service:
       main:
         enabled: true
@@ -58,23 +56,19 @@ spec:
               enabled: true
           tcp:
             enabled: true
-            port: 9001            # Example TCP port, adjust as needed
+            port: 9001 # Example TCP port, adjust as needed
             protocol: tcp
             forwardedHeaders:
               enabled: true
       tcp:
         enabled: false
-
-
     additionalArguments:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.tcp.address=:9001"
-
     ingressRoute:
       dashboard:
         enabled: true
-
     ingress:
       main:
         enabled: true
@@ -95,7 +89,6 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-
     middlewares:
       ipWhiteList:
         - name: local
@@ -108,7 +101,6 @@ spec:
             - 192.168.3.0/24
             - 192.168.9.0/24
             - 192.168.8.0/24
-
       bouncer:
         - name: bouncer
           crowdsecMode: live
@@ -119,7 +111,6 @@ spec:
           crowdsecLapiTLSKeyFile: /etc/traefik/crowdsec/key.pem
           crowdsecLapiTLSCaCertFile: /etc/traefik/crowdsec/ca.pem
           crowdsecLapiKey: "${CROWDSEC_LAPI_KEY}"
-
       chain:
         - name: secure-chain
           chain:
@@ -128,11 +119,9 @@ spec:
                 namespace: traefik
               - name: local
                 namespace: traefik
-
     env:
       - name: TZ
         value: America/Los_Angeles
-
     workload:
       main:
         autoscaling:
@@ -145,3 +134,5 @@ spec:
           limits:
             memory: 2Gi
             cpu: 500m
+    podOptions:
+      hostUsers: true

@@ -64,7 +64,6 @@ spec:
               custom:
                 key: ${READARR_API}
               enabled: true
-
     service:
       main:
         enabled: true
@@ -138,3 +137,7 @@ spec:
     autoscaling:
       vpa:
         enabled: true
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

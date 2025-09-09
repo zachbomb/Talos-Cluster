@@ -62,3 +62,7 @@ spec:
     addons:
       codeserver:
         enabled: false
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

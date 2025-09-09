@@ -32,7 +32,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -63,7 +62,6 @@ spec:
               enabled: true
               custom:
                 key: ${BAZARR_API}
-
     service:
       main:
         enabled: true
@@ -75,14 +73,12 @@ spec:
             port: 6767
             targetPort: 6767
             protocol: http
-
     workload:
       main:
         podSpec:
           initContainers:
             initconfig:
               enabled: false
-
     persistence:
       config:
         enabled: true
@@ -111,11 +107,9 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -123,3 +117,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    podOptions:
+      hostUsers: true

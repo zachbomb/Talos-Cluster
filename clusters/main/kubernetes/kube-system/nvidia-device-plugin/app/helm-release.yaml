@@ -35,9 +35,7 @@ spec:
     image:
       repository: nvcr.io/nvidia/k8s-device-plugin
       tag: v0.17.4
-
     runtimeClassName: nvidia
-
     config:
       map:
         default: |-
@@ -51,10 +49,8 @@ spec:
               resources:
                 - name: nvidia.com/gpu
                   replicas: 5
-
     gfd:
       enabled: true
-
     workload:
       main:
         autoscaling:
@@ -67,3 +63,5 @@ spec:
           limits:
             memory: 4Gi
             cpu: 500m
+    podOptions:
+      hostUsers: true

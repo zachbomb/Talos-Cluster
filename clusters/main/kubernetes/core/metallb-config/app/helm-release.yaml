@@ -55,3 +55,6 @@ spec:
           limits:
             memory: 2Gi
             cpu: 500m
+    podOptions:
+      hostUsers: true
+    service: null
