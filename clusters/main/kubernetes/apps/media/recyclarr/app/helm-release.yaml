@@ -48,7 +48,7 @@ spec:
             port: 8080
           codeserver:
             enabled: true
-            port: 8181         
+            port: 8181
     addons:
       codeserver:
         enabled: true
@@ -76,7 +76,6 @@ spec:
                 paths:
                   - path: /
                     pathType: Prefix
-
     workload:
       main:
         podSpec:
@@ -102,7 +101,8 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-
     autoscaling:
       vpa:
         enabled: true
+    podOptions:
+      hostUsers: true

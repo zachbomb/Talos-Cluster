@@ -15,7 +15,6 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   install:
     createNamespace: true
     crds: CreateReplace
@@ -25,10 +24,8 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
-
   values:
     TZ: America/Los_Angeles
-
     credentials:
       s3:
         type: s3
@@ -37,7 +34,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -69,7 +65,6 @@ spec:
               custom:
                 url: "http://192.168.10.230:10097"
                 key: "${SABNZBD_API}"
-
     service:
       main:
         enabled: true
@@ -84,7 +79,6 @@ spec:
             enabled: true
             port: 12321
             targetPort: 12321
-
     persistence:
       config:
         enabled: true
@@ -99,7 +93,6 @@ spec:
             src:
               enabled: true
               cacheCapacity: 100Gi
-
       media:
         enabled: true
         type: nfs
@@ -114,7 +107,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       movies:
         enabled: true
         type: nfs
@@ -129,7 +121,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       tv:
         enabled: true
         type: nfs
@@ -144,7 +135,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       music:
         enabled: true
         type: nfs
@@ -159,7 +149,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       downloads:
         enabled: true
         type: nfs
@@ -174,7 +163,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       backup:
         enabled: true
         mountPath: /backups
@@ -188,12 +176,11 @@ spec:
               enabled: true
               trigger:
                 schedule: "4 2 * * *"
-
     addons:
       codeserver:
         enabled: true
         service:
-          enabled: false  # Don't create a separate service
+          enabled: false # Don't create a separate service
         ingress:
           enabled: true
           targetSelector:
@@ -222,11 +209,9 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-
     autoscaling:
       vpa:
         enabled: true
-
     securityContext:
       container:
         UMASK: "0022"
@@ -235,7 +220,6 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     workload:
       main:
         service:
@@ -251,3 +235,5 @@ spec:
                   enabled: false
                 startup:
                   enabled: false
+    podOptions:
+      hostUsers: true

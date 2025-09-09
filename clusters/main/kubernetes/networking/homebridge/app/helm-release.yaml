@@ -38,10 +38,10 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
-#        tls:
-#          hosts:
-#            - homebridge.${BASE_DOMAIN}
-#          secretName: homebridge-tls
+                #        tls:
+                #          hosts:
+                #            - homebridge.${BASE_DOMAIN}
+                #          secretName: homebridge-tls
     release_name: homebridge
     service:
       main:
@@ -67,3 +67,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 1000m
+    podOptions:
+      hostUsers: true

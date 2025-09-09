@@ -8,7 +8,6 @@ spec:
   interval: 15m
   timeout: 20m
   releaseName: sonarr
-
   chart:
     spec:
       chart: sonarr
@@ -17,7 +16,6 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   values:
     credentials:
       s3:
@@ -27,14 +25,11 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     TZ: America/Los_Angeles
-
     exportarrImage:
       pullPolicy: IfNotPresent
       repository: ghcr.io/onedr0p/exportarr
       tag: v2.3.0@sha256:af535d94061cf97a52e1661945ffba78c03f9443eae7c0da1a80a5a4be56b520
-
     service:
       main:
         enabled: true
@@ -44,7 +39,6 @@ spec:
           main:
             port: 8989
             protocol: http
-
     ingress:
       main:
         enabled: true
@@ -75,7 +69,6 @@ spec:
               enabled: true
               custom:
                 key: ${SONARR_API}
-
     metrics:
       main:
         enabled: false
@@ -86,7 +79,6 @@ spec:
           enabled: false
         targetSelector: metrics
         type: servicemonitor
-
     securityContext:
       container:
         UMASK: "0022"
@@ -95,7 +87,6 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     persistence:
       config:
         enabled: true
@@ -170,11 +161,9 @@ spec:
             src:
               enabled: true
               cacheCapacity: 10Gi
-
     autoscaling:
       vpa:
         enabled: true
-
     resources:
       requests:
         memory: 1024Mi
@@ -182,3 +171,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
