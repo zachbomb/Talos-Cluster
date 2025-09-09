@@ -3,9 +3,8 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: metallb
+  name: longhorn
   namespace: flux-system
 spec:
-  interval: 10m
-  url: https://metallb.github.io/metallb
-  timeout: 3m
+  interval: 2h
+  url: https://charts.longhorn.io

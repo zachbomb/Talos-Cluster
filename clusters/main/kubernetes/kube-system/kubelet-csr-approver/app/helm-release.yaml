@@ -6,13 +6,43 @@ metadata:
   namespace: kube-system
 spec:
   interval: 30m
+  timeout: 20m
+  maxHistory: 3
+  driftDetection:
+    mode: warn
   chart:
     spec:
       chart: kubelet-csr-approver
-      version: 2.3.6
+      version: 2.4.0
       sourceRef:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
       interval: 30m
-  values: {}
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    workload:
+      main:
+        enabled: true
+        podSpec:
+          hostUsers: true
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 2Gi
+            cpu: 500m
+    securityContext:
+      readOnlyRootFilesystem: false
