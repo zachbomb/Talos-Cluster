@@ -4,5 +4,3 @@ resources:
   - namespace.yaml
   - helm-release.yaml
   - volumeSnapshotClass.yaml
-  - ingress.yaml
-  - jobs
