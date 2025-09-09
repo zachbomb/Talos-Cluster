@@ -31,6 +31,7 @@ spec:
     keepHistory: false
   values:
     workload:
-      main: null
+      main:
+        enabled: false
     podOptions:
       hostUsers: true
