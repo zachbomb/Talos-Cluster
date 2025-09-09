@@ -7,7 +7,8 @@ metadata:
   namespace: flux-system
 spec:
   interval: 30m
-  url: https://github.com/trueforge-org/truecharts/
+  url: ssh://github.com/trueforge-org/truecharts.git
+  timeout: 15m
   ref:
     branch: master
   secretRef:
