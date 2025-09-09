@@ -5,4 +5,13 @@ resources:
   - helm-release.yaml
   - volumeSnapshotClass.yaml
   - ingress.yaml
-  - jobs
+  # jobs directory commented out until CRDs are stable
+  # - jobs
+
+# Optional: Add health checks to ensure HelmRelease is ready before applying dependent resources
+# Uncomment these lines if you want Flux to wait for Longhorn to be healthy
+# healthChecks:
+#   - apiVersion: helm.toolkit.fluxcd.io/v2
+#     kind: HelmRelease
+#     name: longhorn
+#     namespace: longhorn-system
