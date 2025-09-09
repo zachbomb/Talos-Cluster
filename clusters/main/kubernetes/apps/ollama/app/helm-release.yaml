@@ -175,5 +175,3 @@ spec:
     autoscaling:
       vpa:
         enabled: true
-    podOptions:
-      hostUsers: true

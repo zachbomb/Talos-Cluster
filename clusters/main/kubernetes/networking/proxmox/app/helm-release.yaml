@@ -55,7 +55,3 @@ spec:
             certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: false
-    workload:
-      main: null
-    podOptions:
-      hostUsers: true

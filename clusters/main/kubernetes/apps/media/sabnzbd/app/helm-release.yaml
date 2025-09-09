@@ -235,5 +235,3 @@ spec:
                   enabled: false
                 startup:
                   enabled: false
-    podOptions:
-      hostUsers: true

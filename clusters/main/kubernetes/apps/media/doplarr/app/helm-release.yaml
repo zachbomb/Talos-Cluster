@@ -79,8 +79,6 @@ spec:
             port: 8080
             protocol: http
             targetPort: 8080
-    podOptions:
-      hostUsers: true
     autoscaling:
       vpa:
         enabled: true
@@ -91,5 +89,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-    workload:
-      main: null
+    podOptions:
+      hostUsers: true

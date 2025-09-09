@@ -1,11 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-REFERENCE_COMMIT="7bd6e4e2"
-BACKUP_DIR="$HOME/dev/combined-restore-backup-$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="$HOME/dev/cleanup-backup-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
-echo "=== Helm-Release Enhancement (ref: $REFERENCE_COMMIT) ==="
+echo "=== Cleaning up previous script modifications ==="
 echo "Backups at: $BACKUP_DIR"
 
 if [ ! -d ".git" ]; then
@@ -14,71 +13,102 @@ fi
 
 HELM_FILES=$(find . -name "helm-release.yaml" -type f ! -path "$BACKUP_DIR/*" ! -name "*backup*" | sort)
 
-# Temp files
-TMP_CUR=$(mktemp) TMP_REF=$(mktemp) TMP_MERGE=$(mktemp) TMP_BLOCK=$(mktemp)
-trap 'rm -f "$TMP_CUR" "$TMP_REF" "$TMP_MERGE" "$TMP_BLOCK"' EXIT
+# Apps that legitimately need hostUsers
+NEEDS_HOST_USERS=("volsync" "longhorn" "nvidia-device-plugin" "metallb" "cilium" "traefik" "intel-device-plugin-operator" "intel-device-plugin-gpu")
+
+# Function to check if chart is TrueCharts
+is_truecharts() {
+  local file="$1"
+  yq e '.spec.chart.spec.sourceRef.name' "$file" | grep -q "truecharts"
+}
+
+# Function to check if app needs hostUsers
+needs_host_users() {
+  local app_name="$1"
+  for needed_app in "${NEEDS_HOST_USERS[@]}"; do
+    if [[ "$app_name" == *"$needed_app"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
 
 for file in $HELM_FILES; do
   echo "🔍 Processing: $file"
   cp "$file" "$BACKUP_DIR/$(basename "$(dirname "$file")")-helm-release.backup"
   
-  if ! git show "$REFERENCE_COMMIT:$file" &>/dev/null; then
-    echo "  ℹ️ No reference version, skipping"
-    continue
-  fi
-
-  yq e '.spec.values // {}' "$file" > "$TMP_CUR"
-  git show "$REFERENCE_COMMIT:$file" | yq e '.spec.values // {}' - > "$TMP_REF"
-  cp "$TMP_CUR" "$TMP_MERGE"
+  APP_NAME=$(yq e '.metadata.name' "$file")
+  NAMESPACE=$(yq e '.metadata.namespace' "$file")
   MOD=false
-
-  # Shallow merge to $TMP_MERGE
-  yq eval-all '. as $item ireduce ({}; . * $item )' "$TMP_CUR" "$TMP_REF" > "$TMP_MERGE"
-
-  # workload.main
-  if [ "$(yq e '.workload.main // ""' "$TMP_MERGE")" = "" ]; then
-    echo "  ➕ Adding workload.main"
-    yq e '.workload.main' "$TMP_REF" > "$TMP_BLOCK"
-    yq e '.workload.main = load("'"$TMP_BLOCK"'")' -i "$TMP_MERGE"
-    MOD=true
-  else
-    echo "  ✔️ workload.main block present"
-  fi
-
-  # podOptions.hostUsers
-  if [ "$(yq e '.podOptions.hostUsers // false' "$TMP_MERGE")" != "true" ]; then
-    echo "  ➕ Adding podOptions.hostUsers: true"
-    yq e '.podOptions.hostUsers = true' -i "$TMP_MERGE"
-    MOD=true
-  else
-    echo "  ✔️ podOptions.hostUsers: true present"
-  fi
-
-  # Add service if env vars found in reference
-  if yq e 'tostring | test("\\$\\{.*\\}")' "$TMP_REF" | grep -q true; then
-    if [ "$(yq e '.service // ""' "$TMP_MERGE")" = "" ]; then
-      echo "  ➕ Adding service (env detected)"
-      yq e '.service' "$TMP_REF" > "$TMP_BLOCK"
-      yq e '.service = load("'"$TMP_BLOCK"'")' -i "$TMP_MERGE"
+  
+  echo "  📋 App: $APP_NAME, Namespace: $NAMESPACE"
+  
+  # Check current hostUsers setting
+  CURRENT_HOST_USERS=$(yq e '.spec.values.podOptions.hostUsers // false' "$file")
+  
+  if [ "$CURRENT_HOST_USERS" = "true" ]; then
+    if needs_host_users "$file"; then
+      echo "  ✔️ Keeping podOptions.hostUsers: true (required for chart: $(yq e '.spec.chart.spec.chart' "$file"))"
+    else
+      echo "  🔄 Removing unnecessary podOptions.hostUsers from $APP_NAME"
+      yq e 'del(.spec.values.podOptions.hostUsers)' -i "$file"
+      
+      # If podOptions is now empty, remove it entirely
+      if [ "$(yq e '.spec.values.podOptions | length' "$file")" = "0" ]; then
+        yq e 'del(.spec.values.podOptions)' -i "$file"
+      fi
+      
       MOD=true
     fi
   fi
-
-  # Add ingress if nginx is mentioned
-  if yq e '.ingress | tostring | test("nginx")' "$TMP_REF" | grep -q true; then
-    if [ "$(yq e '.ingress // ""' "$TMP_MERGE")" = "" ]; then
-      echo "  ➕ Adding ingress (nginx detected)"
-      yq e '.ingress' "$TMP_REF" > "$TMP_BLOCK"
-      yq e '.ingress = load("'"$TMP_BLOCK"'")' -i "$TMP_MERGE"
-      MOD=true
+  
+  # Check for conflicting workload configurations
+  WORKLOAD_HOST_USERS=$(yq e '.spec.values.workload.main.podSpec.hostUsers // ""' "$file")
+  POD_OPTIONS_HOST_USERS=$(yq e '.spec.values.podOptions.hostUsers // ""' "$file")
+  
+  if [ "$WORKLOAD_HOST_USERS" != "" ] && [ "$POD_OPTIONS_HOST_USERS" != "" ]; then
+    if [ "$WORKLOAD_HOST_USERS" != "$POD_OPTIONS_HOST_USERS" ]; then
+      echo "  ⚠️ Conflicting hostUsers settings detected"
+      echo "     podOptions: $POD_OPTIONS_HOST_USERS, workload: $WORKLOAD_HOST_USERS"
+      
+      if is_truecharts "$file"; then
+        echo "  🔄 Removing workload.main.podSpec.hostUsers (using podOptions instead)"
+        yq e 'del(.spec.values.workload.main.podSpec.hostUsers)' -i "$file"
+        MOD=true
+      fi
     fi
   fi
-
-  # Apply merged values *into* existing .spec.values (deep merge)
-  echo "  🔄 Merging changes into helm-release.yaml"
-  yq eval-all --inplace '.spec.values *= load("'"$TMP_MERGE"'")' "$file"
-  echo "  ✅ Updated"
+  
+  # Check for TrueCharts-specific configs in non-TrueCharts apps
+  if ! is_truecharts "$file"; then
+    if [ "$(yq e '.spec.values.podOptions // ""' "$file")" != "" ]; then
+      echo "  🔄 Removing TrueCharts-specific podOptions from official chart"
+      yq e 'del(.spec.values.podOptions)' -i "$file"
+      MOD=true
+    fi
+    
+    if [ "$(yq e '.spec.values.workload.main // ""' "$file")" != "" ]; then
+      WORKLOAD_CONTENT=$(yq e '.spec.values.workload.main' "$file")
+      if [[ "$WORKLOAD_CONTENT" == *"podSpec"* ]]; then
+        echo "  🔄 Removing TrueCharts-specific workload config from official chart"
+        yq e 'del(.spec.values.workload)' -i "$file"
+        MOD=true
+      fi
+    fi
+  fi
+  
+  if [ "$MOD" = true ]; then
+    echo "  ✅ Cleaned up"
+  else
+    echo "  ➖ No cleanup needed"
+  fi
 done
 
 echo ""
-echo "🎉 Done! All enhanced files are backed up in: $BACKUP_DIR"
+echo "🎉 Cleanup complete! Backups at: $BACKUP_DIR"
+echo ""
+echo "📝 Next steps:"
+echo "   1. Review changes: git diff"
+echo "   2. Test critical applications first"
+echo "   3. Check for Pod Security Standard violations"
+echo "   4. Run: kubectl get pods -A | grep -E '(Error|CrashLoop)'"

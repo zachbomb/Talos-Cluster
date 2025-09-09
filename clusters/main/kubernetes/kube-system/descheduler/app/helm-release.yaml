@@ -84,7 +84,3 @@ spec:
       limits:
         memory: 2Gi
         cpu: 500m
-    workload:
-      main: null
-    podOptions:
-      hostUsers: true

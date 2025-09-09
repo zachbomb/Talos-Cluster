@@ -206,5 +206,3 @@ spec:
         memory: 8Gi
         cpu: 500m
         nvidia.com/gpu: 1
-    podOptions:
-      hostUsers: true
