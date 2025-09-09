@@ -16,7 +16,7 @@ spec:
       version: 1.18.1
       sourceRef:
         kind: HelmRepository
-        name: home-ops-mirror
+        name: cilium
         namespace: flux-system
       interval: 15m
   timeout: 20m
@@ -34,14 +34,32 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    # autoDirectNodeRoutes: true
-    # routingMode: native
-    hubble:
-      enabled: false
     cluster:
       name: ${CLUSTERNAME}
       id: 1
     ipv4NativeRoutingCIDR: ${PODNET}
+    ipam:
+      mode: kubernetes
+    kubeProxyReplacement: true
+    kubeProxyReplacementHealthzBindAddr: "0.0.0.0:10256"
+    k8sServiceHost: 127.0.0.1
+    k8sServicePort: 7445
+    enableRuntimeDeviceDetection: true
+    rollOutCiliumPods: true
+    endpointRoutes:
+      enabled: true
+    localRedirectPolicy: true
+    operator:
+      rollOutPods: true
+    hubble:
+      enabled: false
+    hostPorts:
+      health: true                   # enables 9879 health port
+      prometheus: false
+    cgroup:
+      automount:
+        enabled: false
+      hostRoot: /sys/fs/cgroup
     securityContext:
       privileged: true
       capabilities:
@@ -61,20 +79,15 @@ spec:
           - NET_ADMIN
           - SYS_ADMIN
           - SYS_RESOURCE
-    cgroup:
-      automount:
-        enabled: false
-      hostRoot: /sys/fs/cgroup
-    enableRuntimeDeviceDetection: true
-    endpointRoutes:
-      enabled: true
-    ipam:
-      mode: kubernetes
-    k8sServiceHost: 127.0.0.1
-    k8sServicePort: 7445
-    kubeProxyReplacement: true
-    kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
-    localRedirectPolicy: true
-    operator:
-      rollOutPods: true
-    rollOutCiliumPods: true
+
+    autoscaling:
+      vpa:
+        enabled: true
+
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 2Gi
+        cpu: 500m

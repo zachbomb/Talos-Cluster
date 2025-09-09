@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 4.2.0
+      version: 3.7.3
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -27,8 +27,6 @@ spec:
     controllers:
       system-upgrade-controller:
         strategy: RollingUpdate
-        serviceAccount:
-          identifier: system-upgrade
         containers:
           app:
             image:
@@ -79,8 +77,8 @@ spec:
           operator: Exists
           effect: NoSchedule
     serviceAccount:
-      system-upgrade:
-        forceRename: system-upgrade
+      create: true
+      name: system-upgrade
     persistence:
       tmp:
         type: emptyDir
@@ -102,3 +100,15 @@ spec:
         hostPathType: DirectoryOrCreate
         globalMounts:
           - readOnly: true
+    workload:
+      main:
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 2Gi
+            cpu: 500m

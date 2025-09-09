@@ -27,7 +27,6 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    replicas: 2
     kind: Deployment
     deschedulerPolicyAPIVersion: descheduler/v1alpha2
     deschedulerPolicy:
@@ -74,3 +73,15 @@ spec:
       enabled: false
     leaderElection:
       enabled: true
+
+    autoscaling:
+      vpa:
+        enabled: true
+
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 2Gi
+        cpu: 500m
