@@ -161,7 +161,3 @@ spec:
     autoscaling:
       vpa:
         enabled: true
-    workload:
-      main: null
-    podOptions:
-      hostUsers: true

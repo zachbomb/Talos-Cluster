@@ -32,17 +32,3 @@ spec:
           sources: ["pci", "system", "usb"]
     prometheus:
       enable: true
-    workload:
-      main:
-        autoscaling:
-          vpa:
-            enabled: true
-        resources:
-          requests:
-            memory: 1024Mi
-            cpu: 50m
-          limits:
-            memory: 2Gi
-            cpu: 500m
-    podOptions:
-      hostUsers: true

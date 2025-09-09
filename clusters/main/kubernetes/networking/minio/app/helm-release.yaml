@@ -60,5 +60,3 @@ spec:
         podSpec:
           containers:
             main: {}
-    podOptions:
-      hostUsers: true
