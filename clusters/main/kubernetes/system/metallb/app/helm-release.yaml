@@ -1,0 +1,41 @@
+<<<<<<< HEAD
+=======
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: metallb
+  namespace: metallb
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: metallb
+      version: 0.15.2
+      sourceRef:
+        kind: HelmRepository
+        name: metallb
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    workload:
+      main:
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 2Gi
+            cpu: 500m
+    speaker:
+      ignoreExcludeLB: true
+>>>>>>> 3b7eec9d4fb65ece4770e7a6a0e7e89b9be381aa

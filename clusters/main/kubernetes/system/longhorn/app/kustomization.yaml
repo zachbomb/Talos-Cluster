@@ -1,4 +1,12 @@
 resources:
+<<<<<<< HEAD
   - ./helm-release.yaml
   - ./ingress.yaml
   - ./jobs
+=======
+  - namespace.yaml
+  - helm-release.yaml
+  - volumeSnapshotClass.yaml
+  - ingress.yaml
+  - jobs
+>>>>>>> 3b7eec9d4fb65ece4770e7a6a0e7e89b9be381aa
