@@ -30,8 +30,37 @@ spec:
       # Overprovisioning might be needed when using volsync
       storageOverProvisioningPercentage: 100000
       # v2DataEngine: true
+
+      storageReservedPercentageForDefaultDisk: 10
+      # v2DataEngine: true
     persistence:
       # Set to false to pick another CSI as default
       defaultClass: true
       # Increase to 3 for a multi-node cluster
       defaultClassReplicaCount: 1
+    csi:
+      attacherReplicaCount: 1
+      provisionerReplicaCount: 1
+      resizerReplicaCount: 1
+      snapshotterReplicaCount: 1
+    longhornUI:
+      replicas: 1
+    service:
+      ui:
+        type: LoadBalancer
+        loadBalancerIP: ${LONGHORN_IP} # Replace with your actual IP here
+        port: 80
+    workload:
+      main:
+        autoscaling:
+          vpa:
+            enabled: true
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 4Gi
+            cpu: 500m
+    podOptions:
+      hostUsers: true

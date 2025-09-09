@@ -27,7 +27,6 @@ spec:
         namespace: flux-system
   values:
     TZ: America/Los_Angeles
-
     credentials:
       s3:
         type: s3
@@ -36,12 +35,10 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     exportarrImage:
       repository: ghcr.io/onedr0p/exportarr
       tag: v2.3.0@sha256:af535d94061cf97a52e1661945ffba78c03f9443eae7c0da1a80a5a4be56b520
       pullPolicy: IfNotPresent
-
     securityContext:
       container:
         UMASK: "0022"
@@ -51,15 +48,13 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     metrics:
       main:
         enabled: false
-
     workload:
       exportarr:
         enabled: false
-
+      main: null
     service:
       main:
         enabled: true
@@ -68,7 +63,6 @@ spec:
         ports:
           main:
             port: 7878
-
     ingress:
       main:
         enabled: true
@@ -99,7 +93,6 @@ spec:
               enabled: true
               custom:
                 key: ${RADARR_API}
-
     persistence:
       config:
         enabled: true
@@ -117,7 +110,7 @@ spec:
                 enabled: true
                 cacheCapacity: 10Gi
         exportarr:
-          mountPath: /config   # You may adjust this if needed
+          mountPath: /config # You may adjust this if needed
           volsync:
             - name: exportarr
               credentials: s3
@@ -126,7 +119,6 @@ spec:
                 enabled: true
               src:
                 enabled: true
-
       media:
         enabled: true
         type: nfs
@@ -141,7 +133,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       movies:
         enabled: true
         type: nfs
@@ -156,7 +147,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       downloads:
         enabled: true
         type: nfs
@@ -171,7 +161,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       backup:
         enabled: true
         mountPath: /backups
@@ -193,3 +182,5 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    podOptions:
+      hostUsers: true

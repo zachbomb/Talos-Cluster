@@ -32,7 +32,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -63,7 +62,6 @@ spec:
               enabled: false
               custom:
                 key: ""
-
     service:
       main:
         enabled: true
@@ -79,11 +77,8 @@ spec:
             port: 8081
             protocol: http
             targetPort: 8081
-
       webserver:
         enabled: false
-
-
     persistence:
       config:
         volsync:
@@ -155,11 +150,9 @@ spec:
       backup:
         enabled: true
         mountPath: /backups
-
     metrics:
       main:
         enabled: false
-
     resources:
       requests:
         memory: 1024Mi
@@ -167,7 +160,10 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-
     autoscaling:
       vpa:
         enabled: true
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

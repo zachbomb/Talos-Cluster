@@ -41,6 +41,7 @@ spec:
       service:
         selector:
           component: kube-apiserver
+      enabled: true
     kubeProxy:
       enabled: false
     prometheus:
@@ -69,10 +70,16 @@ spec:
         replicas: 1
         resources:
           requests:
-            cpu: 75m
+            cpu: 100m
             memory: 500Mi
           limits:
             memory: 2000Mi
+            # storageSpec:
+            #   volumeClaimTemplate:
+            #     spec:
+            #       resources:
+            #         requests:
+            #           storage: 60Gi
         # storageSpec:
         #   volumeClaimTemplate:
         #     spec:
@@ -80,6 +87,12 @@ spec:
         #         requests:
         #           storage: 60Gi
 
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              resources:
+                requests:
+                  storage: 60Gi
     prometheus-node-exporter:
       fullnameOverride: node-exporter
       prometheus:
@@ -106,8 +119,44 @@ spec:
               replacement: $1
               sourceLabels: ["__meta_kubernetes_pod_node_name"]
               targetLabel: kubernetes_node
+      metricLabelsAllowlist:
+        - pods=[*]
+        - deployments=[*]
+        - persistentvolumeclaims=[*]
     grafana:
       enabled: false
       forceDeployDashboards: true
       defaultDashboardsEnabled: true
       forceDeployDatasources: true
+    kubeControllerManager:
+      enabled: true
+      service:
+        port: 10257
+        targetPort: 10257
+      serviceMonitor:
+        enabled: true
+        https: true
+        insecureSkipVerify: true
+    kubeScheduler:
+      enabled: true
+      service:
+        port: 10259
+        targetPort: 10259
+      serviceMonitor:
+        enabled: true
+        https: true
+        insecureSkipVerify: true
+    autoscaling:
+      vpa:
+        enabled: true
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 100m
+      limits:
+        memory: 4Gi
+        cpu: 1000m
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true

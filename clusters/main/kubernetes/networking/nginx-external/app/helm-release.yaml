@@ -38,6 +38,8 @@ spec:
           # internal-dns.alpha.kubernetes.io/hostname: external.${DOMAIN_0}
           metallb.io/ip-allocated-from-pool: main
           metallb.io/loadBalancerIPs: ${NGINX_EXTERNAL_IP}
+          internal-dns.alpha.kubernetes.io/hostname: external.${BASE_DOMAIN}
+          lbipam.cilium.io/ips: ${NGINX_EXTERNAL_IP}
       ingressClassByName: true
       watchIngressWithoutClass: false
       ingressClassResource:
@@ -54,23 +56,29 @@ spec:
         enable-ocsp: "true"
         enable-real-ip: "true"
         force-ssl-redirect: "true"
-        hide-headers: Server,X-Powered-By
+        hide-headers: Server,X‑Powered‑By
         hsts-max-age: "31449600"
         keep-alive-requests: 10000
         keep-alive: 120
         proxy-body-size: 0
         proxy-buffer-size: 16k
-        proxy-busy-buffers-size: 32k
+        proxy-busy-buffers-size: "32k"
         ssl-protocols: TLSv1.3 TLSv1.2
         use-forwarded-headers: "true"
+        proxy-buffers: "8 16k"
       metrics:
         enabled: true
         # serviceMonitor:
         #   enabled: true
         #   namespaceSelector:
         #     any: true
+
+        serviceMonitor:
+          enabled: true
+          namespaceSelector:
+            any: true
       extraArgs:
-        default-ssl-certificate: "clusterissuer/certificate-issuer-domain-0-wildcard"
+        default-ssl-certificate: "clusterissuer/certificate-issuer-wethecommon-wildcard-cert"
         publish-status-address: ${NGINX_EXTERNAL_IP}
       terminationGracePeriodSeconds: 120
       publishService:
@@ -82,3 +90,15 @@ spec:
           memory: 500Mi
     defaultBackend:
       enabled: false
+    resources:
+      requests:
+        cpu: 50m
+        memory: 1024Mi
+      limits:
+        cpu: 500m
+        memory: 4Gi
+    workload:
+      main: null
+    podOptions:
+      hostUsers: true
+    service: null

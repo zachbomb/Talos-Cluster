@@ -15,21 +15,17 @@ spec:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-
   install:
     createNamespace: true
     crds: CreateReplace
     remediation:
       retries: 3
-
   upgrade:
     crds: CreateReplace
     remediation:
       retries: 3
-
   values:
     TZ: America/Los_Angeles
-
     credentials:
       s3:
         type: s3
@@ -38,7 +34,6 @@ spec:
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-
     ingress:
       main:
         enabled: true
@@ -70,7 +65,6 @@ spec:
               custom:
                 username: zach
                 password: ${NZBGET_API}
-
     service:
       main:
         enabled: true
@@ -81,13 +75,12 @@ spec:
             port: 10057
             targetPort: 6789
             protocol: http
-
     podOptions:
       dnsConfig:
         options:
           - name: ndots
             value: "3"
-
+      hostUsers: true
     persistence:
       config:
         enabled: true
@@ -102,7 +95,6 @@ spec:
               enabled: true
               trigger:
                 schedule: "30 2 * * *"
-
       backup:
         enabled: true
         mountPath: /backups
@@ -116,7 +108,6 @@ spec:
               enabled: true
               trigger:
                 schedule: "0 3 * * *"
-
       media:
         enabled: true
         type: nfs
@@ -131,7 +122,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       movies:
         enabled: true
         type: nfs
@@ -146,7 +136,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       tv:
         enabled: true
         type: nfs
@@ -161,7 +150,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       music:
         enabled: true
         type: nfs
@@ -176,7 +164,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
       downloads:
         enabled: true
         type: nfs
@@ -191,7 +178,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-
     resources:
       requests:
         memory: 1024Mi
@@ -199,11 +185,9 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-
     autoscaling:
       vpa:
         enabled: true
-
     securityContext:
       container:
         UMASK: "0022"
@@ -212,7 +196,6 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-
     workload:
       main:
         podSpec:
