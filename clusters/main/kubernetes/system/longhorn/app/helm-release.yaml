@@ -5,15 +5,11 @@ metadata:
   namespace: longhorn-system
 spec:
   interval: 5m
+  timeout: 20m
+  maxHistory: 3
+  driftDetection:
+    mode: warn
   releaseName: longhorn
-  chart:
-    spec:
-      chart: longhorn
-      version: 1.9.1
-      sourceRef:
-        kind: HelmRepository
-        name: home-ops-mirror
-        namespace: flux-system
   install:
     createNamespace: true
     crds: CreateReplace
@@ -23,32 +19,42 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
+    cleanupOnFail: true
+  uninstall:
+    keepHistory: false
+  chart:
+    spec:
+      chart: longhorn
+      version: 1.9.1
+      sourceRef:
+        kind: HelmRepository
+        name: home-ops-mirror
+        namespace: flux-system
+      interval: 5m
   values:
     defaultSettings:
       # Increase to 3 for a multi-node cluster
       defaultReplicaCount: 1
       # Overprovisioning might be needed when using volsync
       storageOverProvisioningPercentage: 100000
-      # v2DataEngine: true
-
       storageReservedPercentageForDefaultDisk: 10
       # v2DataEngine: true
-    persistence:
-      # Set to false to pick another CSI as default
-      defaultClass: true
-      # Increase to 3 for a multi-node cluster
-      defaultClassReplicaCount: 1
     csi:
       attacherReplicaCount: 1
       provisionerReplicaCount: 1
       resizerReplicaCount: 1
       snapshotterReplicaCount: 1
+    persistence:
+      # Set to false to pick another CSI as default
+      defaultClass: true
+      # Increase to 3 for a multi-node cluster
+      defaultClassReplicaCount: 1
     longhornUI:
       replicas: 1
     service:
       ui:
         type: LoadBalancer
-        loadBalancerIP: ${LONGHORN_IP} # Replace with your actual IP here
+        loadBalancerIP: ${LONGHORN_IP}
         port: 80
     workload:
       main:
