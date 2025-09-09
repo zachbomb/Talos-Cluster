@@ -23,8 +23,6 @@ spec:
       retries: 3
 
   values:
-    podOptions:
-      hostUsers: true
     securityContext:
       runAsNonRoot: true
       runAsUser: 65534
