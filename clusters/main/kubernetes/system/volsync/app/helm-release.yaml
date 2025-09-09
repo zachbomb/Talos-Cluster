@@ -21,10 +21,8 @@ spec:
   upgrade:
     remediation:
       retries: 3
+
   values:
-    metrics:
-      main:
-        enabled: false
     podOptions:
       hostUsers: true
     autoscaling:
@@ -37,5 +35,3 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-    workload:
-      main: null
