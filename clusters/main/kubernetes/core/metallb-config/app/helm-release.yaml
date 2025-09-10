@@ -34,7 +34,8 @@ spec:
       requests:
         cpu: 10m
     L2Advertisements:
-      - name: main
+      main:
+        enabled: true
         addressPools:
           - main
     ipAddressPools:
