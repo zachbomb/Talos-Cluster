@@ -6,26 +6,21 @@ metadata:
   namespace: kube-system
 spec:
   interval: 30m
-  timeout: 20m
-  maxHistory: 3
-  driftDetection:
-    mode: warn
+  timeout: 15m
   chart:
     spec:
       chart: intel-device-plugins-operator
-      version: 0.1.0
+      version: 0.31.1
       sourceRef:
         kind: HelmRepository
-        name: truecharts
+        name: intel  # Use Intel's official repo instead of TrueCharts
         namespace: flux-system
   install:
     createNamespace: true
-    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
     remediation:
       strategy: rollback
       retries: 3
