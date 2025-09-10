@@ -29,37 +29,44 @@ spec:
       retries: 3
   uninstall:
     keepHistory: false
+  dependsOn:
+    - name: metallb
+      namespace: metallb
   values:
-    resources:
-      requests:
-        cpu: 10m
-    L2Advertisements:
-      main:
-        enabled: true
-        addressPools:
-          - main
-    ipAddressPools:
-      - name: main
-        autoAssign: false
-        avoidBuggyIPs: true
-        addresses:
-          - ${METALLB_RANGE}
-    workload:
-      main:
-        autoscaling:
-          vpa:
-            enabled: true
-        resources:
-          requests:
-            memory: 1024Mi
-            cpu: 50m
-          limits:
-            memory: 2Gi
-            cpu: 500m
-    # Fix the service configuration - don't set to null
+    # Global configuration
+    global:
+      namespace: metallb
+    
+    # MetalLB specific configuration
+    metallb:
+      ipAddressPools:
+        main:
+          name: main
+          autoAssign: false
+          avoidBuggyIPs: true
+          addresses:
+            - ${METALLB_RANGE}
+      
+      l2Advertisements:
+        main:
+          name: main
+          ipAddressPools:
+            - main
+    
+    # Disable unnecessary components
     service:
       main:
         enabled: false
-        ports:
-          main:
-            enabled: true
+    
+    workload:
+      main:
+        enabled: false
+    
+    # Resource configuration for the operator itself
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 256Mi
