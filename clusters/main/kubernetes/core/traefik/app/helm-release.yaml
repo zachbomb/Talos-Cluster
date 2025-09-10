@@ -28,6 +28,9 @@ spec:
         name: truecharts
         namespace: flux-system
   values:
+    env:
+      - name: TZ
+        value: America/Los_Angeles
     dashboard:
       enabled: true
     defaultCertificate: wethecommon-wildcard-cert
@@ -102,18 +105,3 @@ spec:
             - 192.168.9.0/24
             - 192.168.8.0/24
 
-    env:
-      - name: TZ
-        value: America/Los_Angeles
-    workload:
-      main:
-        autoscaling:
-          vpa:
-            enabled: true
-        resources:
-          requests:
-            memory: 1024Mi
-            cpu: 50m
-          limits:
-            memory: 2Gi
-            cpu: 500m
