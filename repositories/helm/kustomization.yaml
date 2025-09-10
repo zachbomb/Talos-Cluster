@@ -19,7 +19,7 @@ resources:
   - kustomization.yaml
   - kyverno.yaml
   - metallb.yaml
-  - metallb_alt.yaml
+  # - metallb_alt.yaml
   - node-feature-discovery.yaml
   - nvidia.yaml
   - openebs/ks.yaml
