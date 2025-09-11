@@ -9,27 +9,10 @@ spec:
   chart:
     spec:
       chart: kubelet-csr-approver
-      version: 2.4.1
+      version: 2.3.6
       sourceRef:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
       interval: 30m
-  values:
-    workload:
-      main:
-        enabled: true
-        podSpec:
-          hostUsers: true
-        autoscaling:
-          vpa:
-            enabled: true
-        resources:
-          requests:
-            memory: 1024Mi
-            cpu: 50m
-          limits:
-            memory: 2Gi
-            cpu: 500m
-    securityContext:
-      readOnlyRootFilesystem: false
+  values: {}

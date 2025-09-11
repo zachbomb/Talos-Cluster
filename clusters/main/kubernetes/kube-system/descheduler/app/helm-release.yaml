@@ -74,13 +74,3 @@ spec:
       enabled: false
     leaderElection:
       enabled: true
-    autoscaling:
-      vpa:
-        enabled: true
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 2Gi
-        cpu: 500m
