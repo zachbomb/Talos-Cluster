@@ -73,22 +73,8 @@ spec:
     k8sServiceHost: 127.0.0.1
     k8sServicePort: 7445
     kubeProxyReplacement: true
-    kubeProxyReplacementHealthzBindAddr: "0.0.0.0:10256"
+    kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
     localRedirectPolicy: true
     operator:
       rollOutPods: true
     rollOutCiliumPods: true
-    hostPorts:
-      health: true # enables 9879 health port
-      prometheus: false
-    autoscaling:
-      vpa:
-        enabled: true
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 2Gi
-        cpu: 500m
-    service: null
