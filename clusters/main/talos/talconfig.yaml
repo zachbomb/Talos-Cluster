@@ -90,7 +90,7 @@ controlPlane:
         nconnect=16
         noatime=True
       permissions: 420
-      path: /etc/nfsmount.conf
+      path: /var/etc/nfsmount.conf
       op: create
 worker:
     patches:
@@ -140,5 +140,5 @@ worker:
         nconnect=16
         noatime=True
       permissions: 420
-      path: /etc/nfsmount.conf
+      path: /var/etc/nfsmount.conf
       op: overwrite
