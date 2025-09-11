@@ -27,6 +27,8 @@ spec:
   dependsOn:
     - name: node-feature-discovery
       namespace: kube-system
+    - name: intel-device-plugin-operator
+      namespace: kube-system
   values:
     sharedDevNum: 5  # Increased from 3 to match your working guide
     nodeFeatureRule: true  # Enable node feature rules
