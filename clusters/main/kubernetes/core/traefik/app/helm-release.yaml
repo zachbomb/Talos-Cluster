@@ -82,7 +82,7 @@ spec:
                 pathType: Prefix
         integrations:
           traefik:
-            enabled: false
+            enabled: true
             entrypoints:
               - websecure
             forceTLS: true
