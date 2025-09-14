@@ -38,7 +38,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: sabnzbd.${BASE_DOMAIN}"
+          - host: sabnzbd."${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -198,7 +198,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
           hosts:
-            - host: sabnzbd-code.${BASE_DOMAIN}"
+            - host: sabnzbd-code."${BASE_DOMAIN}"
               paths:
                 - path: /
                   pathType: Prefix

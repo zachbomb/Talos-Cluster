@@ -45,7 +45,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: tdarr.${BASE_DOMAIN}"
+          - host: tdarr."${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

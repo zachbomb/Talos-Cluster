@@ -172,12 +172,12 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ${PLEX_API}
+                key: "${PLEX_API}"
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${PLEX_IP}
+        loadBalancerIP: "${PLEX_IP}"
         ports:
           main:
             enabled: true
