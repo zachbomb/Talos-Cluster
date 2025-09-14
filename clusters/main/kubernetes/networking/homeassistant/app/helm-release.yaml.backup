@@ -20,7 +20,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: homeassistant.${BASE_DOMAIN}
+          - host: homeassistant.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -54,7 +54,7 @@ spec:
         enabled: false
         podSpec:
           containers:
-            main: {}
+            main: {}"
     autoscaling:
       vpa:
         enabled: true
