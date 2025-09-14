@@ -57,6 +57,3 @@ spec:
     workload:
       main:
         enabled: false
-        podSpec:
-          containers:
-            main: {}"
