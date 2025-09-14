@@ -45,7 +45,7 @@ spec:
           homepage:
             enabled: false
         hosts:
-          - host: truenas."${BASE_DOMAIN}"
+          - host: truenas.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
