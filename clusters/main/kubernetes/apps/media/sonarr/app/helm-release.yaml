@@ -34,7 +34,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${SONARR_IP}
+        loadBalancerIP: "${SONARR_IP}"
         ports:
           main:
             port: 8989
@@ -68,7 +68,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ${SONARR_API}
+                key: "${SONARR_API}"
     metrics:
       main:
         enabled: false

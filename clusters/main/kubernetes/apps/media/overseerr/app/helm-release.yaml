@@ -48,7 +48,7 @@ spec:
               enabled: true
               custom:
                 url: http://192.168.10.207:5055
-                key: ${OVERSEERR_API}
+                key: "${OVERSEERR_API}"
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
@@ -61,7 +61,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${OVERSEERR_IP}
+        loadBalancerIP: "${OVERSEERR_IP}"
         ports:
           main:
             port: 5055

@@ -64,7 +64,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${OLLAMA_IP}
+        loadBalancerIP: "${OLLAMA_IP}"
         ports:
           main:
             enabled: true
