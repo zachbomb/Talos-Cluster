@@ -36,7 +36,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: "bazarr.${BASE_DOMAIN}"
+          - host: bazarr."${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

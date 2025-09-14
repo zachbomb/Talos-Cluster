@@ -1,52 +1,42 @@
-# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: dizquetv
+  name: calibre
   namespace: media
 spec:
-  interval: 15m
+  interval: 5m
   chart:
     spec:
-      chart: dizquetv
-      version: 17.4.1
+      chart: calibre
+      version: 18.8.2
       sourceRef:
         kind: HelmRepository
         name: truecharts
         namespace: flux-system
-  releaseName: dizquetv
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
   values:
-    image:
-      pullPolicy: IfNotPresent
-      repository: vexorian/dizquetv
-      tag: latest-nvidia
-    nvidiaImage:
-      pullPolicy: IfNotPresent
-      repository: vexorian/dizquetv
-      tag: latest-nvidia
     credentials:
       s3:
         type: s3
         url: "${S3URL}"
-        bucket: "${S3PREFIX}-dizquetv"
+        bucket: "${S3PREFIX}-calibre"
         accessKey: "${S3ID}"
         secretKey: "${S3KEY}"
         encrKey: "${S3KEY}"
-    TZ: America/Los_Angeles
-    service:
-      main:
-        enabled: true
-        LoadBalancerIP: "${DIZQUETV_IP}"
-        type: LoadBalancer
-        ports:
-          main:
-            enabled: true
-            port: 8080
     ingress:
       main:
         enabled: true
         hosts:
-          - host: dizquetv."${BASE_DOMAIN}"
+          - host: "calibre.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -60,30 +50,47 @@ spec:
               - name: local
                 namespace: traefik
           certManager:
+            enabled: true
             certificateIssuer: wethecommon-prod-cert
-            enabled: true
           homepage:
-            description: Streaming Channel Scheduler / Management
             enabled: true
-            group: Media Players
-            name: DizqueTV
+            name: Calibre
+            description: Book Manager
+            group: Content Management
+            icon: ""
             widget:
+              enabled: false
               custom:
                 key: ""
-              enabled: false
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: "${CALIBRE_IP}"
+        ports:
+          main:
+            port: 8084
+            targetPort: 8080
+            protocol: http
+          webserver:
+            enabled: true
+            port: 8081
+            protocol: http
+            targetPort: 8081
+      webserver:
+        enabled: false
     persistence:
       config:
-        main:
-          enabled: true
-          mountPath: /config
-          volsync:
-            - name: config
-              type: restic
-              credentials: s3
-              dest:
-                enabled: true
-              src:
-                enabled: true
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: 40 0 * * *
       media:
         enabled: true
         type: nfs
@@ -98,12 +105,12 @@ spec:
           - noatime
           - nodiratime
           - nolock
-      movies:
+      books:
         enabled: true
         type: nfs
-        path: /mnt/Pibbs-Horde/media/data/media/movies
+        path: /mnt/Pibbs-Horde/media/data/media/books
         server: 192.168.10.123
-        mountPath: /movies
+        mountPath: /books
         mountOptions:
           - nfsvers=4
           - tcp
@@ -112,12 +119,12 @@ spec:
           - noatime
           - nodiratime
           - nolock
-      tv:
+      comics:
         enabled: true
         type: nfs
-        path: /mnt/Pibbs-Horde/media/data/media/tv
+        path: /mnt/Pibbs-Horde/media/data/media/comics
         server: 192.168.10.123
-        mountPath: /tv
+        mountPath: /comics
         mountOptions:
           - nfsvers=4
           - tcp
@@ -126,12 +133,12 @@ spec:
           - noatime
           - nodiratime
           - nolock
-      xmltv:
+      downloads:
         enabled: true
         type: nfs
-        path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/xmltv
+        path: /mnt/Pibbs-Horde/media/data/usenet
         server: 192.168.10.123
-        mountPath: /xmltv
+        mountPath: /usenet
         mountOptions:
           - nfsvers=4
           - tcp
@@ -140,30 +147,12 @@ spec:
           - noatime
           - nodiratime
           - nolock
-      backups:
+      backup:
         enabled: true
-        type: nfs
-        path: /mnt/Pibbs-Horde/media/data/app_backups/DizqueTV_Backups/backups
-        server: 192.168.10.123
         mountPath: /backups
-        mountOptions:
-          - nfsvers=4
-          - tcp
-          - intr
-          - hard
-          - noatime
-          - nodiratime
-          - nolock
-    securityContext:
-      container:
-        PUID: 1000
-        UMASK: "0022"
-        privileged: false
-        readOnlyRootFilesystem: false
-        runAsGroup: 1000
-    autoscaling:
-      vpa:
-        enabled: true
+    metrics:
+      main:
+        enabled: false
     resources:
       requests:
         memory: 1024Mi
@@ -171,3 +160,6 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+    autoscaling:
+      vpa:
+        enabled: true

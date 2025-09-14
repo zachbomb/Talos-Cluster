@@ -59,7 +59,7 @@ spec:
         enabled: true
         ingress:
           enabled: true
-          host: crowdsec.${BASE_DOMAIN}"
+          host: crowdsec."${BASE_DOMAIN}"
           integrations:
             certManager:
               enabled: true

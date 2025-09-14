@@ -69,7 +69,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${TINYMEDIAMANAGER_IP}
+        loadBalancerIP: "${TINYMEDIAMANAGER_IP}"
         ports:
           main:
             port: 10179

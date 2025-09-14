@@ -39,7 +39,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: "tinymediamanager.${BASE_DOMAIN}"
+          - host: tinymediamanager."${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

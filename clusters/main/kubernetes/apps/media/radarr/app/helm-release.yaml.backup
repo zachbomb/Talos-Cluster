@@ -58,7 +58,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${RADARR_IP}
+        loadBalancerIP: "${RADARR_IP}"
         ports:
           main:
             port: 7878
@@ -91,7 +91,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ${RADARR_API}
+                key: "${RADARR_API}"
     persistence:
       config:
         enabled: true
