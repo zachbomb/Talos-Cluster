@@ -38,7 +38,7 @@ spec:
           # internal-dns.alpha.kubernetes.io/hostname: internal.${DOMAIN_0}"
           metallb.io/ip-allocated-from-pool: main
           metallb.io/loadBalancerIPs: ${NGINX_INTERNAL_IP}
-          internal-dns.alpha.kubernetes.io/hostname: internal.${BASE_DOMAIN}"
+          internal-dns.alpha.kubernetes.io/hostname: internal.${BASE_DOMAIN}
           lbipam.cilium.io/ips: ${NGINX_INTERNAL_IP}
           nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
       ingressClassByName: true
