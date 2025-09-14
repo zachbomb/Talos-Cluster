@@ -29,24 +29,24 @@ spec:
       # This will be your password for your first-time login.
       # Use the username 'admin' and the API key as password to log in.
       # After login you must change your password from the UI
-      apikey: "${NOTIFIARR_API}"
+      apikey: ${NOTIFIARR_API}
     global:
       stopAll: false
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-plex"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     TZ: America/Los_Angeles
     ingress:
       main:
         enabled: true
         ingressClassName: internal
         hosts:
-          - host: notifiarr."${BASE_DOMAIN}"
+          - host: notifiarr.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -65,7 +65,7 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: "${NOTIFIARR_IP}"
+        loadBalancerIP: ${NOTIFIARR_IP}
         type: LoadBalancer
         ports:
           main:
@@ -119,7 +119,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
           hosts:
-            - host: notifiarr-code."${BASE_DOMAIN}"
+            - host: notifiarr-code.${BASE_DOMAIN}
               paths:
                 - path: /
                   pathType: Prefix

@@ -32,11 +32,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-kapowarr"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
@@ -64,11 +64,11 @@ spec:
                 key: 0c056d6d5c0206155947652bb26ce254
               enabled: true
         hosts:
-          - host: kapowarr."${BASE_DOMAIN}"
+          - host: kapowarr.${BASE_DOMAIN}
     service:
       main:
         enabled: true
-        loadBalancerIP: "${KAPOWARR_IP}"
+        loadBalancerIP: ${KAPOWARR_IP}
         type: LoadBalancer
         ports:
           main:

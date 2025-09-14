@@ -34,7 +34,7 @@ spec:
     service:
       dns:
         externalTrafficPolicy: Local
-        loadBalancerIP: ${BLOCKY_IP}
+        loadBalancerIP: "${BLOCKY_IP}"
         type: LoadBalancer
         integrations:
           metallb:
@@ -46,7 +46,7 @@ spec:
       clientGroupsBlock: []
     k8sgateway:
       domains:
-        - domain: ${DOMAIN_0}
+        - domain: "${DOMAIN_0}"
           dnsChallenge:
             enabled: false
             domain: dns01.clouddns.com

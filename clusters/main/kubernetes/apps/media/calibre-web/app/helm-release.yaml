@@ -33,16 +33,16 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-calibre-web"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
         hosts:
-          - host: calibre-web."${BASE_DOMAIN}"
+          - host: calibre-web.${BASE_DOMAIN}
         integrations:
           nginx:
             enabled: true
@@ -66,12 +66,12 @@ spec:
               custom:
                 url: http://192.168.10.235:8083
                 username: zach
-                password: "${CALIBRE_WEB_API}"
+                password: ${CALIBRE_WEB_API}
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${CALIBRE_WEB_IP}"
+        loadBalancerIP: ${CALIBRE_WEB_IP}
         ports:
           main:
             port: 8083

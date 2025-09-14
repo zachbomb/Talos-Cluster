@@ -38,7 +38,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${TRAEFIK_IP}"
+        loadBalancerIP: ${TRAEFIK_IP}
         ports:
           main:
             enabled: true
@@ -113,7 +113,7 @@ spec:
           crowdsecLapiTLSCertFile: /etc/traefik/crowdsec/cert.pem
           crowdsecLapiTLSKeyFile: /etc/traefik/crowdsec/key.pem
           crowdsecLapiTLSCaCertFile: /etc/traefik/crowdsec/ca.pem
-          crowdsecLapiKey: "${CROWDSEC_LAPI_KEY}"
+          crowdsecLapiKey: ${CROWDSEC_LAPI_KEY}
       chain:
         - name: secure-chain
           chain:

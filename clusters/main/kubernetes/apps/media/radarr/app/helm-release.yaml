@@ -30,11 +30,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-radarr"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     exportarrImage:
       repository: ghcr.io/onedr0p/exportarr
       tag: v2.3.0@sha256:af535d94061cf97a52e1661945ffba78c03f9443eae7c0da1a80a5a4be56b520
@@ -58,7 +58,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${RADARR_IP}"
+        loadBalancerIP: ${RADARR_IP}
         ports:
           main:
             port: 7878
@@ -66,7 +66,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: radarr."${BASE_DOMAIN}"
+          - host: radarr.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -91,7 +91,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: "${RADARR_API}"
+                key: ${RADARR_API}
     persistence:
       config:
         enabled: true

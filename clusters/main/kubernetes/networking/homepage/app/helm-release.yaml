@@ -20,11 +20,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-homepage"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     workload:
       main:
         podSpec:
@@ -90,7 +90,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${HOMEPAGE_IP}"
+        loadBalancerIP: ${HOMEPAGE_IP}
         ports:
           main:
             enabled: true

@@ -33,7 +33,7 @@ spec:
           containers:
             main:
               env:
-                TUNNEL_TOKEN: ${CLOUDFLARE_TOKEN}
+                TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
     securityContext:
       container:
         runAsUser: 1000

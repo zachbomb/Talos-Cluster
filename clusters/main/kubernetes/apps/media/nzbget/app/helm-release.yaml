@@ -29,11 +29,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-nzbget"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
@@ -64,12 +64,12 @@ spec:
               enabled: true
               custom:
                 username: zach
-                password: "${NZBGET_API}"
+                password: ${NZBGET_API}
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${NZBGET_IP}"
+        loadBalancerIP: ${NZBGET_IP}
         ports:
           main:
             port: 10057

@@ -32,11 +32,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-tautulli"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     TZ: America/Los_Angeles
     ingress:
       main:
@@ -63,18 +63,18 @@ spec:
             widget:
               custom:
                 url: http://192.168.10.224:8181/
-                key: "${TAUTULLI_API}"
+                key: ${TAUTULLI_API}
                 user: "true"
               enabled: true
         hosts:
-          - host: tautulli."${BASE_DOMAIN}"
+          - host: tautulli.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
     service:
       main:
         enabled: true
-        loadBalancerIP: "${TAUTULLI_IP}"
+        loadBalancerIP: ${TAUTULLI_IP}
         type: LoadBalancer
         ports:
           main:

@@ -29,16 +29,16 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-emby"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
         hosts:
-          - host: emby."${BASE_DOMAIN}"
+          - host: emby.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -63,12 +63,12 @@ spec:
             widget:
               enabled: true
               custom:
-                key: "${EMBY_API}"
+                key: ${EMBY_API}
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${EMBY_IP}"
+        loadBalancerIP: ${EMBY_IP}
         ports:
           main:
             port: 10079

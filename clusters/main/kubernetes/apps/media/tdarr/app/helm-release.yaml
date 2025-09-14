@@ -28,16 +28,16 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-tdarr"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${TDARR_IP}"
+        loadBalancerIP: ${TDARR_IP}
         ports:
           main:
             port: 8265
@@ -45,7 +45,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: tdarr."${BASE_DOMAIN}"
+          - host: tdarr.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix

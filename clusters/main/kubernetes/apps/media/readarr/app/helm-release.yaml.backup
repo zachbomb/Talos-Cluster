@@ -41,7 +41,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: readarr.${BASE_DOMAIN}"
+          - host: readarr.${BASE_DOMAIN}
         integrations:
           nginx:
             enabled: true
