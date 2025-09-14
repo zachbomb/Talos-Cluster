@@ -31,11 +31,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-plex"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     TZ: America/Los_Angeles
     image:
       existingPullSecret: ""
@@ -172,12 +172,12 @@ spec:
             widget:
               enabled: true
               custom:
-                key: "${PLEX_API}"
+                key: ${PLEX_API}
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${PLEX_IP}"
+        loadBalancerIP: ${PLEX_IP}
         ports:
           main:
             enabled: true

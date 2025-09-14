@@ -28,16 +28,16 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-ollama"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
         hosts:
-          - host: ollama."${BASE_DOMAIN}"
+          - host: ollama.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
@@ -64,7 +64,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${OLLAMA_IP}"
+        loadBalancerIP: ${OLLAMA_IP}
         ports:
           main:
             enabled: true
