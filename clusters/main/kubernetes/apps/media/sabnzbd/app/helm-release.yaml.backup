@@ -1,0 +1,237 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sabnzbd
+  namespace: media
+spec:
+  interval: 15m
+  timeout: 20m
+  releaseName: sabnzbd
+  chart:
+    spec:
+      chart: sabnzbd
+      version: 22.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    TZ: America/Los_Angeles
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-sabnzbd"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: sabnzbd.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: SabNZBD
+            group: Media Downloaders
+            description: Usenet Downloader
+            icon: ""
+            widget:
+              enabled: true
+              custom:
+                url: "http://192.168.10.230:10097"
+                key: "${SABNZBD_API}"
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: "${SABNZBD_IP}"
+        ports:
+          main:
+            enabled: true
+            port: 10097
+            protocol: http
+          codeserver:
+            enabled: true
+            port: 12321
+            targetPort: 12321
+    persistence:
+      config:
+        enabled: true
+        mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 100Gi
+            src:
+              enabled: true
+              cacheCapacity: 100Gi
+      media:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      movies:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        mountPath: /movies
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      tv:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      music:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/music
+        mountPath: /music
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      downloads:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/usenet
+        mountPath: /usenet
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      backup:
+        enabled: true
+        mountPath: /backups
+        volsync:
+          - name: b2
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "4 2 * * *"
+    addons:
+      codeserver:
+        enabled: true
+        service:
+          enabled: false # Don't create a separate service
+        ingress:
+          enabled: true
+          targetSelector:
+            main: codeserver
+          integrations:
+            nginx:
+              enabled: true
+              ingressClassName: internal
+            traefik:
+              enabled: false
+              middlewares:
+                - name: local
+                  namespace: traefik
+            certManager:
+              enabled: true
+              certificateIssuer: wethecommon-prod-cert
+          hosts:
+            - host: sabnzbd-code.${BASE_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
+    autoscaling:
+      vpa:
+        enabled: true
+    securityContext:
+      container:
+        UMASK: "0022"
+        runAsUser: 1000
+        runAsGroup: 1000
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    workload:
+      main:
+        service:
+          main:
+            enabled: false
+        podSpec:
+          containers:
+            main:
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false

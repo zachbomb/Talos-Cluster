@@ -44,5 +44,5 @@ spec:
     service:
       ui:
         type: LoadBalancer
-        loadBalancerIP: ${LONGHORN_IP}
+        loadBalancerIP: "${LONGHORN_IP}"
         port: 80

@@ -20,13 +20,13 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: minio.${BASE_DOMAIN}
+          - host: minio.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
         tls:
           - hosts:
-              - minio.${BASE_DOMAIN}
+              - minio.${BASE_DOMAIN}"
             secretName: minio-tls # 🔓 Enable TLS at Ingress level
         integrations:
           nginx:
@@ -59,4 +59,4 @@ spec:
         enabled: false
         podSpec:
           containers:
-            main: {}
+            main: {}"

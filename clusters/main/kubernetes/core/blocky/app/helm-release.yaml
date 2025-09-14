@@ -34,7 +34,7 @@ spec:
     service:
       dns:
         externalTrafficPolicy: Local
-        loadBalancerIP: ${BLOCKY_IP}
+        loadBalancerIP: "${BLOCKY_IP}"
         type: LoadBalancer
         integrations:
           metallb:

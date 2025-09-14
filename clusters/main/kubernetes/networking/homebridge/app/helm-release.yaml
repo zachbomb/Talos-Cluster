@@ -34,13 +34,13 @@ spec:
           homepage:
             enabled: false
         hosts:
-          - host: homebridge.${BASE_DOMAIN}
+          - host: homebridge.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
                 #        tls:
                 #          hosts:
-                #            - homebridge.${BASE_DOMAIN}
+                #            - homebridge.${BASE_DOMAIN}"
                 #          secretName: homebridge-tls
     release_name: homebridge
     service:

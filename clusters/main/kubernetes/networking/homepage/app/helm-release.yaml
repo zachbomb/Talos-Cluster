@@ -31,7 +31,7 @@ spec:
           containers:
             main:
               env:
-                HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}
+                HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}"
     ingress:
       main:
         enabled: true
@@ -48,7 +48,7 @@ spec:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
         hosts:
-          - host: homepage.${BASE_DOMAIN}
+          - host: homepage.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -142,7 +142,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
           hosts:
-            - host: homepage-code.${BASE_DOMAIN}
+            - host: homepage-code.${BASE_DOMAIN}"
               paths:
                 - path: /
                   pathType: Prefix

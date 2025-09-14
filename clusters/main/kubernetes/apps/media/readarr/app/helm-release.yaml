@@ -41,7 +41,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: readarr.${BASE_DOMAIN}
+          - host: readarr.${BASE_DOMAIN}"
         integrations:
           nginx:
             enabled: true
@@ -62,12 +62,12 @@ spec:
             name: Readarr
             widget:
               custom:
-                key: ${READARR_API}
+                key: "${READARR_API}"
               enabled: true
     service:
       main:
         enabled: true
-        loadBalancerIP: ${READARR_IP}
+        loadBalancerIP: "${READARR_IP}"
         type: LoadBalancer
         ports:
           main:

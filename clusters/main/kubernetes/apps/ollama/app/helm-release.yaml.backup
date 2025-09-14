@@ -1,0 +1,177 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollama
+  namespace: ollama
+spec:
+  releaseName: ollama
+  interval: 15m
+  timeout: 10m
+  chart:
+    spec:
+      chart: ollama
+      version: 8.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-ollama"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: "ollama.${BASE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Ollama
+            description: AI Language Model
+            group: Lifestyle & Home
+            widget:
+              enabled: false
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${OLLAMA_IP}
+        ports:
+          main:
+            enabled: true
+            port: 10686
+            targetPort: 10686
+            protocol: tcp
+          api:
+            enabled: true
+            port: 11434
+            targetPort: 11434
+            protocol: tcp
+      api:
+        enabled: false
+    ollama:
+      registration:
+        enabled: true
+        def_user_role: "pending"
+      whisper:
+        model: "base"
+      rag:
+        model_device_type: "cpu"
+        model: "all-MiniLM-L6-v2"
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              imageSelector: image
+              probes:
+                liveness:
+                  enabled: true
+                  type: http
+                  path: /api/version
+                  port: 11434
+                readiness:
+                  enabled: true
+                  type: http
+                  path: /api/version
+                  port: 11434
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 11434
+      ui:
+        enabled: true
+        type: Deployment
+        podSpec:
+          containers:
+            ui:
+              primary: true
+              enabled: true
+              imageSelector: uiImage
+              probes:
+                liveness:
+                  enabled: true
+                  type: http
+                  path: /
+                  port: 10686
+                readiness:
+                  enabled: true
+                  type: http
+                  path: /
+                  port: 10686
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 10686
+              env:
+                PORT: "10686"
+                OLLAMA_BASE_URL: "http://ollama-api:11434"
+                ENABLE_SIGNUP: "true"
+                DEFAULT_USER_ROLE: "pending"
+                WHISPER_MODEL: "base"
+                RAG_EMBEDDING_MODEL: "all-MiniLM-L6-v2"
+                RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cpu"
+                WEBUI_SECRET_KEY:
+                  secretKeyRef:
+                    name: ollama-secrets
+                    key: WEBUI_SECRET_KEY
+    configmap:
+      tcportal-open:
+        enabled: true
+        data:
+          placeholder: "enabled"
+    persistence:
+      config:
+        enabled: true
+        mountPath: /root/.ollama
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            src:
+              enabled: true
+            dest:
+              enabled: true
+      data:
+        enabled: true
+        mountPath: /app/backend/data
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            src:
+              enabled: true
+            dest:
+              enabled: true
+    autoscaling:
+      vpa:
+        enabled: true
