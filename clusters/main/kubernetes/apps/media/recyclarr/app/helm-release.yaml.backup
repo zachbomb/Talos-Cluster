@@ -40,7 +40,7 @@ spec:
     service:
       main:
         enabled: true
-        LoadBalancerIP: ${RECYCLARR_IP}
+        LoadBalancerIP: "${RECYCLARR_IP}"
         type: LoadBalancer
         ports:
           main:
@@ -72,7 +72,7 @@ spec:
                 enabled: true
                 certificateIssuer: wethecommon-prod-cert
             hosts:
-              - host: recyclarr.${BASE_DOMAIN}
+              - host: recyclarr.${BASE_DOMAIN}"
                 paths:
                   - path: /
                     pathType: Prefix
