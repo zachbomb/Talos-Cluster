@@ -3,7 +3,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: metallb-config
-  namespace: metallb-system
+  namespace: metallb  # Changed from metallb-system to match where MetalLB expects resources
 spec:
   interval: 15m
   chart:
@@ -42,10 +42,10 @@ spec:
       ipAddressPools:
         main:
           name: main
-          autoAssign: false
+          autoAssign: true  # Changed from false to true
           avoidBuggyIPs: true
           addresses:
-            - ${METALLB_RANGE}
+            - 192.168.10.193-192.168.10.254  # Hardcoded instead of variable
       
       l2Advertisements:
         main:
