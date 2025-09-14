@@ -21,7 +21,7 @@ spec:
         enabled: true
         ingressClassName: internal
         hosts:
-          - host: roon.${BASE_DOMAIN}
+          - host: roon.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -56,7 +56,7 @@ spec:
         enabled: false
         podSpec:
           containers:
-            main: {}
+            main: {}"
     autoscaling:
       vpa:
         enabled: true

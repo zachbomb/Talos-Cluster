@@ -66,7 +66,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${TUNARR_IP}
+        loadBalancerIP: "${TUNARR_IP}"
         ports:
           main:
             enabled: true
@@ -81,7 +81,7 @@ spec:
         enabled: true
         ingressClassName: internal
         hosts:
-          - host: tunarr.${BASE_DOMAIN}
+          - host: tunarr.${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
@@ -269,7 +269,7 @@ spec:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
           hosts:
-            - host: tunarr-code.${BASE_DOMAIN}
+            - host: tunarr-code.${BASE_DOMAIN}"
               paths:
                 - path: /
                   pathType: Prefix

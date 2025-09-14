@@ -61,12 +61,12 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ${BAZARR_API}
+                key: "${BAZARR_API}"
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${BAZARR_IP}
+        loadBalancerIP: "${BAZARR_IP}"
         ports:
           main:
             enabled: true

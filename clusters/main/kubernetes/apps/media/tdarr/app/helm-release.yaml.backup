@@ -1,0 +1,140 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tdarr
+  namespace: media
+spec:
+  interval: 10m
+  timeout: 20m
+  chart:
+    spec:
+      chart: tdarr
+      version: 12.5.1
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    credentials:
+      s3:
+        type: s3
+        url: "${S3URL}"
+        bucket: "${S3PREFIX}-tdarr"
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${TDARR_IP}
+        ports:
+          main:
+            port: 8265
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: tdarr.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+            traefik:
+              enabled: false
+              middlewares:
+                - name: local
+                  namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Tdarr
+            group: -*rrs
+            description: Transcoder
+            icon: ""
+            widget:
+              enabled: true
+              custom:
+                key: ""
+    persistence:
+      configs:
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "50 0 * * *"
+      logs:
+        volsync:
+          - name: logs
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+              trigger:
+                schedule: "50 0 * * *"
+      server:
+        volsync:
+          - name: server
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 20Gi
+            src:
+              enabled: true
+              cacheCapacity: 20Gi
+              trigger:
+                schedule: "50 0 * * *"
+      transcode-cache:
+        type: emptyDir
+      media:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
+        nvidia.com/gpu: 1
+    workload:
+      main:
+        podSpec:
+          runtimeClassName: nvidia
+    autoscaling:
+      vpa:
+        enabled: true

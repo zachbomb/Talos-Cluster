@@ -53,7 +53,7 @@ spec:
           enabled: true
           certificateIssuer: wethecommon-prod-cert
           hosts:
-            - ${DOMAIN_0}
+            - "${DOMAIN_0}"
             - '*.${DOMAIN_0}'
     autoscaling:
       vpa:
