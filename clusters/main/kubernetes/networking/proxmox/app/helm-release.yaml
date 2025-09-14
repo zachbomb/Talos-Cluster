@@ -37,7 +37,7 @@ spec:
           nginx.ingress.kubernetes.io/proxy-ssl-verify: "false" # <-- Skip TLS verification
           nginx.ingress.kubernetes.io/proxy-ssl-name: "proxmox.${BASE_DOMAIN}" # Optional: Use hostname to match cert CN/SAN
         hosts:
-          - host: proxmox.${BASE_DOMAIN}"
+          - host: proxmox."${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

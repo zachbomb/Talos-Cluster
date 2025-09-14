@@ -63,12 +63,12 @@ spec:
             widget:
               enabled: true
               custom:
-                key: ${EMBY_API}
+                key: "${EMBY_API}"
     service:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${EMBY_IP}
+        loadBalancerIP: "${EMBY_IP}"
         ports:
           main:
             port: 10079

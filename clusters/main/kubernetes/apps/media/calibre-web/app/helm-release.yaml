@@ -42,7 +42,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: calibre-web.${BASE_DOMAIN}"
+          - host: calibre-web."${BASE_DOMAIN}"
         integrations:
           nginx:
             enabled: true

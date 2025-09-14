@@ -49,7 +49,7 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: ${LIDARR_IP}
+        loadBalancerIP: "${LIDARR_IP}"
         ports:
           main:
             port: 8686
@@ -78,7 +78,7 @@ spec:
             name: Lidarr
             widget:
               custom:
-                key: ${LIDARR_API}
+                key: "${LIDARR_API}"
               enabled: true
         hosts:
           - host: "lidarr.${BASE_DOMAIN}"

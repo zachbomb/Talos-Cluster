@@ -37,7 +37,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: "tandoor.${BASE_DOMAIN}"
+          - host: tandoor."${BASE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix

@@ -63,7 +63,7 @@ spec:
             widget:
               custom:
                 url: http://192.168.10.224:8181/
-                key: ${TAUTULLI_API}
+                key: "${TAUTULLI_API}"
                 user: "true"
               enabled: true
         hosts:
@@ -74,7 +74,7 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: ${TAUTULLI_IP}
+        loadBalancerIP: "${TAUTULLI_IP}"
         type: LoadBalancer
         ports:
           main:
