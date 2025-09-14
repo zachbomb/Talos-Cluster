@@ -48,7 +48,7 @@ spec:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
         hosts:
-          - host: homepage."${BASE_DOMAIN}"
+          - host: homepage.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix
