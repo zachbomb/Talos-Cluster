@@ -148,7 +148,7 @@ spec:
       main:
         enabled: true
         hosts:
-          - host: "plex.${BASE_DOMAIN}"
+          - host: plex.${BASE_DOMAIN}
             paths:
               - path: /
                 pathType: Prefix

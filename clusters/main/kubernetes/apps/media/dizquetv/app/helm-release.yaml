@@ -27,16 +27,16 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-dizquetv"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     TZ: America/Los_Angeles
     service:
       main:
         enabled: true
-        LoadBalancerIP: "${DIZQUETV_IP}"
+        LoadBalancerIP: ${DIZQUETV_IP}
         type: LoadBalancer
         ports:
           main:

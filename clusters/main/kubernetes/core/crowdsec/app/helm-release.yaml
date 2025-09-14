@@ -59,7 +59,7 @@ spec:
         enabled: true
         ingress:
           enabled: true
-          host: crowdsec."${BASE_DOMAIN}"
+          host: crowdsec.${BASE_DOMAIN}
           integrations:
             certManager:
               enabled: true
@@ -79,7 +79,7 @@ spec:
         - name: DISABLE_ONLINE_API
           value: "false"
         - name: ENROLL_KEY
-          value: "${CSKEY}"
+          value: ${CSKEY}
         - name: ENROLL_INSTANCE_NAME
           value: "cluster"
       metrics:
@@ -89,7 +89,7 @@ spec:
       service:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${CROWDSEC_IP}"
+        loadBalancerIP: ${CROWDSEC_IP}
         ports:
           http:
             port: 8080

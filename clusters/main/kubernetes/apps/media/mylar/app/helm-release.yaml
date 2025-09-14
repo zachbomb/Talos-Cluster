@@ -32,11 +32,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-mylar"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
@@ -60,14 +60,14 @@ spec:
             name: Mylar
             widget:
               custom:
-                key: "${MYLAR_API}"
+                key: ${MYLAR_API}
               enabled: true
         hosts:
           - host: mylar.${BASE_DOMAIN}
     service:
       main:
         enabled: true
-        loadBalancerIP: "${MYLAR_IP}"
+        loadBalancerIP: ${MYLAR_IP}
         type: LoadBalancer
         ports:
           main:
