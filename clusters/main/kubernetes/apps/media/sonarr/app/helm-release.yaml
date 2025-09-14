@@ -20,11 +20,11 @@ spec:
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-sonarr"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     TZ: America/Los_Angeles
     exportarrImage:
       pullPolicy: IfNotPresent
@@ -34,7 +34,7 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: "${SONARR_IP}"
+        loadBalancerIP: ${SONARR_IP}
         ports:
           main:
             port: 8989
@@ -68,7 +68,7 @@ spec:
             widget:
               enabled: true
               custom:
-                key: "${SONARR_API}"
+                key: ${SONARR_API}
     metrics:
       main:
         enabled: false

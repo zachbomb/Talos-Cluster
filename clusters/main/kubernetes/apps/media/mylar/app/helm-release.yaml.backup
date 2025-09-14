@@ -63,7 +63,7 @@ spec:
                 key: "${MYLAR_API}"
               enabled: true
         hosts:
-          - host: mylar.${BASE_DOMAIN}"
+          - host: mylar.${BASE_DOMAIN}
     service:
       main:
         enabled: true

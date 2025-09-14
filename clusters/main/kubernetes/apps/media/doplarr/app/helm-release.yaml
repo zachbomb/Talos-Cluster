@@ -28,34 +28,34 @@ spec:
       stopAll: false
     env:
       LOG_LEVEL: ":info"
-      OVERSEERR__URL: "${OVERSEERR_IP}"
-      OVERSEERR__API: "${OVERSEERR_API}"
+      OVERSEERR__URL: ${OVERSEERR_IP}
+      OVERSEERR__API: ${OVERSEERR_API}
       OVERSEERR__DEFAULT_ID: ""
       DISCORD__MAX_RESULTS: 25
       DISCORD__REQUESTED_MSG_STYLE: ":plain"
       DISCORD__ROLE_ID: ""
-      DISCORD__TOKEN: "${DISCORD_TOKEN}"
-      SONARR__URL: "${SONARR_IP}"
-      SONARR__API: "${SONARR_API}"
+      DISCORD__TOKEN: ${DISCORD_TOKEN}
+      SONARR__URL: ${SONARR_IP}
+      SONARR__API: ${SONARR_API}
       SONARR__QUALITY_PROFILE: ""
       SONARR__LANGUAGE_PROFILE: ""
-      RADARR__URL: "${RADARR_IP}"
-      RADARR__API: "${RADARR_API}"
+      RADARR__URL: ${RADARR_IP}
+      RADARR__API: ${RADARR_API}
       RADARR__QUALITY_PROFILE: ""
       PARTIAL_SEASONS: true
     credentials:
       s3:
         type: s3
-        url: "${S3URL}"
+        url: ${S3URL}
         bucket: "${S3PREFIX}-doplarr"
-        accessKey: "${S3ID}"
-        secretKey: "${S3KEY}"
-        encrKey: "${S3KEY}"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
     ingress:
       main:
         enabled: true
         hosts:
-          - host: doplarr."${BASE_DOMAIN}"
+          - host: doplarr.${BASE_DOMAIN}
         integrations:
           nginx:
             enabled: true
@@ -71,7 +71,7 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: "${doplarr_IP}"
+        loadBalancerIP: ${doplarr_IP}
         type: LoadBalancer
         ports:
           main:
