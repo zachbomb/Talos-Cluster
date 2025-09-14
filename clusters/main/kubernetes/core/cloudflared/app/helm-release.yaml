@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: cloudflared
-      version: 14.5.1
+      version: 14.5.0
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -23,17 +23,20 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
+
   values:
     portal:
       open:
         enabled: false
+
     workload:
       main:
         podSpec:
           containers:
             main:
               env:
-                TUNNEL_TOKEN: ${CLOUDFLARE_TOKEN}
+                TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
+
     securityContext:
       container:
         runAsUser: 1000
@@ -42,6 +45,7 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+
     resources:
       requests:
         memory: 1024Mi
@@ -49,6 +53,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
+
     service:
       main:
         enabled: false
