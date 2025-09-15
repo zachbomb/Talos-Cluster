@@ -37,6 +37,7 @@ spec:
         ports:
           main:
             port: 80
+
     workload:
       main:
         enabled: true
@@ -58,11 +59,14 @@ spec:
         enabled: true
         podSpec:
           hostUsers: true
+
     securityContext:
       readOnlyRootFilesystem: false
+
     autoscaling:
       vpa:
         enabled: true
+
     resources:
       requests:
         memory: 1024Mi
