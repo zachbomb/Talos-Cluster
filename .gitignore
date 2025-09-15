@@ -8,4 +8,6 @@ clustertool
 sopssecret.yaml
 sopssecret*
 *sopssecret*
-mounts/
+mounts/*.backup.yaml
+*-backup.yaml
+current-ip-assignments.txt
