@@ -31,9 +31,12 @@ spec:
     env:
       - name: TZ
         value: America/Los_Angeles
+
     dashboard:
       enabled: true
+
     defaultCertificate: wethecommon-wildcard-cert
+
     service:
       main:
         enabled: true
@@ -59,19 +62,22 @@ spec:
               enabled: true
           tcp:
             enabled: true
-            port: 9001 # Example TCP port, adjust as needed
+            port: 9001
             protocol: tcp
             forwardedHeaders:
               enabled: true
       tcp:
         enabled: false
+
     additionalArguments:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.tcp.address=:9001"
+
     ingressRoute:
       dashboard:
         enabled: true
+
     ingress:
       main:
         enabled: true
@@ -92,36 +98,49 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-    middlewares:
-      ipWhiteList:
-        - name: local
-          sourceRange:
-            - 172.16.0.0/16
-            - 172.17.0.0/16
-            - 192.168.10.0/24
-            - 192.168.20.0/24
-            - 192.168.30.0/24
-            - 192.168.3.0/24
-            - 192.168.9.0/24
-            - 192.168.8.0/24
-      bouncer:
-        - name: bouncer
-          crowdsecMode: live
-          crowdsecLapiHost: crowdsec.crowdsec.svc.cluster.local:8443
-          crowdsecLapiScheme: https
-          crowdsecLapiTLSInsecureVerify: false
-          crowdsecLapiTLSCertFile: /etc/traefik/crowdsec/cert.pem
-          crowdsecLapiTLSKeyFile: /etc/traefik/crowdsec/key.pem
-          crowdsecLapiTLSCaCertFile: /etc/traefik/crowdsec/ca.pem
-          crowdsecLapiKey: ${CROWDSEC_LAPI_KEY}
-      chain:
-        - name: secure-chain
-          chain:
+
+    ingressMiddlewares:
+      traefik:
+        local-whitelist:
+          enabled: true
+          type: ip-allow-list
+          data:
+            sourceRange:
+              - 172.16.0.0/16
+              - 172.17.0.0/16
+              - 192.168.10.0/24
+              - 192.168.20.0/24
+              - 192.168.30.0/24
+              - 192.168.3.0/24
+              - 192.168.9.0/24
+              - 192.168.8.0/24
+
+        bouncer:
+          enabled: true
+          type: plugin-bouncer
+          data:
+            enabled: true
+            crowdsecMode: live
+            crowdsecLapiHost: crowdsec.crowdsec.svc.cluster.local:8443
+            crowdsecLapiScheme: https
+            crowdsecLapiTLSInsecureVerify: false
+            crowdsecLapiKey: ${CROWDSEC_LAPI_KEY}
+            # If the plugin supports specifying CA/cert/key files, check docs
+            # crowdsecLapiTLSCertificateAuthority: |
+            #   -----BEGIN CERTIFICATE-----
+            #   <CA cert contents>
+            #   -----END CERTIFICATE-----
+
+        secure-chain:
+          enabled: true
+          type: chain
+          data:
             middlewares:
               - name: bouncer
                 namespace: traefik
-              - name: local
+              - name: local-whitelist
                 namespace: traefik
+
     workload:
       main:
         autoscaling:
