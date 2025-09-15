@@ -78,7 +78,7 @@ spec:
           namespaceSelector:
             any: true
       extraArgs:
-        default-ssl-certificate: "clusterissuer/certificate-issuer-wethecommon-wildcard-cert"
+        default-ssl-certificate: "cert-manager/certificate-issuer-wethecommon-wildcard-cert"
         publish-status-address: ${NGINX_EXTERNAL_IP}
       terminationGracePeriodSeconds: 120
       publishService:
