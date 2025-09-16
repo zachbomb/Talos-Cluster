@@ -61,7 +61,7 @@ spec:
                 namespace: traefik
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-prod-cert
+            certificateIssuer: wethecommon-staging-cert
     service:
       main:
         enabled: true
@@ -117,7 +117,7 @@ spec:
                   namespace: traefik
             certManager:
               enabled: true
-              certificateIssuer: wethecommon-prod-cert
+              certificateIssuer: wethecommon-staging-cert
           hosts:
             - host: notifiarr-code.${BASE_DOMAIN}
               paths:
