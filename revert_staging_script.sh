@@ -50,6 +50,14 @@ main() {
         "media/tinymediamanager"
         "media/tunarr"
         "ollama"
+        "media/roon"
+        "media/overseerr"
+        "media/bazarr"
+        "media/prowlarr"
+        "media/dizquetv"
+        "media/emby"
+        "media/radarr"
+        "code-server"
     )
     
     # Add minio if it exists (it's in networking namespace)
