@@ -53,7 +53,7 @@ spec:
                 namespace: traefik
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-staging-cert
+            certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: true
             name: SabNZBD
@@ -196,7 +196,7 @@ spec:
                   namespace: traefik
             certManager:
               enabled: true
-              certificateIssuer: wethecommon-staging-cert
+              certificateIssuer: wethecommon-prod-cert
           hosts:
             - host: sabnzbd-code.${BASE_DOMAIN}
               paths:
