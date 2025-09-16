@@ -69,7 +69,7 @@ spec:
                 namespace: traefik
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-prod-cert
+            certificateIssuer: wethecommon-staging-cert
           homepage:
             description: Music Management/Downloader
             enabled: true

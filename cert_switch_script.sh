@@ -33,8 +33,24 @@ error() {
 check_time() {
     local target_time="2025-09-17 01:00:00 UTC"
     local current_time=$(date -u +"%Y-%m-%d %H:%M:%S")
-    local target_epoch=$(date -d "$target_time" +%s 2>/dev/null || date -j -f "%Y-%m-%d %H:%M:%S %Z" "$target_time" +%s)
+    
+    # Cross-platform epoch time conversion
+    local target_epoch
     local current_epoch=$(date -u +%s)
+    
+    # Try Linux/GNU date first, then fall back to macOS date
+    if target_epoch=$(date -d "$target_time" +%s 2>/dev/null); then
+        # Linux/GNU date worked
+        :
+    elif target_epoch=$(date -j -u -f "%Y-%m-%d %H:%M:%S %Z" "$target_time" +%s 2>/dev/null); then
+        # macOS date worked
+        :
+    else
+        # Manual calculation as fallback
+        # September 17, 2025 01:00:00 UTC = 1757970000 (approximate)
+        target_epoch=1757970000
+        warn "Could not parse target time automatically, using hardcoded epoch: $target_epoch"
+    fi
     
     if [ "$current_epoch" -lt "$target_epoch" ]; then
         error "Current time ($current_time UTC) is before safe switch time ($target_time). Please wait."

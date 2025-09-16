@@ -60,7 +60,7 @@ spec:
               - name: local
                 namespace: traefik
           certManager:
-            certificateIssuer: wethecommon-prod-cert
+            certificateIssuer: wethecommon-staging-cert
             enabled: true
           homepage:
             description: Streaming Channel Scheduler / Management
