@@ -67,7 +67,7 @@ spec:
                 namespace: traefik
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-staging-cert
+            certificateIssuer: wethecommon-prod-cert
     service:
       main:
         enabled: true

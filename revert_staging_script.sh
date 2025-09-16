@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Revert to Staging Certificates Script
-# Switches certificates back from production to staging for immediate functionality
+# Selective Certificate Management Script
+# Keeps only rate-limited services on staging, moves everything else to production
 
 set -euo pipefail
 
@@ -30,11 +30,31 @@ error() {
 }
 
 main() {
-    log "Starting Certificate Revert to Staging Process"
+    log "Starting Selective Certificate Configuration"
     
     # Check if we're in the right directory
     if [[ ! -f "./clustertool" ]] || [[ ! -d "clusters/main" ]]; then
         error "Script must be run from the root of your cluster repository"
+    fi
+    
+    # Services that should stay on staging (rate limited until tonight)
+    declare -a staging_services=(
+        "home/tandoor-recipes"
+        "media/notifiarr"
+        "media/nzbget"
+        "media/plex"
+        "media/readarr"
+        "media/sabnzbd"
+        "media/sonarr"
+        "media/tautulli"
+        "media/tinymediamanager"
+        "media/tunarr"
+        "ollama"
+    )
+    
+    # Add minio if it exists (it's in networking namespace)
+    if [[ -f "$CLUSTER_PATH/apps/networking/minio/app/helm-release.yaml" ]]; then
+        staging_services+=("networking/minio")
     fi
     
     # Step 1: Git pull to ensure we have latest changes
@@ -48,41 +68,60 @@ main() {
         log "Repository is up to date"
     fi
     
-    # Step 2: Find and update all helm releases with production certificates back to staging
-    log "Step 2: Reverting certificates from production back to staging"
+    # Step 2: Function to check if service should be on staging
+    log "Step 2: Processing certificate configurations"
     
-    updated_files=()
+    is_staging_service() {
+        local service="$1"
+        for staging_service in "${staging_services[@]}"; do
+            if [[ "$service" == "$staging_service" ]]; then
+                return 0  # Found in staging list
+            fi
+        done
+        return 1  # Not found in staging list
+    }
     
+    updated_to_prod=0
+    kept_staging=0
+    
+    # Step 3: Process all helm-release.yaml files
     while IFS= read -r -d '' file; do
-        if grep -q "wethecommon-prod-cert" "$file"; then
-            log "  Reverting $(echo "$file" | sed "s|$CLUSTER_PATH/apps/||" | sed 's|/app/helm-release.yaml||') back to staging"
-            sed -i.bak 's/wethecommon-prod-cert/wethecommon-staging-cert/g' "$file"
-            rm -f "$file.bak"
-            updated_files+=("$file")
+        # Extract service path from file path
+        service_path=$(echo "$file" | sed "s|$CLUSTER_PATH/apps/||" | sed 's|/app/helm-release.yaml||')
+        
+        if is_staging_service "$service_path"; then
+            # This service should stay on staging
+            if grep -q "wethecommon-prod-cert" "$file"; then
+                log "  Switching $service_path to staging (rate limited)"
+                sed -i.bak 's/wethecommon-prod-cert/wethecommon-staging-cert/g' "$file"
+                rm -f "$file.bak"
+            else
+                log "  Keeping $service_path on staging"
+            fi
+            kept_staging=$((kept_staging + 1))
+        else
+            # This service should be on production
+            if grep -q "wethecommon-staging-cert" "$file"; then
+                log "  Switching $service_path to production (no rate limits)"
+                sed -i.bak 's/wethecommon-staging-cert/wethecommon-prod-cert/g' "$file"
+                rm -f "$file.bak"
+                updated_to_prod=$((updated_to_prod + 1))
+            fi
         fi
     done < <(find "$CLUSTER_PATH/apps" -name "helm-release.yaml" -type f -print0)
     
-    log "Reverted ${#updated_files[@]} helm-release.yaml file(s) back to staging certificates"
+    log "Summary:"
+    log "  - $kept_staging services kept on staging certificates"
+    log "  - $updated_to_prod services switched to production certificates"
     
-    if [[ ${#updated_files[@]} -eq 0 ]]; then
-        warn "No helm-release.yaml files contained production certificates. All may already be using staging certificates."
-        exit 0
-    fi
-    
-    # Show which files were reverted
-    for file in "${updated_files[@]}"; do
-        service_path=$(echo "$file" | sed "s|$CLUSTER_PATH/apps/||" | sed 's|/app/helm-release.yaml||')
-        log "  ✓ $service_path"
-    done
-    
-    # Step 3: Generate cluster configuration
+    # Step 4: Generate cluster configuration
     log "Step 3: Generating cluster configuration"
     ./clustertool genconfig
     
-    # Step 4: Commit and push changes
+    # Step 5: Commit and push changes
     log "Step 4: Committing changes to git"
     git add -A
-    git commit -m "Revert certificates back to staging - avoiding production rate limits"
+    git commit -m "Selective certificate config: staging for rate-limited services, production for others"
     
     log "Step 5: Pushing changes to repository"
     git push origin $BRANCH
@@ -92,16 +131,13 @@ main() {
     flux reconcile source git cluster
     flux reconcile kustomization flux-entry
     
-    log "Certificate revert completed successfully!"
-    log "All services should now be using staging Let's Encrypt certificates with immediate functionality."
-    log "You can switch back to production certificates this evening using the corrected script."
+    log "Selective certificate configuration completed successfully!"
+    log "Rate-limited services remain on staging, others moved to production."
+    log "Tonight you can switch all remaining staging services to production."
     
-    # Show certificate status
+    # Show current status
     log "Current certificate status:"
     kubectl get certificates -A | grep -E "(NAMESPACE|False)" || echo "All certificates appear to be ready!"
-    
-    log "Services should be accessible with valid SSL (staging) certificates shortly."
-    log "Remember to clear HSTS for any domains if needed: chrome://net-internals/#hsts"
 }
 
 # Run main function
