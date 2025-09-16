@@ -63,7 +63,7 @@ spec:
             widget:
               enabled: true
               custom:
-                url: "http://192.168.10.230:10097"
+                url: "http://${SABNZBD_IP}:10097"
                 key: ${SABNZBD_API}
     service:
       main:

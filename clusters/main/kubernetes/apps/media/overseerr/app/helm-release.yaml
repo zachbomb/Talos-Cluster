@@ -47,7 +47,7 @@ spec:
             widget:
               enabled: true
               custom:
-                url: http://192.168.10.207:5055
+                url: http://${OVERSEERR_IP}:5055
                 key: ${OVERSEERR_API}
           certManager:
             enabled: true
