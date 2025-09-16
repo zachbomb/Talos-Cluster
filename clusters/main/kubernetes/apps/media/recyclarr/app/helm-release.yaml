@@ -70,7 +70,7 @@ spec:
                   namespace: traefik
               certManager:
                 enabled: true
-                certificateIssuer: wethecommon-prod-cert
+                certificateIssuer: wethecommon-staging-cert
             hosts:
               - host: recyclarr.${BASE_DOMAIN}
                 paths:
