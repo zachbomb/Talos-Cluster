@@ -62,7 +62,7 @@ spec:
             name: Tautulli
             widget:
               custom:
-                url: http://192.168.10.224:8181/
+                url: http://${TAUTULLI_IP}:8181/
                 key: ${TAUTULLI_API}
                 user: "true"
               enabled: true
