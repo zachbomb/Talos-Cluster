@@ -54,8 +54,5 @@ spec:
         memory: 4Gi
         cpu: 500m
 
-    service:
-      main:
-        enabled: false
     podOptions:
       hostUsers: true
