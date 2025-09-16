@@ -53,7 +53,7 @@ spec:
                 namespace: traefik
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-staging-cert
+            certificateIssuer: wethecommon-prod-cert
           homepage:
             description: Book Downloader/Manager
             enabled: true
