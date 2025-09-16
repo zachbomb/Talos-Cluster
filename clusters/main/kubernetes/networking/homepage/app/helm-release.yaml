@@ -31,7 +31,7 @@ spec:
           containers:
             main:
               env:
-                HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN}"
+                HOMEPAGE_ALLOWED_HOSTS: homepage.${BASE_DOMAIN},${HOMEPAGE_IP}
     ingress:
       main:
         enabled: true
