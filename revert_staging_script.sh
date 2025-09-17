@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Selective Certificate Management Script
-# Keeps only rate-limited services on staging, moves everything else to production
+# Certificate Production Switch Script
+# Switches certificates from staging back to production after rate limits expire
+# Run after September 17, 2025 01:00 UTC (September 16, 2025 5:00 PM PST)
 
 set -euo pipefail
 
@@ -29,41 +30,47 @@ error() {
     exit 1
 }
 
+check_time() {
+    local target_time="2025-09-17 01:00:00 UTC"
+    local current_time=$(date -u +"%Y-%m-%d %H:%M:%S")
+    local target_epoch=$(date -d "$target_time" +%s 2>/dev/null || date -j -f "%Y-%m-%d %H:%M:%S %Z" "$target_time" +%s)
+    local current_epoch=$(date -u +%s)
+    
+    if [ "$current_epoch" -lt "$target_epoch" ]; then
+        error "Current time ($current_time UTC) is before safe switch time ($target_time). Please wait."
+    fi
+    
+    log "Time check passed. Safe to proceed with certificate switch."
+}
+
+update_helm_release() {
+    local file="$1"
+    local service_name=$(basename $(dirname $(dirname "$file")))
+    
+    log "Processing $service_name..."
+    
+    # Replace staging cert issuer with production cert issuer
+    if grep -q "wethecommon-staging-cert" "$file"; then
+        sed -i.bak 's/wethecommon-staging-cert/wethecommon-prod-cert/g' "$file"
+        log "  Updated issuer from staging to production"
+        rm -f "$file.bak"
+        return 0
+    else
+        warn "  No staging certificate reference found in $file"
+        return 1
+    fi
+}
+
 main() {
-    log "Starting Selective Certificate Configuration"
+    log "Starting Certificate Production Switch Process"
     
     # Check if we're in the right directory
     if [[ ! -f "./clustertool" ]] || [[ ! -d "clusters/main" ]]; then
         error "Script must be run from the root of your cluster repository"
     fi
     
-    # Services that should stay on staging (rate limited until tonight)
-    declare -a staging_services=(
-        "home/tandoor-recipes"
-        "media/notifiarr"
-        "media/nzbget"
-        "media/plex"
-        "media/readarr"
-        "media/sabnzbd"
-        "media/sonarr"
-        "media/tautulli"
-        "media/tinymediamanager"
-        "media/tunarr"
-        "ollama"
-        "media/roon"
-        "media/overseerr"
-        "media/bazarr"
-        "media/prowlarr"
-        "media/dizquetv"
-        "media/emby"
-        "media/radarr"
-        "code-server"
-    )
-    
-    # Add minio if it exists (it's in networking namespace)
-    if [[ -f "$CLUSTER_PATH/apps/networking/minio/app/helm-release.yaml" ]]; then
-        staging_services+=("networking/minio")
-    fi
+    # Check if it's safe to proceed
+    check_time
     
     # Step 1: Git pull to ensure we have latest changes
     log "Step 1: Updating repository with latest changes"
@@ -76,60 +83,42 @@ main() {
         log "Repository is up to date"
     fi
     
-    # Step 2: Function to check if service should be on staging
-    log "Step 2: Processing certificate configurations"
+    # Step 2: Find and update all helm releases with staging certificates
+    log "Step 2: Switching certificates from staging to production"
     
-    is_staging_service() {
-        local service="$1"
-        for staging_service in "${staging_services[@]}"; do
-            if [[ "$service" == "$staging_service" ]]; then
-                return 0  # Found in staging list
-            fi
-        done
-        return 1  # Not found in staging list
-    }
+    # Find all helm-release.yaml files and replace staging with production certificates
+    updated_files=()
     
-    updated_to_prod=0
-    kept_staging=0
-    
-    # Step 3: Process all helm-release.yaml files
     while IFS= read -r -d '' file; do
-        # Extract service path from file path
-        service_path=$(echo "$file" | sed "s|$CLUSTER_PATH/apps/||" | sed 's|/app/helm-release.yaml||')
-        
-        if is_staging_service "$service_path"; then
-            # This service should stay on staging
-            if grep -q "wethecommon-prod-cert" "$file"; then
-                log "  Switching $service_path to staging (rate limited)"
-                sed -i.bak 's/wethecommon-prod-cert/wethecommon-staging-cert/g' "$file"
-                rm -f "$file.bak"
-            else
-                log "  Keeping $service_path on staging"
-            fi
-            kept_staging=$((kept_staging + 1))
-        else
-            # This service should be on production
-            if grep -q "wethecommon-staging-cert" "$file"; then
-                log "  Switching $service_path to production (no rate limits)"
-                sed -i.bak 's/wethecommon-staging-cert/wethecommon-prod-cert/g' "$file"
-                rm -f "$file.bak"
-                updated_to_prod=$((updated_to_prod + 1))
-            fi
+        if grep -q "wethecommon-staging-cert" "$file"; then
+            log "  Updating $(echo "$file" | sed "s|$CLUSTER_PATH/apps/||" | sed 's|/app/helm-release.yaml||')"
+            sed -i.bak 's/wethecommon-staging-cert/wethecommon-prod-cert/g' "$file"
+            rm -f "$file.bak"
+            updated_files+=("$file")
         fi
     done < <(find "$CLUSTER_PATH/apps" -name "helm-release.yaml" -type f -print0)
     
-    log "Summary:"
-    log "  - $kept_staging services kept on staging certificates"
-    log "  - $updated_to_prod services switched to production certificates"
+    log "Updated ${#updated_files[@]} helm-release.yaml file(s) to use production certificates"
     
-    # Step 4: Generate cluster configuration
+    if [[ ${#updated_files[@]} -eq 0 ]]; then
+        warn "No helm-release.yaml files contained staging certificates. All may already be using production certificates."
+        exit 0
+    fi
+    
+    # Show which files were updated
+    for file in "${updated_files[@]}"; do
+        service_path=$(echo "$file" | sed "s|$CLUSTER_PATH/apps/||" | sed 's|/app/helm-release.yaml||')
+        log "  ✓ $service_path"
+    done
+    
+    # Step 3: Generate cluster configuration
     log "Step 3: Generating cluster configuration"
     ./clustertool genconfig
     
-    # Step 5: Commit and push changes
+    # Step 4: Commit and push changes
     log "Step 4: Committing changes to git"
     git add -A
-    git commit -m "Selective certificate config: staging for rate-limited services, production for others"
+    git commit -m "Switch certificates from staging to production after rate limit expiry"
     
     log "Step 5: Pushing changes to repository"
     git push origin $BRANCH
@@ -139,11 +128,11 @@ main() {
     flux reconcile source git cluster
     flux reconcile kustomization flux-entry
     
-    log "Selective certificate configuration completed successfully!"
-    log "Rate-limited services remain on staging, others moved to production."
-    log "Tonight you can switch all remaining staging services to production."
+    log "Certificate switch completed successfully!"
+    log "All services should now be using production Let's Encrypt certificates."
+    log "Monitor certificate status with: kubectl get certificates -A"
     
-    # Show current status
+    # Optional: Show certificate status
     log "Current certificate status:"
     kubectl get certificates -A | grep -E "(NAMESPACE|False)" || echo "All certificates appear to be ready!"
 }

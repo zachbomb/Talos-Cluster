@@ -54,7 +54,7 @@ spec:
             ingressClassName: internal
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-staging-cert
+            certificateIssuer: wethecommon-prod-cert
         hosts:
           - host: code.${BASE_DOMAIN}
             paths:
