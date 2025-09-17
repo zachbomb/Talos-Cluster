@@ -51,7 +51,7 @@ spec:
                 key: ${OVERSEERR_API}
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-staging-cert
+            certificateIssuer: wethecommon-prod-cert
           traefik:
             enabled: false
             middlewares:
