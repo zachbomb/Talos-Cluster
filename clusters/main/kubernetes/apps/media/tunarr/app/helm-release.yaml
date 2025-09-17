@@ -96,7 +96,7 @@ spec:
                 namespace: traefik
           certManager:
             enabled: true
-            certificateIssuer: wethecommon-staging-cert
+            certificateIssuer: wethecommon-prod-cert
           homepage:
             enabled: true
             icon: https://tunarr.com/assets/tunarr.png
@@ -267,7 +267,7 @@ spec:
                   namespace: traefik
             certManager:
               enabled: true
-              certificateIssuer: wethecommon-staging-cert
+              certificateIssuer: wethecommon-prod-cert
           hosts:
             - host: tunarr-code.${BASE_DOMAIN}
               paths:
