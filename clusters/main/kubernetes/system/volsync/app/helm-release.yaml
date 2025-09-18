@@ -31,8 +31,10 @@ spec:
             main:
               securityContext:
                 runAsNonRoot: true
+                runAsUser: 65534  # nobody user
+                runAsGroup: 65534
                 seccompProfile:
-              type: RuntimeDefault
+                  type: RuntimeDefault
               resources:
                 requests:
                   memory: 1024Mi
@@ -40,6 +42,13 @@ spec:
                 limits:
                   memory: 4Gi
                   cpu: 500m
+    # Add this section for job security context
+    jobSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      seccompProfile:
+        type: RuntimeDefault
     podOptions:
       hostUsers: true
     serviceAccount:
