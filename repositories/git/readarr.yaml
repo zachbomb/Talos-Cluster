@@ -3,11 +3,11 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: tunarr
+  name: readarr
   namespace: flux-system
 spec:
   interval: 30m
-  url: ssh://git@github.com/chrisbenincasa/tunarr.git
+  url: ssh://git@github.com/faustvii/readarr.git
   timeout: 10m
   ref:
     branch: develop

@@ -24,6 +24,10 @@ spec:
     remediation:
       retries: 3
   values:
+    image:
+      repository: ghcr.io/faustvii/readarr
+      pullPolicy: IfNotPresent
+      tag: 0.9.0
     portal:
       open:
         enabled: false
