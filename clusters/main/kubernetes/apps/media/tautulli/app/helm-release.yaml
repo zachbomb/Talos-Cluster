@@ -102,7 +102,15 @@ spec:
         type: LoadBalancer
         ports:
           main:
+            enabled: true
             port: 8181
+            targetPort: 8181
+            protocol: http
+          codeserver:
+            enabled: true
+            port: 12321
+            targetPort: 12321
+            protocol: http
     addons:
       codeserver:
         enabled: true
