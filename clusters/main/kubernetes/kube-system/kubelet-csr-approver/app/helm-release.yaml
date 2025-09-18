@@ -15,3 +15,17 @@ spec:
         name: truecharts
         namespace: flux-system
       interval: 30m
+  values:
+    autoscaling:
+      vpa:
+        enabled: true
+
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 4Gi
+        cpu: 500m
+    podOptions:
+      hostUsers: true
