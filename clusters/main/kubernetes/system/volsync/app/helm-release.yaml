@@ -22,11 +22,6 @@ spec:
     remediation:
       retries: 3
   values:
-    # TrueCharts specific settings
-    podOptions:
-      hostUsers: true
-    
-    # TrueCharts workload format
     workload:
       main:
         enabled: true
@@ -45,14 +40,12 @@ spec:
                 limits:
                   memory: 4Gi
                   cpu: 500m
-    
-    # TrueCharts service account format
+    podOptions:
+      hostUsers: true
     serviceAccount:
       main:
         enabled: true
         create: true
-    
-    # TrueCharts RBAC format with required VolSync permissions
     rbac:
       main:
         enabled: true
