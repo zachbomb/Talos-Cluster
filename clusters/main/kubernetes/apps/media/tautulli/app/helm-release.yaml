@@ -71,6 +71,30 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+    persistence:
+      config:
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+      media:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
     service:
       main:
         enabled: true
