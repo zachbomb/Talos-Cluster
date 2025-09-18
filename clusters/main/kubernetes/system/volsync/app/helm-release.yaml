@@ -27,12 +27,12 @@ spec:
         enabled: true
         type: Deployment
         podSpec:
-          securityContext:
-            runAsNonRoot: true
-            seccompProfile:
-              type: RuntimeDefault
           containers:
             main:
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+              type: RuntimeDefault
               resources:
                 requests:
                   memory: 1024Mi
