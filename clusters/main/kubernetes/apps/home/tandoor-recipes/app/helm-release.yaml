@@ -25,7 +25,7 @@ spec:
       retries: 3
   values:
     image:
-      repository: ghcr.io/TandoorRecipes/recipes
+      repository: ghcr.io/tandoorrecipes/recipes
       pullPolicy: IfNotPresent
       tag: 2.2.1
     TZ: America/Los_Angeles

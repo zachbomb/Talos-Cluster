@@ -27,7 +27,7 @@ spec:
     image:
       repository: ghcr.io/morpheus65535/bazarr
       pullPolicy: IfNotPresent
-      tag: 1.5.2
+      tag: v1.5.2
     credentials:
       s3:
         type: s3
