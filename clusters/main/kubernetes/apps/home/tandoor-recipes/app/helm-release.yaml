@@ -24,6 +24,10 @@ spec:
     remediation:
       retries: 3
   values:
+    image:
+      repository: ghcr.io/TandoorRecipes/recipes
+      pullPolicy: IfNotPresent
+      tag: 2.2.1
     TZ: America/Los_Angeles
     credentials:
       s3:
