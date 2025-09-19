@@ -25,7 +25,7 @@ spec:
       retries: 3
   values:
     image:
-      repository: ghcr.io/kovidgoyal/calibre
+      repository: ghcr.io/linuxserver/calibre
       pullPolicy: IfNotPresent
       tag: 8.10.0
     credentials:
