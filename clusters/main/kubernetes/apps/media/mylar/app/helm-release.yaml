@@ -29,6 +29,32 @@ spec:
         enabled: false
     global:
       stopAll: false
+    
+    # Security configuration to fix PodSecurity violations
+    workload:
+      main:
+        podSpec:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            fsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            main:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                runAsGroup: 65534
+                allowPrivilegeEscalation: false
+                seccompProfile:
+                  type: RuntimeDefault
+                capabilities:
+                  drop:
+                  - ALL
+                  # Don't add any capabilities - remove the restricted ones
+    
     credentials:
       s3:
         type: s3
@@ -37,6 +63,7 @@ spec:
         accessKey: ${S3ID}
         secretKey: ${S3KEY}
         encrKey: ${S3KEY}
+    
     ingress:
       main:
         enabled: true
@@ -55,7 +82,7 @@ spec:
           homepage:
             description: Comic Downloader/Manager
             enabled: true
-            group: -*rrs
+            group: "*rrs"
             icon: ""
             name: Mylar
             widget:
@@ -64,6 +91,7 @@ spec:
               enabled: true
         hosts:
           - host: mylar.${BASE_DOMAIN}
+    
     service:
       main:
         enabled: true
@@ -74,6 +102,7 @@ spec:
             port: 8090
             protocol: http
             targetPort: 8090
+    
     persistence:
       config:
         volsync:
@@ -131,12 +160,15 @@ spec:
       backup:
         enabled: true
         mountPath: /backups
+    
     metrics:
       main:
         enabled: false
+    
     autoscaling:
       vpa:
         enabled: true
+    
     resources:
       requests:
         memory: 1024Mi
