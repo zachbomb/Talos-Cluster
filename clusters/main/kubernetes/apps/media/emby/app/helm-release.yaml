@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: emby
-      version: 25.4.2
+      version: 25.4.3
       sourceRef:
         kind: HelmRepository
         name: truecharts
