@@ -25,6 +25,10 @@ spec:
     remediation:
       retries: 3
   values:
+    image:
+      repository: docker.io/haveagitgat/tdarr
+      pullPolicy: IfNotPresent
+      tag: 2.46.01
     credentials:
       s3:
         type: s3
