@@ -17,6 +17,10 @@ spec:
         name: truecharts
         namespace: flux-system
   values:
+    image:
+      repository: ghcr.io/sct/overseerr
+      pullPolicy: IfNotPresent
+      tag: 1.34.0
     credentials:
       s3:
         type: s3

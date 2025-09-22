@@ -38,6 +38,9 @@ spec:
         encrKey: ${S3KEY}
     TZ: America/Los_Angeles
     image:
+      repository: ghcr.io/home-operations/plex
+      pullPolicy: IfNotPresent
+      tag: 1.42.1.10060
       existingPullSecret: ""
     persistence:
       config:

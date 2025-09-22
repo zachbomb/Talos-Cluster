@@ -25,6 +25,10 @@ spec:
     remediation:
       retries: 3
   values:
+    image:
+      repository: ghcr.io/home-operations/nzbget
+      pullPolicy: IfNotPresent
+      tag: 25.3.0
     TZ: America/Los_Angeles
     credentials:
       s3:
