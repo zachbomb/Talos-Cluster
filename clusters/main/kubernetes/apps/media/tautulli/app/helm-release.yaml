@@ -27,6 +27,10 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    image:
+      repository: ghcr.io/tautulli/tautulli
+      pullPolicy: IfNotPresent
+      tag: v2.16.0
     securityContext:
       readOnlyRootFilesystem: false
     credentials:

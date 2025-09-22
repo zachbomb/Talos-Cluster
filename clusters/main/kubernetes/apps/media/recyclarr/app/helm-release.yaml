@@ -24,6 +24,10 @@ spec:
     remediation:
       retries: 3
   values:
+    image:
+      pullPolicy: IfNotPresent
+      repository: ghcr.io/recyclarr/recyclarr
+      tag: 7.4.1
     portal:
       open:
         enabled: false
