@@ -17,6 +17,10 @@ spec:
         name: truecharts
         namespace: flux-system
   values:
+    image:
+      repository: ghcr.io/home-operations/sonarr
+      pullPolicy: IfNotPresent
+      tag: 4.0.15.2940
     credentials:
       s3:
         type: s3
