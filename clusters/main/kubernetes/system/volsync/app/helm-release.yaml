@@ -48,6 +48,41 @@ spec:
                 limits:
                   memory: 4Gi
                   cpu: 500m
+            restic:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                runAsGroup: 65534
+                seccompProfile:
+                  type: RuntimeDefault
+            rclone:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                runAsGroup: 65534
+                seccompProfile:
+                  type: RuntimeDefault
+            rsync:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                runAsGroup: 65534
+                seccompProfile:
+                  type: RuntimeDefault
+            rsync-tls:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                runAsGroup: 65534
+                seccompProfile:
+                  type: RuntimeDefault
+            syncthing:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                runAsGroup: 65534
+                seccompProfile:
+                  type: RuntimeDefault
     podOptions:
       hostUsers: true
     serviceAccount:
