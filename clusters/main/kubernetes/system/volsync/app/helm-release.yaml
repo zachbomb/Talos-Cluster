@@ -63,8 +63,9 @@ spec:
                   cpu: 500m
             restic:
               securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
+                runAsUser: 0           # root user to allow chown
+                runAsNonRoot: false    # must be false to allow root
+                allowPrivilegeEscalation: false
                 runAsGroup: 65534
                 seccompProfile:
                   type: RuntimeDefault
