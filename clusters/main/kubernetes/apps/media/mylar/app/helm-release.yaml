@@ -39,25 +39,19 @@ spec:
       main:
         podSpec:
           securityContext:
+            runAsUser: 911
+            runAsGroup: 1001
+            fsGroup: 1001
             runAsNonRoot: true
-            runAsUser: 65534
-            runAsGroup: 65534
-            fsGroup: 65534
             seccompProfile:
               type: RuntimeDefault
           containers:
             main:
               securityContext:
                 runAsNonRoot: true
-                runAsUser: 65534
-                runAsGroup: 65534
+                runAsUser: 911
+                runAsGroup: 1001
                 allowPrivilegeEscalation: false
-                seccompProfile:
-                  type: RuntimeDefault
-                capabilities:
-                  drop:
-                  - ALL
-                  # Don't add any capabilities - remove the restricted ones
     
     credentials:
       s3:
