@@ -22,6 +22,19 @@ spec:
     remediation:
       retries: 3
   values:
+    containers:
+      rclone:
+        enabled: false          # Explicitly add this to fix Helm template error
+      restic:
+        enabled: true
+      rsync:
+        enabled: true
+      rsync-tls:
+        enabled: true
+      syncthing:
+        enabled: true
+      main:
+        enabled: true
     workload:
       main:
         enabled: true
