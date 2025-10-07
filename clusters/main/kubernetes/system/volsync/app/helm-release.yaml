@@ -24,6 +24,15 @@ spec:
   values:
     metrics:
     main:
-      enabled: false
+      enabled: true
+      type: Deployment
+      podSpec:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+          # REMOVED containers section - it's defined at top level
     podOptions:
       hostUsers: true
