@@ -108,7 +108,7 @@ spec:
       config:
         enabled: true
         storageClass: longhorn  # Explicitly set to longhorn
-        size: 100Gi
+        size: 10Gi
         volsync:
           - name: config
             type: restic
