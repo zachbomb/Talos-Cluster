@@ -25,16 +25,58 @@ spec:
     containers:
       main:
         enabled: true
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+          startup:
+            enabled: false
       restic:
         enabled: true
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+          startup:
+            enabled: false
       rclone:
-        enabled: false   # must be here explicitly
+        enabled: false
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+          startup:
+            enabled: false
       rsync:
         enabled: true
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+          startup:
+            enabled: false
       rsync-tls:
         enabled: true
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+          startup:
+            enabled: false
       syncthing:
         enabled: true
+        probes:
+          liveness:
+            enabled: false
+          readiness:
+            enabled: false
+          startup:
+            enabled: false
     workload:
       main:
         enabled: true
@@ -63,8 +105,8 @@ spec:
                   cpu: 500m
             restic:
               securityContext:
-                runAsUser: 0           # root user to allow chown
-                runAsNonRoot: false    # must be false to allow root
+                runAsUser: 0
+                runAsNonRoot: false
                 allowPrivilegeEscalation: false
                 runAsGroup: 65534
                 seccompProfile:
