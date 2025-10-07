@@ -25,3 +25,5 @@ spec:
     metrics:
     main:
       enabled: false
+    podOptions:
+      hostUsers: true
