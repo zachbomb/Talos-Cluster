@@ -70,6 +70,7 @@ spec:
                 seccompProfile:
                   type: RuntimeDefault
             rclone:
+              enabled: true
               securityContext:
                 runAsNonRoot: true
                 runAsUser: 65534
