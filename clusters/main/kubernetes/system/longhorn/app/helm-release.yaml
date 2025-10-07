@@ -28,16 +28,12 @@ spec:
         namespace: flux-system
   values:
     defaultSettings:
-      # Increase to 3 for a multi-node cluster
-      defaultReplicaCount: 1
-      # Overprovisioning might be needed when using volsync
-      storageOverProvisioningPercentage: "100000"  # Must be string
+      defaultReplicaCount: "1"
+      storageOverProvisioningPercentage: "100000"
       # v2DataEngine: true
     persistence:
-      # Set to false to pick another CSI as default
       defaultClass: true
-      # Increase to 3 for a multi-node cluster
-      defaultClassReplicaCount: 1
+      defaultClassReplicaCount: "1"
     longhornUI:
       replicas: 1
     service:
