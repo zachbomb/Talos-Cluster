@@ -32,6 +32,19 @@ spec:
             enabled: false
           startup:
             enabled: false
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+        resources:
+          requests:
+            memory: 1024Mi
+            cpu: 50m
+          limits:
+            memory: 4Gi
+            cpu: 500m
       restic:
         enabled: true
         probes:
@@ -41,6 +54,13 @@ spec:
             enabled: false
           startup:
             enabled: false
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
       rclone:
         enabled: false
         probes:
@@ -50,6 +70,12 @@ spec:
             enabled: false
           startup:
             enabled: false
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
       rsync:
         enabled: true
         probes:
@@ -59,6 +85,12 @@ spec:
             enabled: false
           startup:
             enabled: false
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
       rsync-tls:
         enabled: true
         probes:
@@ -68,6 +100,12 @@ spec:
             enabled: false
           startup:
             enabled: false
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
       syncthing:
         enabled: true
         probes:
@@ -77,6 +115,12 @@ spec:
             enabled: false
           startup:
             enabled: false
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
     workload:
       main:
         enabled: true
@@ -88,58 +132,7 @@ spec:
             runAsGroup: 65534
             seccompProfile:
               type: RuntimeDefault
-          containers:
-            main:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                runAsGroup: 65534
-                seccompProfile:
-                  type: RuntimeDefault
-              resources:
-                requests:
-                  memory: 1024Mi
-                  cpu: 50m
-                limits:
-                  memory: 4Gi
-                  cpu: 500m
-            restic:
-              securityContext:
-                runAsUser: 0
-                runAsNonRoot: false
-                allowPrivilegeEscalation: false
-                runAsGroup: 65534
-                seccompProfile:
-                  type: RuntimeDefault
-            rclone:
-              enabled: true
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                runAsGroup: 65534
-                seccompProfile:
-                  type: RuntimeDefault
-            rsync:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                runAsGroup: 65534
-                seccompProfile:
-                  type: RuntimeDefault
-            rsync-tls:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                runAsGroup: 65534
-                seccompProfile:
-                  type: RuntimeDefault
-            syncthing:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 65534
-                runAsGroup: 65534
-                seccompProfile:
-                  type: RuntimeDefault
+          # REMOVED containers section - it's defined at top level
     podOptions:
       hostUsers: true
     serviceAccount:
