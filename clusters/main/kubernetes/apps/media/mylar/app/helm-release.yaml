@@ -28,43 +28,16 @@ spec:
       repository: lscr.io/linuxserver/mylar3
       pullPolicy: IfNotPresent
       tag: version-v0.8.3
-    
-    portal:
-      open:
-        enabled: false
-    
     global:
       stopAll: false
-    
-    workload:
-      main:
-        podSpec:
-          securityContext:
-            runAsUser: 911
-            runAsGroup: 1001
-            fsGroup: 1001
-            runAsNonRoot: true
-            seccompProfile:
-              type: RuntimeDefault
-          containers:
-            main:
-              securityContext:
-                runAsNonRoot: true
-                runAsUser: 911
-                runAsGroup: 1001
-                allowPrivilegeEscalation: false
-                seccompProfile:
-                  type: RuntimeDefault
-    
     credentials:
       s3:
         type: s3
-        url: ${S3URL}
+        url: "${S3URL}"
         bucket: "${S3PREFIX}-mylar"
-        accessKey: ${S3ID}
-        secretKey: ${S3KEY}
-        encrKey: ${S3KEY}
-    
+        accessKey: "${S3ID}"
+        secretKey: "${S3KEY}"
+        encrKey: "${S3KEY}"
     ingress:
       main:
         enabled: true
@@ -83,7 +56,7 @@ spec:
           homepage:
             description: Comic Downloader/Manager
             enabled: true
-            group: "*rrs"
+            group: -*rrs
             icon: ""
             name: Mylar
             widget:
@@ -92,7 +65,6 @@ spec:
               enabled: true
         hosts:
           - host: mylar.${BASE_DOMAIN}
-    
     service:
       main:
         enabled: true
@@ -103,28 +75,18 @@ spec:
             port: 8090
             protocol: http
             targetPort: 8090
-    
     persistence:
       config:
-        enabled: true
-        storageClass: longhorn
         volsync:
-          - name: config
-            type: restic
-            credentials: s3
-            volumeSnapshotClassName: longhorn-snapshot-vsc
-            dest:
-              enabled: true
-              # Run as root to allow chown during restore
-              moverSecurityContext:
-                runAsUser: 0
-                runAsGroup: 0
-                fsGroup: 1001
-                runAsNonRoot: false
-            src:
-              enabled: true
-              trigger:
-                schedule: 40 0 * * *
+        - name: config
+          type: restic
+          credentials: s3
+          dest:
+            enabled: true
+          src:
+            enabled: true
+            trigger:
+              schedule: 40 0 * * *
       media:
         enabled: true
         type: nfs
@@ -132,13 +94,13 @@ spec:
         server: 192.168.10.123
         mountPath: /media
         mountOptions:
-          - nfsvers=4
-          - tcp
-          - intr
-          - hard
-          - noatime
-          - nodiratime
-          - nolock
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
       comics:
         enabled: true
         type: nfs
@@ -146,13 +108,13 @@ spec:
         server: 192.168.10.123
         mountPath: /comics
         mountOptions:
-          - nfsvers=4
-          - tcp
-          - intr
-          - hard
-          - noatime
-          - nodiratime
-          - nolock
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
       downloads:
         enabled: true
         type: nfs
@@ -160,25 +122,24 @@ spec:
         server: 192.168.10.123
         mountPath: /usenet
         mountOptions:
-          - nfsvers=4
-          - tcp
-          - intr
-          - hard
-          - noatime
-          - nodiratime
-          - nolock
+         - nfsvers=4
+         - tcp
+         - intr
+         - hard
+         - noatime
+         - nodiratime
+         - nolock
       backup:
         enabled: true
         mountPath: /backups
-    
     metrics:
       main:
         enabled: false
-    
+
     autoscaling:
       vpa:
         enabled: true
-    
+
     resources:
       requests:
         memory: 1024Mi
