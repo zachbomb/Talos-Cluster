@@ -108,6 +108,7 @@ spec:
       config:
         enabled: true
         storageClass: longhorn
+        size: 100Gi
         volsync:
           - name: config
             type: restic
@@ -115,24 +116,16 @@ spec:
             volumeSnapshotClassName: longhorn-snapshot-vsc
             dest:
               enabled: true
-              podSecurityContext:
+              # Run as root to allow chown during restore
+              moverSecurityContext:
                 runAsUser: 0
-                runAsNonRoot: false
+                runAsGroup: 0
                 fsGroup: 1001
-              containerSecurityContext:
-                runAsUser: 0
                 runAsNonRoot: false
-                allowPrivilegeEscalation: true
-                capabilities:
-                  add:
-                    - CHOWN
-                    - DAC_OVERRIDE
             src:
               enabled: true
               trigger:
                 schedule: 40 0 * * *
-              resticOptions:
-                - --one-file-system
       media:
         enabled: true
         type: nfs
