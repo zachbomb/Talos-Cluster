@@ -1,38 +1,24 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: volsync
-  namespace: volsync
+    name: volsync
+    namespace: volsync
 spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: volsync
-      version: 3.10.0
-      sourceRef:
-        kind: HelmRepository
-        name: truecharts
-        namespace: flux-system
-      interval: 5m
-  install:
-    createNamespace: true
-    remediation:
-      retries: 3
-  upgrade:
-    remediation:
-      retries: 3
-  values:
-    metrics:
-    main:
-      enabled: true
-      type: Deployment
-      podSpec:
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 65534
-          runAsGroup: 65534
-          seccompProfile:
-            type: RuntimeDefault
-          # REMOVED containers section - it's defined at top level
-    podOptions:
-      hostUsers: true
+    interval: 5m
+    chart:
+        spec:
+
+            chart: volsync
+            version: 3.10.0
+            sourceRef:
+                kind: HelmRepository
+                name: truecharts
+                namespace: flux-system
+            interval: 5m
+    install:
+        createNamespace: true
+        remediation:
+            retries: 3
+    upgrade:
+        remediation:
+            retries: 3
