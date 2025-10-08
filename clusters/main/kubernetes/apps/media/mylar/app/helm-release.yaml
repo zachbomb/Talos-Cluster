@@ -108,12 +108,10 @@ spec:
       config:
         enabled: true
         storageClass: longhorn
-        size: 100Gi
         volsync:
           - name: config
             type: restic
             credentials: s3
-            volumeSnapshotClassName: longhorn-snapshot-vsc
             dest:
               enabled: true
               resticOptions:
