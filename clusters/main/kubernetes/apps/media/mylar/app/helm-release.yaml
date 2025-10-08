@@ -107,19 +107,24 @@ spec:
     persistence:
       config:
         enabled: true
-        storageClass: longhorn  # Explicitly set to longhorn
+        storageClass: longhorn
         size: 100Gi
         volsync:
           - name: config
             type: restic
             credentials: s3
-            volumeSnapshotClassName: longhorn-snapshot-vsc  # Add this
+            volumeSnapshotClassName: longhorn-snapshot-vsc
             dest:
               enabled: true
+              resticOptions:
+                - --no-owner
+                - --no-xattrs
             src:
               enabled: true
               trigger:
                 schedule: 40 0 * * *
+              resticOptions:
+                - --one-file-system
       media:
         enabled: true
         type: nfs
