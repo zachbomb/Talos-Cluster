@@ -26,8 +26,5 @@ spec:
     main:
       enabled: true
       type: Deployment
-      podSpec:
-        securityContext:
-          runAsNonRoot: true
     podOptions:
       hostUsers: true
