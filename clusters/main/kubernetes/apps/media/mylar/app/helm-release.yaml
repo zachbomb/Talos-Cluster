@@ -112,11 +112,21 @@ spec:
           - name: config
             type: restic
             credentials: s3
+            volumeSnapshotClassName: longhorn-snapshot-vsc
             dest:
               enabled: true
-              resticOptions:
-                - --no-owner
-                - --no-xattrs
+              podSecurityContext:
+                runAsUser: 0
+                runAsNonRoot: false
+                fsGroup: 1001
+              containerSecurityContext:
+                runAsUser: 0
+                runAsNonRoot: false
+                allowPrivilegeEscalation: true
+                capabilities:
+                  add:
+                    - CHOWN
+                    - DAC_OVERRIDE
             src:
               enabled: true
               trigger:
