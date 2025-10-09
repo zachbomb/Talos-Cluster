@@ -83,6 +83,7 @@ spec:
             targetPort: 12321
     workload:
       main:
+        type: StatefulSet
         podSpec:
           initContainers:
             initconfig:
@@ -100,7 +101,7 @@ spec:
               trigger:
                 schedule: 40 0 * * *
       machine-id:
-        enabled: false
+        enabled: true
     addons:
       codeserver:
         enabled: true
