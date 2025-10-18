@@ -102,6 +102,7 @@ spec:
     workload:
       main:
         podSpec:
+          runtimeClassName: "nvidia"
           containers:
             main:
               imageSelector: image
@@ -187,3 +188,11 @@ spec:
     autoscaling:
       vpa:
         enabled: true
+    resources:
+      requests:
+        memory: 1024Mi
+        cpu: 50m
+      limits:
+        memory: 8Gi
+        cpu: 500m
+        nvidia.com/gpu: 1
