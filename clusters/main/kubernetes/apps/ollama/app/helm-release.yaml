@@ -105,6 +105,7 @@ spec:
           runtimeClassName: "nvidia"
           containers:
             main:
+              imageSelector: image
               env:
                 - name: OLLAMA_BIND_ADDRESS
                   value: "0.0.0.0"
