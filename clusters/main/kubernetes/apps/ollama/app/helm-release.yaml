@@ -106,6 +106,9 @@ spec:
           containers:
             main:
               imageSelector: image
+              args:
+                - serve
+                - --host=0.0.0.0
               probes:
                 liveness:
                   enabled: true
