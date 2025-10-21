@@ -105,10 +105,9 @@ spec:
           runtimeClassName: "nvidia"
           containers:
             main:
-              imageSelector: image
-              args:
-                - serve
-                - --host=0.0.0.0
+              env:
+                - name: OLLAMA_BIND_ADDRESS
+                  value: "0.0.0.0"
               probes:
                 liveness:
                   enabled: true
