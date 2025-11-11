@@ -28,7 +28,7 @@ spec:
     image:
       repository: docker.io/haveagitgat/tdarr
       pullPolicy: IfNotPresent
-      tag: 2.53.01
+      tag: 2.54.01
     credentials:
       s3:
         type: s3
