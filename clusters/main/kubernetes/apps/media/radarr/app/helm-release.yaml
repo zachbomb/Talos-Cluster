@@ -29,7 +29,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/radarr
       pullPolicy: IfNotPresent
-      tag: 6.0.3.10276
+      tag: 6.0.4.10291
     TZ: America/Los_Angeles
     credentials:
       s3:
