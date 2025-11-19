@@ -235,7 +235,7 @@ spec:
       container:
         runAsUser: 1000
         runAsGroup: 1000
-        readOnlyRootFilesystem: false
+      readOnlyRootFilesystem: false
       pod:
         fsGroup: 1000
     resources:
@@ -246,6 +246,8 @@ spec:
         nvidia.com/gpu: 1
         memory: 8Gi
         cpu: 500m
+    podOptions:
+      hostUsers: true
     addons:
       codeserver:
         enabled: true
