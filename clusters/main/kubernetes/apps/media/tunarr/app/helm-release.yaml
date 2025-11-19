@@ -132,7 +132,7 @@ spec:
               enabled: true
       local:
         enabled: true
-        mountPath: /root/.local
+        mountPath: /.local
         volsync:
           - name: local
             type: restic
