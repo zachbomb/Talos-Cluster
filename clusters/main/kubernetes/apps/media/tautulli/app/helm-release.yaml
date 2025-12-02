@@ -99,6 +99,20 @@ spec:
           - noatime
           - nodiratime
           - nolock
+      backups:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/app_backups/Tautulli_Backups
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
     service:
       main:
         enabled: true
