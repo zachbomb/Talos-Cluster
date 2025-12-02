@@ -104,7 +104,7 @@ spec:
         type: nfs
         path: /mnt/Pibbs-Horde/media/data/app_backups/Tautulli_Backups
         server: 192.168.10.123
-        mountPath: /media
+        mountPath: /backups
         mountOptions:
           - nfsvers=4
           - tcp
