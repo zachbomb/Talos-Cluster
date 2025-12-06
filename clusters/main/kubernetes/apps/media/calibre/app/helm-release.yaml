@@ -27,7 +27,7 @@ spec:
     image:
       repository: ghcr.io/linuxserver/calibre
       pullPolicy: IfNotPresent
-      tag: 8.16.1
+      tag: 8.16.2
     credentials:
       s3:
         type: s3
