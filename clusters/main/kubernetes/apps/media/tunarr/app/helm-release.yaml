@@ -49,10 +49,10 @@ spec:
               command:
                 - sh
                 - -c
-                - "cp -r /tunarr/. /tunarr-writable/"
+                - "cp -r /tunarr/. /mnt/tunarr-writable/"
               volumeMounts:
                 - name: tunarr-bin
-                  mountPath: /tunarr-writable
+                  mountPath: /mnt/tunarr-writable
     autoscaling:
       vpa:
         enabled: true
