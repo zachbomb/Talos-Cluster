@@ -41,6 +41,16 @@ spec:
           - "8000"
         podSpec:
           runtimeClassName: "nvidia"
+          initContainers:
+            copy-bin:
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              command:
+                - sh
+                - -c
+                - "cp -r /tunarr/. /tunarr-writable/"
+              volumeMounts:
+                - name: tunarr-bin
+                  mountPath: /tunarr-writable
     autoscaling:
       vpa:
         enabled: true
@@ -234,6 +244,10 @@ spec:
       transcoding:
         enabled: true
         mountPath: /.transcode
+      tunarr-bin:
+        enabled: true
+        type: emptyDir
+        mountPath: /tunarr
     securityContext:
       container:
         runAsUser: 0
