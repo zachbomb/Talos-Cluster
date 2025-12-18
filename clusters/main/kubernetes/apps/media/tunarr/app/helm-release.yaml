@@ -239,7 +239,7 @@ spec:
         runAsUser: 0
         runAsGroup: 0
         runAsNonRoot: false
-      readOnlyRootFilesystem: false
+        readOnlyRootFilesystem: false
       pod:
         fsGroup: 0
     resources:
