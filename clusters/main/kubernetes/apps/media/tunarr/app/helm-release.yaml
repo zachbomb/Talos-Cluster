@@ -27,7 +27,7 @@ spec:
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 1.0.6
+      tag: 0.22.18
       pullPolicy: IfNotPresent
     env:
       TZ: America/Los_Angeles
@@ -236,13 +236,11 @@ spec:
         mountPath: /.transcode
     securityContext:
       container:
-        runAsUser: 0
-        runAsGroup: 0
-        runAsNonRoot: false
-        readOnlyRootFilesystem: false
-        privileged: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      readOnlyRootFilesystem: false
       pod:
-        fsGroup: 0
+        fsGroup: 1000
     resources:
       requests:
         memory: 1024Mi
