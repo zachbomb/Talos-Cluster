@@ -236,11 +236,12 @@ spec:
         mountPath: /.transcode
     securityContext:
       container:
-        runAsUser: 1000
-        runAsGroup: 1000
+        runAsUser: 0
+        runAsGroup: 0
+        runAsNonRoot: false
       readOnlyRootFilesystem: false
       pod:
-        fsGroup: 1000
+        fsGroup: 0
     resources:
       requests:
         memory: 1024Mi
