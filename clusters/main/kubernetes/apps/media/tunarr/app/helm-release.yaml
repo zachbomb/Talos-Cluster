@@ -43,7 +43,9 @@ spec:
           runtimeClassName: "nvidia"
           initContainers:
             copy-bin:
-              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              enabled: true
+              type: init
+              imageSelector: image
               command:
                 - sh
                 - -c
