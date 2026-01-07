@@ -18,7 +18,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/lidarr
       pullPolicy: IfNotPresent
-      tag: 3.1.1
+      tag: 3.1.2
     credentials:
       s3:
         type: s3
