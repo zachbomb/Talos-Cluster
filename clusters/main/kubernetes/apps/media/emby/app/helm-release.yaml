@@ -28,7 +28,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/emby
       pullPolicy: IfNotPresent
-      tag: 4.9.1.90
+      tag: 4.9.3.0
     TZ: America/Los_Angeles
     credentials:
       s3:
