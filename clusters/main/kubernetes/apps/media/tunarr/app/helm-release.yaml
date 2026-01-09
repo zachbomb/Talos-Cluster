@@ -27,7 +27,7 @@ spec:
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 1.0.16
+      tag: 1.0.17
       pullPolicy: IfNotPresent
     env:
       TZ: America/Los_Angeles
