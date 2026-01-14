@@ -82,9 +82,9 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: false  # Disabled - restore from corrupted backup
+              enabled: true
             src:
-              enabled: true   # Enable to create new backups
+              enabled: true
       media:
         enabled: true
         type: nfs
