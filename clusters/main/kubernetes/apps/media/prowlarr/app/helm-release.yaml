@@ -46,16 +46,7 @@ spec:
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
-    autoscaling:
-      vpa:
-        enabled: true
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 4Gi
-        cpu: 500m
+    # External service - no workload, resources not needed
     workload:
       main:
         enabled: false
