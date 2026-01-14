@@ -40,10 +40,10 @@ spec:
             enabled: true
         resources:
           requests:
-            memory: 1024Mi
-            cpu: 50m
+            memory: 128Mi
+            cpu: 10m
           limits:
-            memory: 2Gi
-            cpu: 500m
+            memory: 512Mi
+            cpu: 200m
     securityContext:
       readOnlyRootFilesystem: false
