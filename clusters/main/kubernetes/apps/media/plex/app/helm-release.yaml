@@ -50,8 +50,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 15Gi
             src:
               enabled: true
+              cacheCapacity: 15Gi
       media:
         enabled: true
         type: nfs
@@ -131,8 +133,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 5Gi
             src:
               enabled: true
+              cacheCapacity: 5Gi
     plex:
       additionalAdvertiseURL: ""
       disableGDM: false

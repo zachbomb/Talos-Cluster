@@ -174,8 +174,10 @@ spec:
             credentials: s3
             src:
               enabled: true
+              cacheCapacity: 10Gi
             dest:
               enabled: true
+              cacheCapacity: 10Gi
       data:
         enabled: true
         mountPath: /app/backend/data
@@ -185,8 +187,10 @@ spec:
             credentials: s3
             src:
               enabled: true
+              cacheCapacity: 5Gi
             dest:
               enabled: true
+              cacheCapacity: 5Gi
     autoscaling:
       vpa:
         enabled: true
