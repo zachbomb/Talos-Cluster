@@ -107,8 +107,7 @@ spec:
             main:
               imageSelector: image
               env:
-                - name: OLLAMA_BIND_ADDRESS
-                  value: "0.0.0.0"
+                OLLAMA_BIND_ADDRESS: "0.0.0.0"
               probes:
                 liveness:
                   enabled: true
@@ -175,8 +174,10 @@ spec:
             credentials: s3
             src:
               enabled: true
+              cacheCapacity: 10Gi
             dest:
               enabled: true
+              cacheCapacity: 10Gi
       data:
         enabled: true
         mountPath: /app/backend/data
@@ -186,8 +187,10 @@ spec:
             credentials: s3
             src:
               enabled: true
+              cacheCapacity: 5Gi
             dest:
               enabled: true
+              cacheCapacity: 5Gi
     autoscaling:
       vpa:
         enabled: true
