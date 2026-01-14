@@ -79,15 +79,9 @@ spec:
             port: 8080
             protocol: http
             targetPort: 8080
+    # Using TrueForge defaults (75m/200Mi req, 1500m/2400Mi limit) with VPA
     autoscaling:
       vpa:
         enabled: true
-    resources:
-      requests:
-        memory: 1024Mi
-        cpu: 50m
-      limits:
-        memory: 4Gi
-        cpu: 500m
     podOptions:
       hostUsers: true
