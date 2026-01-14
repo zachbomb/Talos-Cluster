@@ -4,6 +4,7 @@ metadata:
   name: doplarr
   namespace: flux-system
 spec:
+  suspend: true
   interval: 10m
   path: clusters/main/kubernetes/apps/media/doplarr/app
   prune: true

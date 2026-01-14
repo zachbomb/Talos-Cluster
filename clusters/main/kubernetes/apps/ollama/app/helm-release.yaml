@@ -107,8 +107,7 @@ spec:
             main:
               imageSelector: image
               env:
-                - name: OLLAMA_BIND_ADDRESS
-                  value: "0.0.0.0"
+                OLLAMA_BIND_ADDRESS: "0.0.0.0"
               probes:
                 liveness:
                   enabled: true
