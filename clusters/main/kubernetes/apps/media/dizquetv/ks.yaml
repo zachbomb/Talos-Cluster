@@ -4,6 +4,7 @@ metadata:
   name: dizquetv
   namespace: flux-system
 spec:
+  suspend: true
   interval: 10m
   path: clusters/main/kubernetes/apps/media/dizquetv/app
   prune: true
