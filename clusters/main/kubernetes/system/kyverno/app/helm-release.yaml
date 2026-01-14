@@ -39,6 +39,14 @@ spec:
     backgroundController:
       serviceMonitor:
         enabled: true
+      container:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
       rbac:
         clusterRole:
           extraResources:
@@ -48,13 +56,37 @@ spec:
     cleanupController:
       serviceMonitor:
         enabled: true
+      container:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
     reportsController:
       serviceMonitor:
         enabled: true
+      container:
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
     admissionController:
       replicas: 3
       serviceMonitor:
         enabled: true
+      container:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
       rbac:
         clusterRole:
           extraResources:
