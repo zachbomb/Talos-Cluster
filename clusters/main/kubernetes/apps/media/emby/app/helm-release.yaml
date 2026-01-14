@@ -93,8 +93,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 10Gi
             src:
               enabled: true
+              cacheCapacity: 10Gi
               trigger:
                 schedule: "15 0 * * *"
       run:
