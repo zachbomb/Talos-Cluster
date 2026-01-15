@@ -64,10 +64,10 @@ spec:
         ingressClassName: internal
         integrations:
           nginx:
-            enabled: true
+            enabled: false
             ingressClassName: internal
           traefik:
-            enabled: false
+            enabled: true
             middlewares:
               - name: local
                 namespace: traefik

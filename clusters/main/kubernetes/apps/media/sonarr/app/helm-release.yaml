@@ -53,7 +53,7 @@ spec:
                 pathType: Prefix
         integrations:
           nginx:
-            enabled: true
+            enabled: false
             ingressClassName: internal
           traefik:
             enabled: true
