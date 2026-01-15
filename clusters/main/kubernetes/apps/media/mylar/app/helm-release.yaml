@@ -43,10 +43,10 @@ spec:
         enabled: true
         integrations:
           nginx:
-            enabled: true
+            enabled: false
             ingressClassName: internal
           traefik:
-            enabled: false
+            enabled: true
             middlewares:
               - name: local
                 namespace: traefik
@@ -78,6 +78,15 @@ spec:
     persistence:
       config:
         enabled: true
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            src:
+              enabled: true
+              cacheCapacity: 10Gi
+              trigger:
+                schedule: "40 0 * * *"
       media:
         enabled: true
         type: nfs
