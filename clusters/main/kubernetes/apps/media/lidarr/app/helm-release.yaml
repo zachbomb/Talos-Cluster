@@ -103,6 +103,20 @@ spec:
                 enabled: true
               src:
                 enabled: true
+      data:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /data
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
       media:
         enabled: true
         type: nfs
