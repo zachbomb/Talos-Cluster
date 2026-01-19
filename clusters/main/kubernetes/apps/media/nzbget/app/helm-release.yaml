@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: nzbget
-      version: 28.3.10
+      version: 28.3.11
       sourceRef:
         kind: HelmRepository
         name: truecharts
