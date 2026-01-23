@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: notifiarr
-      version: 7.14.11
+      version: 7.14.12
       sourceRef:
         kind: HelmRepository
         name: truecharts
