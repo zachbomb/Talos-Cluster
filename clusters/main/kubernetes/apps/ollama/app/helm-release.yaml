@@ -11,7 +11,7 @@ spec:
   chart:
     spec:
       chart: ollama
-      version: 8.23.6
+      version: 8.23.10
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -28,11 +28,11 @@ spec:
     image:
       repository: docker.io/ollama/ollama
       pullPolicy: IfNotPresent
-      tag: 0.15.2@sha256:76d0c003b27db65170e88ab319ff19c9bcee41ecb8177c52ab06921dfa13abdf
+      tag: 0.15.4@sha256:37ef34d78a6f4563a11cbbb336bbaa75f01eb19671d639973f98baa58f11a5ed
     rocmImage:
       repository: docker.io/ollama/ollama
       pullPolicy: IfNotPresent
-      tag: 0.15.2-rocm@sha256:26304d3ed3de562959ea91d9cd2fe904a976a88b18543d25403904adf97970ed
+      tag: 0.15.4-rocm@sha256:548b7c9be95a9ddf3b1d77d96fa1955e45b3fca854bb18a8e1db008caf4388e4
     uiImage:
       repository: ghcr.io/open-webui/open-webui
       pullPolicy: IfNotPresent
