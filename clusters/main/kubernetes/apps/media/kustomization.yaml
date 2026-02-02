@@ -28,3 +28,4 @@ resources:
   - tdarr/ks.yaml
   - dizquetv/ks.yaml
   - tunarr/ks.yaml
+  - deluge/ks.yaml
