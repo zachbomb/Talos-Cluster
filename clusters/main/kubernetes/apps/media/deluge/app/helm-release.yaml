@@ -174,10 +174,10 @@ spec:
           - nolock
     resources:
       requests:
-        memory: 512Mi
-        cpu: 50m
+        memory: 256Mi
+        cpu: 25m
       limits:
-        memory: 2Gi
+        memory: 1Gi
         cpu: 500m
     autoscaling:
       vpa:
