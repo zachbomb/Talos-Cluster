@@ -11,7 +11,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 15.29.78
+      version: 15.29.80
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -27,7 +27,7 @@ spec:
   values:
     image:
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 1.1.7
+      tag: 1.1.11
       pullPolicy: IfNotPresent
     env:
       TZ: America/Los_Angeles
