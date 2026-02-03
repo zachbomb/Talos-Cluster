@@ -1,0 +1,91 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flaresolverr
+  namespace: media
+spec:
+  interval: 15m
+  timeout: 20m
+  releaseName: flaresolverr
+  chart:
+    spec:
+      # renovate: datasource=docker depName=oci.trueforge.org/truecharts/flaresolverr
+      chart: flaresolverr
+      version: 16.14.17
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    TZ: America/Los_Angeles
+
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-flaresolverr"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
+    service:
+      main:
+        enabled: true
+        type: ClusterIP
+        ports:
+          main:
+            enabled: true
+            port: 8191
+
+    persistence:
+      config:
+        enabled: true
+        mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+            src:
+              enabled: true
+
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 10m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+    autoscaling:
+      vpa:
+        enabled: true
+
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              env:
+                BROWSER_TIMEOUT: "40000"
+                HEADLESS: "true"
+                LOG_LEVEL: "info"
+                LOG_HTML: "false"
+                CAPTCHA_SOLVER: "none"
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false
