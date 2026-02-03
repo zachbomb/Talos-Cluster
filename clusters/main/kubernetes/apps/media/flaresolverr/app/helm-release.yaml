@@ -78,7 +78,7 @@ spec:
           containers:
             main:
               env:
-                BROWSER_TIMEOUT: "40000"
+                BROWSER_TIMEOUT: "120000"
                 HEADLESS: "true"
                 LOG_LEVEL: "info"
                 LOG_HTML: "false"
