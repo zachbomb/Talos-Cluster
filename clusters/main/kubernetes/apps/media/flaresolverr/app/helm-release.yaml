@@ -40,7 +40,8 @@ spec:
     service:
       main:
         enabled: true
-        type: ClusterIP
+        type: LoadBalancer
+        loadBalancerIP: ${FLARESOLVERR_IP}
         ports:
           main:
             enabled: true
