@@ -79,15 +79,6 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${DELUGE_IP}
-        ports:
-          torrent-tcp:
-            enabled: true
-            port: 6881
-            protocol: tcp
-          torrent-udp:
-            enabled: true
-            port: 6881
-            protocol: udp
     persistence:
       config:
         enabled: true
