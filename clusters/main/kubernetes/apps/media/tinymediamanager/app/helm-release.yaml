@@ -11,7 +11,7 @@ spec:
   chart:
     spec:
       chart: tinymediamanager
-      version: 13.14.18
+      version: 13.14.19
       sourceRef:
         kind: HelmRepository
         name: truecharts
