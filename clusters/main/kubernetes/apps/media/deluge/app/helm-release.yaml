@@ -163,6 +163,7 @@ spec:
           - nolock
     addons:
       gluetun:
+        enabled: true
         env:
           VPN_SERVICE_PROVIDER: nordvpn
           VPN_TYPE: openvpn
