@@ -167,8 +167,8 @@ spec:
         env:
           VPN_SERVICE_PROVIDER: nordvpn
           VPN_TYPE: openvpn
-          OPENVPN_USER: ${OPENVPN_USER}
-          OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+          OPENVPN_USER: ${NORD_VPN_USER}
+          OPENVPN_PASSWORD: ${NORD_VPN_PASS}
           SERVER_COUNTRIES: "United States"
         killSwitch: true
         excludedNetworks_IPv4:
