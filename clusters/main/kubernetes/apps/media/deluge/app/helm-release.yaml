@@ -164,12 +164,18 @@ spec:
     addons:
       gluetun:
         enabled: true
-        env:
-          VPN_SERVICE_PROVIDER: nordvpn
-          VPN_TYPE: openvpn
-          OPENVPN_USER: ${NORD_VPN_USER}
-          OPENVPN_PASSWORD: ${NORD_VPN_PASS}
-          SERVER_COUNTRIES: "United States"
+        container:
+          env:
+            VPN_SERVICE_PROVIDER: nordvpn
+            VPN_TYPE: openvpn
+            OPENVPN_USER: ${NORD_VPN_USER}
+            OPENVPN_PASSWORD: ${NORD_VPN_PASS}
+            SERVER_COUNTRIES: "United States"
+            FIREWALL: "on"
+            FIREWALL_OUTBOUND_SUBNETS: "192.168.10.0/24"
+          resources:
+            limits:
+              truecharts.org/tun: 1
         killSwitch: true
         excludedNetworks_IPv4:
           - 192.168.10.0/24
