@@ -161,6 +161,18 @@ spec:
           - noatime
           - nodiratime
           - nolock
+    addons:
+      vpn:
+        type: gluetun
+        env:
+          VPN_SERVICE_PROVIDER: nordvpn
+          VPN_TYPE: openvpn
+          OPENVPN_USER: ${OPENVPN_USER}
+          OPENVPN_PASSWORD: ${OPENVPN_PASSWORD}
+          SERVER_COUNTRIES: "United States"
+        killSwitch: true
+        excludedNetworks_IPv4:
+          - 192.168.10.0/24
     resources:
       requests:
         memory: 256Mi
@@ -174,6 +186,8 @@ spec:
     securityContext:
       container:
         UMASK: "0022"
+        runAsUser: 1000
+        runAsGroup: 1000
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
