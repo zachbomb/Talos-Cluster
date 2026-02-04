@@ -162,8 +162,7 @@ spec:
           - nodiratime
           - nolock
     addons:
-      vpn:
-        type: gluetun
+      gluetun:
         env:
           VPN_SERVICE_PROVIDER: nordvpn
           VPN_TYPE: openvpn
