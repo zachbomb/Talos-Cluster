@@ -19,7 +19,7 @@ spec:
     image:
       repository: ghcr.io/gethomepage/homepage
       pullPolicy: IfNotPresent
-      tag: v1.10.0
+      tag: v1.10.1
     TZ: America/Los_Angeles
     credentials:
       s3:
