@@ -1,0 +1,158 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lidarr-liz
+  namespace: media
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: lidarr
+      version: 28.3.24
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  values:
+    image:
+      repository: ghcr.io/home-operations/lidarr
+      pullPolicy: IfNotPresent
+      tag: 3.1.2
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-lidarr-liz"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+    exportarrImage:
+      pullPolicy: IfNotPresent
+      repository: ghcr.io/onedr0p/exportarr
+      tag: v2.3.0@sha256:af535d94061cf97a52e1661945ffba78c03f9443eae7c0da1a80a5a4be56b520
+    securityContext:
+      container:
+        UMASK: "0022"
+        readOnlyRootFilesystem: false
+        runAsGroup: 1000
+        runAsUser: 1000
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    metrics:
+      main:
+        enabled: false
+        endpoints:
+          - path: /metrics
+            port: metrics
+        prometheusRule:
+          enabled: false
+        targetSelector: metrics
+        type: servicemonitor
+    service:
+      main:
+        enabled: true
+        loadBalancerIP: ${LIDARR_IP}
+        ports:
+          main:
+            port: 8688
+        type: LoadBalancer
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
+            middlewares:
+              - name: local
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            description: Music Management (Liz)
+            enabled: true
+            group: -*rrs
+            icon: ""
+            name: Lidarr Liz
+            widget:
+              enabled: false
+        hosts:
+          - host: lidarr-liz.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+    persistence:
+      config:
+        enabled: true
+        main:
+          enabled: true
+          mountPath: /config
+          volsync:
+            - name: config
+              type: restic
+              credentials: s3
+              dest:
+                enabled: true
+              src:
+                enabled: true
+      media:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data
+        server: 192.168.10.123
+        mountPath: /media
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      music:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/music
+        server: 192.168.10.123
+        mountPath: /music
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      downloads:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/usenet
+        server: 192.168.10.123
+        mountPath: /usenet
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      backup:
+        enabled: true
+        mountPath: /backups
+    autoscaling:
+      vpa:
+        enabled: true
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 25m
+      limits:
+        memory: 2Gi
+        cpu: 500m
