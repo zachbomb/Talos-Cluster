@@ -53,10 +53,10 @@ spec:
     service:
       main:
         enabled: true
-        loadBalancerIP: ${LIDARR_IP}
+        loadBalancerIP: ${LIDARR_FLAC_IP}
         ports:
           main:
-            port: 8687
+            port: 8686
         type: LoadBalancer
     ingress:
       main:
