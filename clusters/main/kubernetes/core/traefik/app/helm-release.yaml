@@ -30,7 +30,7 @@ spec:
   values:
     image:
       repository: docker.io/library/traefik
-      tag: v3.3.3
+      tag: v3.3.7
     env:
       - name: TZ
         value: America/Los_Angeles
