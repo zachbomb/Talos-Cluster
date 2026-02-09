@@ -83,7 +83,7 @@ spec:
 
     ingress:
       main:
-        enabled: true
+        enabled: false  # temporarily disabled to break chicken-and-egg with middleware lookup
         hosts:
           - host: traefik-dashboard.${BASE_DOMAIN}
             paths:
