@@ -144,6 +144,7 @@ spec:
     securityContext:
       container:
         UMASK: "0022"
+        readOnlyRootFilesystem: false
       pod:
         fsGroup: 568
         fsGroupChangePolicy: OnRootMismatch
