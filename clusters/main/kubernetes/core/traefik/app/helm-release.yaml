@@ -28,6 +28,9 @@ spec:
         name: truecharts
         namespace: flux-system
   values:
+    image:
+      repository: docker.io/library/traefik
+      tag: v3.3.3
     env:
       - name: TZ
         value: America/Los_Angeles
