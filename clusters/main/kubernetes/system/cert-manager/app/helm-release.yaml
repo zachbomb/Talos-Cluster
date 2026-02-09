@@ -24,8 +24,7 @@ spec:
     remediation:
       retries: 3
   values:
-    # CRDs are handled by the crds: CreateReplace above
-    installCRDs: false
+    installCRDs: true
     # DNS01 challenge configuration
     dns01RecursiveNameservers: "1.1.1.1:53,1.0.0.1:53"
     dns01RecursiveNameserversOnly: false
