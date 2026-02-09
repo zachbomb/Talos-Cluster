@@ -118,7 +118,7 @@ spec:
             src:
               enabled: true
             dest:
-              enabled: true
+              enabled: false
       streams:
         enabled: true
         mountPath: /tunarr/streams
@@ -129,7 +129,7 @@ spec:
             src:
               enabled: true
             dest:
-              enabled: true
+              enabled: false
       local:
         enabled: true
         mountPath: /root/.local
@@ -140,7 +140,7 @@ spec:
             src:
               enabled: true
             dest:
-              enabled: true
+              enabled: false
       cache:
         enabled: true
         mountPath: /.cache
