@@ -144,10 +144,8 @@ spec:
     securityContext:
       container:
         UMASK: "0022"
-        runAsUser: 1000
-        runAsGroup: 1000
       pod:
-        fsGroup: 1000
+        fsGroup: 568
         fsGroupChangePolicy: OnRootMismatch
     resources:
       requests:
