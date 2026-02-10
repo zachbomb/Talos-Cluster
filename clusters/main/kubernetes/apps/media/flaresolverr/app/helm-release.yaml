@@ -42,6 +42,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${FLARESOLVERR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${FLARESOLVERR_IP}
         ports:
           main:
             enabled: true

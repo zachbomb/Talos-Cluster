@@ -76,6 +76,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${CALIBRE_WEB_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${CALIBRE_WEB_IP}
         ports:
           main:
             port: 8083
