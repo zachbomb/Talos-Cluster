@@ -70,6 +70,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${TANDOOR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TANDOOR_IP}
         ports:
           main:
             port: 10029

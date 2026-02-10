@@ -54,6 +54,8 @@ spec:
       main:
         enabled: true
         loadBalancerIP: ${LIDARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${LIDARR_IP}
         ports:
           main:
             port: 8686

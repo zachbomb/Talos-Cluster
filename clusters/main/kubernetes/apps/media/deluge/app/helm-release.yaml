@@ -70,6 +70,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${DELUGE_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${DELUGE_IP}
         ports:
           main:
             enabled: true
@@ -79,6 +81,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${DELUGE_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${DELUGE_IP}
     persistence:
       config:
         enabled: true
