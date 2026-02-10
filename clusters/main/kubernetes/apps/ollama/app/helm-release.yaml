@@ -176,7 +176,7 @@ spec:
               enabled: true
               cacheCapacity: 10Gi
             dest:
-              enabled: false
+              enabled: true
               cacheCapacity: 10Gi
       data:
         enabled: true
@@ -189,7 +189,7 @@ spec:
               enabled: true
               cacheCapacity: 5Gi
             dest:
-              enabled: false
+              enabled: true
               cacheCapacity: 5Gi
     autoscaling:
       vpa:

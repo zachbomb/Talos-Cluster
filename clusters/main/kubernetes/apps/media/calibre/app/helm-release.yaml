@@ -90,7 +90,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: false
+              enabled: true
             src:
               enabled: true
               trigger:
