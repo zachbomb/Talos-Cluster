@@ -5,7 +5,7 @@ metadata:
   namespace: media
 spec:
   interval: 15m
-  timeout: 20m
+  timeout: 30m
   releaseName: deluge
   chart:
     spec:
