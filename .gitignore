@@ -11,3 +11,4 @@ sopssecret*
 mounts/*.backup.yaml
 *-backup.yaml
 current-ip-assignments.txt
+.decrypted~*
