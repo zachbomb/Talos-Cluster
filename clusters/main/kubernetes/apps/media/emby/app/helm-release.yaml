@@ -73,6 +73,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${EMBY_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${EMBY_IP}
         ports:
           main:
             port: 10079

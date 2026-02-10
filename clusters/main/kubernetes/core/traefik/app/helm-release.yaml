@@ -45,6 +45,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${TRAEFIK_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TRAEFIK_IP}
         ports:
           main:
             enabled: true

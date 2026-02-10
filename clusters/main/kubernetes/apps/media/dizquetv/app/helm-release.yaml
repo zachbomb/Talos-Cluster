@@ -37,6 +37,8 @@ spec:
       main:
         enabled: true
         LoadBalancerIP: ${DIZQUETV_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${DIZQUETV_IP}
         type: LoadBalancer
         ports:
           main:

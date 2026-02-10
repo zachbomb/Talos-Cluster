@@ -67,6 +67,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${TUNARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TUNARR_IP}
         ports:
           main:
             enabled: true

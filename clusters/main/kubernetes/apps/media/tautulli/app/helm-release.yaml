@@ -117,6 +117,8 @@ spec:
       main:
         enabled: true
         loadBalancerIP: ${TAUTULLI_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TAUTULLI_IP}
         type: LoadBalancer
         ports:
           main:

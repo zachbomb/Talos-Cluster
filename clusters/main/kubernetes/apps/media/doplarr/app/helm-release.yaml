@@ -72,6 +72,8 @@ spec:
       main:
         enabled: true
         loadBalancerIP: ${doplarr_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${doplarr_IP}
         type: LoadBalancer
         ports:
           main:

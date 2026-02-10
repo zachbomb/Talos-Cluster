@@ -63,6 +63,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${RADARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${RADARR_IP}
         ports:
           main:
             port: 7878
