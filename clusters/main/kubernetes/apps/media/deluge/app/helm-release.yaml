@@ -72,6 +72,7 @@ spec:
         loadBalancerIP: ${DELUGE_IP}
         annotations:
           metallb.io/loadBalancerIPs: ${DELUGE_IP}
+          metallb.io/allow-shared-ip: "deluge"
         ports:
           main:
             enabled: true
@@ -83,6 +84,7 @@ spec:
         loadBalancerIP: ${DELUGE_IP}
         annotations:
           metallb.io/loadBalancerIPs: ${DELUGE_IP}
+          metallb.io/allow-shared-ip: "deluge"
     persistence:
       config:
         enabled: true
