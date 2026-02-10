@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
   - ./deploykey.secret.yaml
   - ./clustersettings.secret.yaml
+  - ./ghcr-auth.secret.yaml
   - ./flux.yaml
   - ./upgradesettings.yaml
   - ./namespace.yaml
