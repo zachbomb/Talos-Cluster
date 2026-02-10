@@ -97,19 +97,19 @@ spec:
         main:
           enabled: true
           mountPath: /config
-          volsync:
-            - name: config
-              type: restic
-              credentials: s3
-              dest:
-                enabled: true
-                cacheCapacity: 100Gi
-              src:
-                enabled: true
-                cacheCapacity: 100Gi
-          exportarr:
-            mountPath: /config
-            readOnly: true
+        exportarr:
+          mountPath: /config
+          readOnly: true
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 10Gi
+            src:
+              enabled: true
+              cacheCapacity: 10Gi
       media:
         enabled: true
         type: nfs
