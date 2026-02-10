@@ -74,6 +74,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${NZBGET_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${NZBGET_IP}
         ports:
           main:
             port: 10057

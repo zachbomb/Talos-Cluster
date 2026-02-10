@@ -66,6 +66,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${OVERSEERR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${OVERSEERR_IP}
         ports:
           main:
             port: 5055

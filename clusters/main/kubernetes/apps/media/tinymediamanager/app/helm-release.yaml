@@ -74,6 +74,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${TINYMEDIAMANAGER_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TINYMEDIAMANAGER_IP}
         ports:
           main:
             port: 10179

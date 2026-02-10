@@ -71,6 +71,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${BAZARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${BAZARR_IP}
         ports:
           main:
             enabled: true

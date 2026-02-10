@@ -185,6 +185,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${PLEX_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${PLEX_IP}
         ports:
           main:
             enabled: true

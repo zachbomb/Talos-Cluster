@@ -39,6 +39,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${SONARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${SONARR_IP}
         ports:
           main:
             port: 8989

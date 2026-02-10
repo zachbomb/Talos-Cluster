@@ -42,6 +42,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${TDARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TDARR_IP}
         ports:
           main:
             port: 8265

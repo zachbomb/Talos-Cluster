@@ -77,6 +77,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${OLLAMA_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${OLLAMA_IP}
         ports:
           main:
             enabled: true

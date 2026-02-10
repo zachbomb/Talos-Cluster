@@ -73,6 +73,8 @@ spec:
       main:
         enabled: true
         loadBalancerIP: ${KAPOWARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${KAPOWARR_IP}
         type: LoadBalancer
         ports:
           main:

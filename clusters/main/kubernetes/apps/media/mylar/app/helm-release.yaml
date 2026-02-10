@@ -69,6 +69,8 @@ spec:
       main:
         enabled: true
         loadBalancerIP: ${MYLAR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${MYLAR_IP}
         type: LoadBalancer
         ports:
           main:

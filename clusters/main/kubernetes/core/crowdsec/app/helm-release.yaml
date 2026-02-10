@@ -90,6 +90,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${CROWDSEC_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${CROWDSEC_IP}
         ports:
           http:
             port: 8080

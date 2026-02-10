@@ -95,6 +95,8 @@ spec:
         enabled: true
         type: LoadBalancer
         loadBalancerIP: ${HOMEPAGE_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${HOMEPAGE_IP}
         ports:
           main:
             enabled: true

@@ -40,4 +40,6 @@ spec:
       ui:
         type: LoadBalancer
         loadBalancerIP: ${LONGHORN_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${LONGHORN_IP}
         port: 80
