@@ -44,8 +44,10 @@ spec:
     service:
       main:
         enabled: true
-        LoadBalancerIP: ${RECYCLARR_IP}
+        loadBalancerIP: ${RECYCLARR_IP}
         type: LoadBalancer
+        annotations:
+          metallb.io/loadBalancerIPs: ${RECYCLARR_IP}
         ports:
           main:
             enabled: true
