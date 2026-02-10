@@ -82,7 +82,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
+              enabled: false
             src:
               enabled: true
               trigger:
@@ -93,7 +93,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
+              enabled: false
             src:
               enabled: true
               trigger:
@@ -104,7 +104,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
+              enabled: false
               cacheCapacity: 20Gi
             src:
               enabled: true
