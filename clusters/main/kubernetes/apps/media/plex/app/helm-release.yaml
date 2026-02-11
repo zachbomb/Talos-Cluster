@@ -40,7 +40,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/plex
       pullPolicy: IfNotPresent
-      tag: 1.43.0.10467
+      tag: 1.43.0.10492
       existingPullSecret: ""
     persistence:
       config:
