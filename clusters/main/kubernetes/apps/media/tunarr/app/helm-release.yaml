@@ -253,11 +253,11 @@ spec:
         fsGroup: 0
     resources:
       requests:
-        memory: 1024Mi
-        cpu: 50m
+        memory: 512Mi
+        cpu: 25m
       limits:
         nvidia.com/gpu: 1
-        memory: 8Gi
+        memory: 4Gi
         cpu: 500m
     podOptions:
       hostUsers: true
