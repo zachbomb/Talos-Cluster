@@ -146,9 +146,15 @@ spec:
       cache:
         enabled: true
         mountPath: /.cache
-      local-root:  # ADD THIS NEW SECTION
+      local-root:
         enabled: true
         mountPath: /.local
+      icache:
+        enabled: true
+        mountPath: /root/.local/share/tunarr/cache
+      msidx:
+        enabled: true
+        mountPath: /root/.local/share/tunarr/data.ms
       media:
         enabled: true
         type: nfs
