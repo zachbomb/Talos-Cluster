@@ -148,13 +148,14 @@ spec:
 
     workload:
       main:
+        replicas: 1
         autoscaling:
           vpa:
             enabled: false
-        resources:
-          requests:
-            memory: 256Mi
-            cpu: 10m
-          limits:
-            memory: 1Gi
-            cpu: 500m
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 10m
+      limits:
+        memory: 512Mi
+        cpu: 500m
