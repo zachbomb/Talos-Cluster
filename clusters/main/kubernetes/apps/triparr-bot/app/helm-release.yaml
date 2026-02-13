@@ -25,69 +25,72 @@ spec:
     remediation:
       retries: 3
   values:
+    global:
+      stopAll: false
     image:
       repository: ghcr.io/zachbomb/triparr-bot
       tag: latest
       pullPolicy: Always
+    # TrueCharts creates the imagePullSecret from these credentials
+    imagePullSecret:
+      ghcr-pull-secret:
+        registry: ghcr.io
+        username: zachbomb
+        password: ${TRIPARR_GHCR_TOKEN}
     workload:
       main:
         podSpec:
-          imagePullSecrets:
-            - name: ghcr-pull-secret
           containers:
             main:
-              envFrom:
-                - secretRef:
-                    name: triparr-db-app
-    env:
-      # Database — CNPG provides credentials via triparr-db-app secret
-      DB_HOST: triparr-db-rw.triparr-bot.svc
-      DB_PORT: "5432"
-      DB_NAME: triparr
-      DB_USER: triparr_user
-      DB_PASSWORD: ${TRIPARR_DB_PASSWORD}
-      DB_SSL: "false"
-      DB_POOL_MAX: "10"
-      # Discord
-      DISCORD_TOKEN: ${TRIPARR_DISCORD_TOKEN}
-      DISCORD_CLIENT_ID: ${TRIPARR_DISCORD_CLIENT_ID}
-      DISCORD_GUILD_ID: ${TRIPARR_DISCORD_GUILD_ID}
-      DISCORD_ALERT_CATEGORY_ID: ${TRIPARR_DISCORD_ALERT_CATEGORY_ID}
-      DISCORD_ALERT_CHANNEL_ID: ${TRIPARR_DISCORD_ALERT_CHANNEL_ID}
-      DISCORD_OWNER_ID: ${TRIPARR_DISCORD_OWNER_ID}
-      DISCORD_PUBLIC_KEY: ${TRIPARR_DISCORD_PUBLIC_KEY}
-      ADMIN_USER_IDS: ${TRIPARR_ADMIN_USER_IDS}
-      # Security
-      ENCRYPTION_KEY: ${TRIPARR_ENCRYPTION_KEY}
-      SESSION_SECRET: ${TRIPARR_SESSION_SECRET}
-      # API Keys
-      SEATS_AERO_API_KEY: ${TRIPARR_SEATS_API_KEY}
-      SEATS_AERO_SECONDARY_API_KEY: ${TRIPARR_SEATS_SECONDARY_KEY}
-      AMADEUS_API_KEY: ${TRIPARR_AMADEUS_KEY}
-      AMADEUS_API_SECRET: ${TRIPARR_AMADEUS_SECRET}
-      AMADEUS_TEST_API_KEY: ${TRIPARR_AMADEUS_TEST_KEY}
-      AMADEUS_TEST_API_SECRET: ${TRIPARR_AMADEUS_TEST_SECRET}
-      AMADEUS_ENV: production
-      AMADEUS_DAILY_LIMIT: "300"
-      AMADEUS_CACHE_ENABLED: "true"
-      AWARDWALLET_API_KEY: ${TRIPARR_AWARDWALLET_KEY}
-      # Runtime
-      NODE_ENV: production
-      TZ: America/Los_Angeles
-      LOG_LEVEL: info
-      HEALTH_CHECK_ENABLED: "true"
-      HEALTH_CHECK_PORT: "3001"
-      SKIP_DB_WAIT: "true"
-      # Feature flags
-      FEATURE_TRIP_TRACKING: "true"
-      FEATURE_AMADEUS_PRICING: "true"
-      FEATURE_AWARDWALLET_SYNC: "true"
-      FEATURE_TRANSFER_BONUSES: "true"
-      ENABLE_UNIFIED_SEARCH: "true"
-      ENABLE_CONSOLIDATED_MONITORING: "true"
-      ENABLE_ROUTE_ANALYTICS: "true"
-      ENABLE_PROFILE_QUERY: "true"
-      ENABLE_BUDGET_AWARENESS: "true"
+              env:
+                # Database — password from CNPG secret (extracted after initial deploy)
+                DB_HOST: triparr-db-rw.triparr-bot.svc
+                DB_PORT: "5432"
+                DB_NAME: triparr
+                DB_USER: triparr_user
+                DB_PASSWORD: ${TRIPARR_DB_PASSWORD}
+                DB_SSL: "false"
+                DB_POOL_MAX: "10"
+                # Discord
+                DISCORD_TOKEN: ${TRIPARR_DISCORD_TOKEN}
+                DISCORD_CLIENT_ID: ${TRIPARR_DISCORD_CLIENT_ID}
+                DISCORD_GUILD_ID: ${TRIPARR_DISCORD_GUILD_ID}
+                DISCORD_ALERT_CATEGORY_ID: ${TRIPARR_DISCORD_ALERT_CATEGORY_ID}
+                DISCORD_ALERT_CHANNEL_ID: ${TRIPARR_DISCORD_ALERT_CHANNEL_ID}
+                DISCORD_OWNER_ID: ${TRIPARR_DISCORD_OWNER_ID}
+                DISCORD_PUBLIC_KEY: ${TRIPARR_DISCORD_PUBLIC_KEY}
+                ADMIN_USER_IDS: ${TRIPARR_ADMIN_USER_IDS}
+                # Security
+                ENCRYPTION_KEY: ${TRIPARR_ENCRYPTION_KEY}
+                SESSION_SECRET: ${TRIPARR_SESSION_SECRET}
+                # API Keys
+                SEATS_AERO_API_KEY: ${TRIPARR_SEATS_API_KEY}
+                SEATS_AERO_SECONDARY_API_KEY: ${TRIPARR_SEATS_SECONDARY_KEY}
+                AMADEUS_API_KEY: ${TRIPARR_AMADEUS_KEY}
+                AMADEUS_API_SECRET: ${TRIPARR_AMADEUS_SECRET}
+                AMADEUS_TEST_API_KEY: ${TRIPARR_AMADEUS_TEST_KEY}
+                AMADEUS_TEST_API_SECRET: ${TRIPARR_AMADEUS_TEST_SECRET}
+                AMADEUS_ENV: production
+                AMADEUS_DAILY_LIMIT: "300"
+                AMADEUS_CACHE_ENABLED: "true"
+                AWARDWALLET_API_KEY: ${TRIPARR_AWARDWALLET_KEY}
+                # Runtime
+                NODE_ENV: production
+                TZ: America/Los_Angeles
+                LOG_LEVEL: info
+                HEALTH_CHECK_ENABLED: "true"
+                HEALTH_CHECK_PORT: "3001"
+                SKIP_DB_WAIT: "true"
+                # Feature flags
+                FEATURE_TRIP_TRACKING: "true"
+                FEATURE_AMADEUS_PRICING: "true"
+                FEATURE_AWARDWALLET_SYNC: "true"
+                FEATURE_TRANSFER_BONUSES: "true"
+                ENABLE_UNIFIED_SEARCH: "true"
+                ENABLE_CONSOLIDATED_MONITORING: "true"
+                ENABLE_ROUTE_ANALYTICS: "true"
+                ENABLE_PROFILE_QUERY: "true"
+                ENABLE_BUDGET_AWARENESS: "true"
     credentials:
       s3:
         type: s3
@@ -145,17 +148,17 @@ spec:
               enabled: true
       logs:
         enabled: true
+        type: emptyDir
         mountPath: /app/logs
-    autoscaling:
-      vpa:
-        enabled: false
-        mode: Auto
     securityContext:
       container:
         runAsUser: 1000
         runAsGroup: 1000
         runAsNonRoot: true
         readOnlyRootFilesystem: false
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
     resources:
       requests:
         cpu: 100m
