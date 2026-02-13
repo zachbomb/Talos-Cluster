@@ -47,7 +47,7 @@ spec:
             main:
               env:
                 # Database — password from CNPG secret (extracted after initial deploy)
-                DB_HOST: triparr-db-rw.triparr-bot.svc
+                DB_HOST: triparr-db-rw.triparr-bot.svc.cluster.local
                 DB_PORT: "5432"
                 DB_NAME: triparr
                 DB_USER: triparr_user
