@@ -1,0 +1,32 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: triparr-db
+  namespace: triparr-bot
+spec:
+  instances: 1
+  postgresql:
+    parameters:
+      shared_buffers: "256MB"
+      effective_cache_size: "512MB"
+    pg_hba:
+      - host all all 10.0.0.0/8 md5
+  bootstrap:
+    initdb:
+      database: triparr
+      owner: triparr_user
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+        - CREATE EXTENSION IF NOT EXISTS "pgcrypto"
+        - CREATE EXTENSION IF NOT EXISTS "pg_trgm"
+  storage:
+    size: 10Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  monitoring:
+    enablePodMonitor: false
