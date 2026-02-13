@@ -39,6 +39,7 @@ spec:
           username: zachbomb
           password: ${TRIPARR_GHCR_TOKEN}
           email: noreply@github.com
+    TZ: America/Los_Angeles
     workload:
       main:
         podSpec:
@@ -78,7 +79,6 @@ spec:
                 AWARDWALLET_API_KEY: ${TRIPARR_AWARDWALLET_KEY}
                 # Runtime
                 NODE_ENV: production
-                TZ: America/Los_Angeles
                 LOG_LEVEL: info
                 HEALTH_CHECK_ENABLED: "true"
                 HEALTH_CHECK_PORT: "3001"
