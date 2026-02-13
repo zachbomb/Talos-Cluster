@@ -54,15 +54,15 @@ spec:
                 DB_PASSWORD: ${TRIPARR_DB_PASSWORD}
                 DB_SSL: "false"
                 DB_POOL_MAX: "10"
-                # Discord
+                # Discord — IDs must be quoted to prevent YAML float64 truncation
                 DISCORD_TOKEN: ${TRIPARR_DISCORD_TOKEN}
-                DISCORD_CLIENT_ID: ${TRIPARR_DISCORD_CLIENT_ID}
-                DISCORD_GUILD_ID: ${TRIPARR_DISCORD_GUILD_ID}
-                DISCORD_ALERT_CATEGORY_ID: ${TRIPARR_DISCORD_ALERT_CATEGORY_ID}
-                DISCORD_ALERT_CHANNEL_ID: ${TRIPARR_DISCORD_ALERT_CHANNEL_ID}
-                DISCORD_OWNER_ID: ${TRIPARR_DISCORD_OWNER_ID}
+                DISCORD_CLIENT_ID: "${TRIPARR_DISCORD_CLIENT_ID}"
+                DISCORD_GUILD_ID: "${TRIPARR_DISCORD_GUILD_ID}"
+                DISCORD_ALERT_CATEGORY_ID: "${TRIPARR_DISCORD_ALERT_CATEGORY_ID}"
+                DISCORD_ALERT_CHANNEL_ID: "${TRIPARR_DISCORD_ALERT_CHANNEL_ID}"
+                DISCORD_OWNER_ID: "${TRIPARR_DISCORD_OWNER_ID}"
                 DISCORD_PUBLIC_KEY: ${TRIPARR_DISCORD_PUBLIC_KEY}
-                ADMIN_USER_IDS: ${TRIPARR_ADMIN_USER_IDS}
+                ADMIN_USER_IDS: "${TRIPARR_ADMIN_USER_IDS}"
                 # Security
                 ENCRYPTION_KEY: ${TRIPARR_ENCRYPTION_KEY}
                 SESSION_SECRET: ${TRIPARR_SESSION_SECRET}
