@@ -6,3 +6,4 @@ resources:
   - home
   - media
   - ollama/ks.yaml
+  - triparr-bot/ks.yaml
