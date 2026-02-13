@@ -41,6 +41,41 @@ spec:
           - "8000"
         podSpec:
           runtimeClassName: "nvidia"
+          containers:
+            cache-purge:
+              enabled: true
+              image:
+                repository: alpine
+                tag: "3.21"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "Cache purge sidecar started (60m interval, 5m threshold)"
+                  while true; do
+                    echo "[$(date)] Purging cache files older than 5 minutes..."
+                    find /.cache -type f -mmin +5 -delete 2>/dev/null
+                    find /.local -type f -mmin +5 -delete 2>/dev/null
+                    find /root/.local/share/tunarr/cache -type f -mmin +5 -delete 2>/dev/null
+                    find /.transcode -type f -mmin +5 -delete 2>/dev/null
+                    find /.cache -type d -empty -delete 2>/dev/null
+                    find /.local -type d -empty -delete 2>/dev/null
+                    find /root/.local/share/tunarr/cache -type d -empty -delete 2>/dev/null
+                    find /.transcode -type d -empty -delete 2>/dev/null
+                    echo "[$(date)] Purge complete"
+                    sleep 3600
+                  done
+              resources:
+                requests:
+                  cpu: 5m
+                  memory: 32Mi
+                limits:
+                  cpu: 50m
+                  memory: 64Mi
+              securityContext:
+                runAsUser: 0
+                runAsGroup: 0
+                readOnlyRootFilesystem: false
     autoscaling:
       vpa:
         enabled: true
