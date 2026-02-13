@@ -34,6 +34,7 @@ spec:
     # TrueCharts creates the imagePullSecret from these credentials
     imagePullSecret:
       ghcr-pull-secret:
+        enabled: true
         registry: ghcr.io
         username: zachbomb
         password: ${TRIPARR_GHCR_TOKEN}
