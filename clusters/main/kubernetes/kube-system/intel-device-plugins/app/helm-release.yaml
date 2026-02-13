@@ -30,7 +30,7 @@ spec:
   values:
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     resources:
       requests:
         memory: 128Mi

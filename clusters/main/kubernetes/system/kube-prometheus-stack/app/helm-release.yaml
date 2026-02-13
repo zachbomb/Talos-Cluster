@@ -148,4 +148,4 @@ spec:
         insecureSkipVerify: true
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false

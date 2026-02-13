@@ -168,4 +168,4 @@ spec:
         memory: 256Mi
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false

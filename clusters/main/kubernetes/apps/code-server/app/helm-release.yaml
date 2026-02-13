@@ -62,7 +62,7 @@ spec:
                 pathType: Prefix
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     resources:
       requests:
         memory: 256Mi

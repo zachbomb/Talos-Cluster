@@ -57,7 +57,7 @@ spec:
             - '*.${DOMAIN_0}'
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     resources:
       requests:
         memory: 128Mi

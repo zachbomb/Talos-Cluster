@@ -72,7 +72,7 @@ spec:
 
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
 
     workload:
       main:

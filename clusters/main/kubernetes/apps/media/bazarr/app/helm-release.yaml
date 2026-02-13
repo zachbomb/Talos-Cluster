@@ -115,7 +115,7 @@ spec:
           - nolock
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     securityContext:
       container:
         UMASK: "0022"

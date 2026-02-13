@@ -169,7 +169,7 @@ spec:
               cacheCapacity: 10Gi
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     resources:
       requests:
         memory: 512Mi

@@ -132,7 +132,7 @@ spec:
                   pathType: Prefix
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     resources:
       requests:
         cpu: 25m
