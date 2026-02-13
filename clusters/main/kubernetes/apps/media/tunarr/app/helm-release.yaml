@@ -65,6 +65,13 @@ spec:
                     echo "[$(date)] Purge complete"
                     sleep 3600
                   done
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false
               resources:
                 requests:
                   cpu: 5m
