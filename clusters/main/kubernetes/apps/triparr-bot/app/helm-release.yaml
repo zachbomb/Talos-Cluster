@@ -1,0 +1,167 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: triparr-bot
+  namespace: triparr-bot
+spec:
+  interval: 5m
+  timeout: 15m
+  releaseName: triparr-bot
+  chart:
+    spec:
+      chart: app-template
+      version: 15.29.84
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/zachbomb/triparr-bot
+      tag: latest
+      pullPolicy: Always
+    workload:
+      main:
+        podSpec:
+          imagePullSecrets:
+            - name: ghcr-pull-secret
+          containers:
+            main:
+              envFrom:
+                - secretRef:
+                    name: triparr-db-app
+    env:
+      # Database — CNPG provides credentials via triparr-db-app secret
+      DB_HOST: triparr-db-rw.triparr-bot.svc
+      DB_PORT: "5432"
+      DB_NAME: triparr
+      DB_USER: triparr_user
+      DB_PASSWORD: ${TRIPARR_DB_PASSWORD}
+      DB_SSL: "false"
+      DB_POOL_MAX: "10"
+      # Discord
+      DISCORD_TOKEN: ${TRIPARR_DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${TRIPARR_DISCORD_CLIENT_ID}
+      DISCORD_GUILD_ID: ${TRIPARR_DISCORD_GUILD_ID}
+      DISCORD_ALERT_CATEGORY_ID: ${TRIPARR_DISCORD_ALERT_CATEGORY_ID}
+      DISCORD_ALERT_CHANNEL_ID: ${TRIPARR_DISCORD_ALERT_CHANNEL_ID}
+      DISCORD_OWNER_ID: ${TRIPARR_DISCORD_OWNER_ID}
+      DISCORD_PUBLIC_KEY: ${TRIPARR_DISCORD_PUBLIC_KEY}
+      ADMIN_USER_IDS: ${TRIPARR_ADMIN_USER_IDS}
+      # Security
+      ENCRYPTION_KEY: ${TRIPARR_ENCRYPTION_KEY}
+      SESSION_SECRET: ${TRIPARR_SESSION_SECRET}
+      # API Keys
+      SEATS_AERO_API_KEY: ${TRIPARR_SEATS_API_KEY}
+      SEATS_AERO_SECONDARY_API_KEY: ${TRIPARR_SEATS_SECONDARY_KEY}
+      AMADEUS_API_KEY: ${TRIPARR_AMADEUS_KEY}
+      AMADEUS_API_SECRET: ${TRIPARR_AMADEUS_SECRET}
+      AMADEUS_TEST_API_KEY: ${TRIPARR_AMADEUS_TEST_KEY}
+      AMADEUS_TEST_API_SECRET: ${TRIPARR_AMADEUS_TEST_SECRET}
+      AMADEUS_ENV: production
+      AMADEUS_DAILY_LIMIT: "300"
+      AMADEUS_CACHE_ENABLED: "true"
+      AWARDWALLET_API_KEY: ${TRIPARR_AWARDWALLET_KEY}
+      # Runtime
+      NODE_ENV: production
+      TZ: America/Los_Angeles
+      LOG_LEVEL: info
+      HEALTH_CHECK_ENABLED: "true"
+      HEALTH_CHECK_PORT: "3001"
+      SKIP_DB_WAIT: "true"
+      # Feature flags
+      FEATURE_TRIP_TRACKING: "true"
+      FEATURE_AMADEUS_PRICING: "true"
+      FEATURE_AWARDWALLET_SYNC: "true"
+      FEATURE_TRANSFER_BONUSES: "true"
+      ENABLE_UNIFIED_SEARCH: "true"
+      ENABLE_CONSOLIDATED_MONITORING: "true"
+      ENABLE_ROUTE_ANALYTICS: "true"
+      ENABLE_PROFILE_QUERY: "true"
+      ENABLE_BUDGET_AWARENESS: "true"
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-triparr"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${TRIPARR_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${TRIPARR_IP}
+        ports:
+          main:
+            enabled: true
+            port: 3001
+            targetPort: 3001
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: internal
+        hosts:
+          - host: triparr.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: true
+            ingressClassName: internal
+          traefik:
+            enabled: false
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Triparr Bot
+            description: Award Travel Discord Bot
+            group: Home
+    persistence:
+      data:
+        enabled: true
+        mountPath: /app/data
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            src:
+              enabled: true
+            dest:
+              enabled: true
+      logs:
+        enabled: true
+        mountPath: /app/logs
+    autoscaling:
+      vpa:
+        enabled: false
+        mode: Auto
+    securityContext:
+      container:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        readOnlyRootFilesystem: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "2"
+        memory: 1Gi
+    podOptions:
+      hostUsers: true

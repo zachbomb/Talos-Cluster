@@ -83,7 +83,7 @@ spec:
             targetPort: 8080
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     resources:
       requests:
         cpu: 25m

@@ -155,4 +155,4 @@ spec:
         cpu: 500m
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false

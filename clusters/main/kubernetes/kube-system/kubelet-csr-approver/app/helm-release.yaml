@@ -18,7 +18,7 @@ spec:
   values:
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
 
     resources:
       requests:
