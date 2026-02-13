@@ -149,7 +149,7 @@ spec:
         cpu: 500m
     autoscaling:
       vpa:
-        enabled: true
+        enabled: false
     securityContext:
       container:
         UMASK: "0022"
