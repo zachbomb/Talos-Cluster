@@ -54,15 +54,16 @@ spec:
                 DB_PASSWORD: ${TRIPARR_DB_PASSWORD}
                 DB_SSL: "false"
                 DB_POOL_MAX: "10"
-                # Discord — IDs must be quoted to prevent YAML float64 truncation
+                # Discord — IDs hardcoded to prevent YAML/JSON float64 precision loss
+                # Flux substitution converts large integers to float64, truncating snowflake IDs
                 DISCORD_TOKEN: ${TRIPARR_DISCORD_TOKEN}
-                DISCORD_CLIENT_ID: "${TRIPARR_DISCORD_CLIENT_ID}"
-                DISCORD_GUILD_ID: "${TRIPARR_DISCORD_GUILD_ID}"
-                DISCORD_ALERT_CATEGORY_ID: "${TRIPARR_DISCORD_ALERT_CATEGORY_ID}"
-                DISCORD_ALERT_CHANNEL_ID: "${TRIPARR_DISCORD_ALERT_CHANNEL_ID}"
-                DISCORD_OWNER_ID: "${TRIPARR_DISCORD_OWNER_ID}"
-                DISCORD_PUBLIC_KEY: ${TRIPARR_DISCORD_PUBLIC_KEY}
-                ADMIN_USER_IDS: "${TRIPARR_ADMIN_USER_IDS}"
+                DISCORD_CLIENT_ID: "1395304697383878656"
+                DISCORD_GUILD_ID: "1365085096998207559"
+                DISCORD_ALERT_CATEGORY_ID: "1404592878105268357"
+                DISCORD_ALERT_CHANNEL_ID: "1448028450748104796"
+                DISCORD_OWNER_ID: "324728643559358464"
+                DISCORD_PUBLIC_KEY: "7579eaae387985eea13c2275db7a9c3fea3bf531aa2eaf825e892111c8dc2ab3"
+                ADMIN_USER_IDS: "324728643559358464"
                 # Security
                 ENCRYPTION_KEY: ${TRIPARR_ENCRYPTION_KEY}
                 SESSION_SECRET: ${TRIPARR_SESSION_SECRET}
