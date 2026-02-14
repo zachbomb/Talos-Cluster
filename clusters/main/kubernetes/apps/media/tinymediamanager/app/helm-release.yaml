@@ -29,7 +29,7 @@ spec:
     image:
       repository: docker.io/tinymediamanager/tinymediamanager
       pullPolicy: IfNotPresent
-      tag: 5.2.6
+      tag: 5.2.7
     TZ: America/Los_Angeles
     credentials:
       s3:
