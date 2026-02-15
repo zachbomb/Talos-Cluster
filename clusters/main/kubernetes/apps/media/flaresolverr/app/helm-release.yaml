@@ -11,7 +11,7 @@ spec:
     spec:
       # renovate: datasource=docker depName=oci.trueforge.org/truecharts/flaresolverr
       chart: flaresolverr
-      version: 16.14.17
+      version: 16.14.18
       sourceRef:
         kind: HelmRepository
         name: truecharts
