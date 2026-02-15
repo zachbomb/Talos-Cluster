@@ -30,7 +30,7 @@ spec:
     image:
       repository: ghcr.io/tautulli/tautulli
       pullPolicy: IfNotPresent
-      tag: v2.16.0
+      tag: v2.16.1
     securityContext:
       readOnlyRootFilesystem: false
     credentials:
