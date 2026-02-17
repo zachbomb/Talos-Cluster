@@ -210,11 +210,11 @@ spec:
                   pathType: Prefix
     resources:
       requests:
-        memory: 256Mi
-        cpu: 10m
+        memory: 1Gi
+        cpu: 200m
       limits:
-        memory: 2Gi
-        cpu: 500m
+        memory: 4Gi
+        cpu: "2"
     autoscaling:
       vpa:
         enabled: true
