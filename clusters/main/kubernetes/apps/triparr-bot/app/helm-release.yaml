@@ -78,6 +78,10 @@ spec:
                 AMADEUS_DAILY_LIMIT: "300"
                 AMADEUS_CACHE_ENABLED: "true"
                 AWARDWALLET_API_KEY: ${TRIPARR_AWARDWALLET_KEY}
+                # Apple Maps
+                APPLE_MAPS_TEAM_ID: ${TRIPARR_APPLE_MAPS_TEAM_ID}
+                APPLE_MAPS_KEY_ID: ${TRIPARR_APPLE_MAPS_KEY_ID}
+                APPLE_MAPS_PRIVATE_KEY: ${TRIPARR_APPLE_MAPS_PRIVATE_KEY}
                 # Runtime
                 NODE_ENV: production
                 LOG_LEVEL: info
