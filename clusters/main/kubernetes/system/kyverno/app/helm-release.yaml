@@ -76,7 +76,7 @@ spec:
             cpu: 200m
             memory: 512Mi
     admissionController:
-      replicas: 3
+      replicas: 1
       serviceMonitor:
         enabled: true
       container:
@@ -93,14 +93,6 @@ spec:
             - apiGroups: [""]
               resources: [ingresses, pods, nodes]
               verbs: [get, create, update, delete]
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app.kubernetes.io/instance: kyverno
-              app.kubernetes.io/component: kyverno
     config:
       resourceFilters:
         - '[Event,*,*]'
