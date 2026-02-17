@@ -25,7 +25,7 @@ resources:
   - calibre/ks.yaml
   - calibre-web/ks.yaml
   - bazarr/ks.yaml
-  - doplarr/ks.yaml
+  #- doplarr/ks.yaml
   - kapowarr/ks.yaml
   - tdarr/ks.yaml
   - dizquetv/ks.yaml
