@@ -30,10 +30,16 @@ spec:
     defaultSettings:
       defaultReplicaCount: "1"
       storageOverProvisioningPercentage: "100000"
+      guaranteedInstanceManagerCPU: 8
       # v2DataEngine: true
     persistence:
       defaultClass: true
       defaultClassReplicaCount: "1"
+    csi:
+      attacherReplicaCount: 1
+      provisionerReplicaCount: 1
+      resizerReplicaCount: 1
+      snapshotterReplicaCount: 1
     longhornUI:
       replicas: 1
     service:
