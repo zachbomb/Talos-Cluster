@@ -141,7 +141,7 @@ spec:
       additionalAdvertiseURL: ""
       disableGDM: false
       requireHTTPS: false
-      serverIP: 192.168.10.204
+      serverIP: ${PLEX_IP}
     securityContext:
       container:
         runAsUser: 1000
