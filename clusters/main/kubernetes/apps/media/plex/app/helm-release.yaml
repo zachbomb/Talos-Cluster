@@ -197,6 +197,39 @@ spec:
       main:
         podSpec:
           runtimeClassName: "nvidia"
+          containers:
+            main:
+              probes:
+                startup:
+                  enabled: true
+                  type: http
+                  path: /identity
+                  port: 32400
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                    failureThreshold: 90
+                    timeoutSeconds: 5
+                liveness:
+                  enabled: true
+                  type: http
+                  path: /identity
+                  port: 32400
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 30
+                    failureThreshold: 10
+                    timeoutSeconds: 10
+                readiness:
+                  enabled: true
+                  type: http
+                  path: /identity
+                  port: 32400
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 15
+                    failureThreshold: 10
+                    timeoutSeconds: 10
         replicas: 1
     scheduling:
       topologyKey: kubernetes.io/hostname
