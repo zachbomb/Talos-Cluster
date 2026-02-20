@@ -60,6 +60,10 @@ spec:
             paths:
               - path: /
                 pathType: Prefix
+    persistence:
+      config:
+        enabled: true
+        size: 2Gi
     autoscaling:
       vpa:
         enabled: false
