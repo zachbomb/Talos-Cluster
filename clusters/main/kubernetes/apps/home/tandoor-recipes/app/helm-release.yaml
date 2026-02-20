@@ -77,6 +77,9 @@ spec:
             port: 10029
             targetPort: 10029
             protocol: http
+    cnpg:
+      main:
+        vctSize: 2Gi
     persistence:
       config:
         enabled: true
