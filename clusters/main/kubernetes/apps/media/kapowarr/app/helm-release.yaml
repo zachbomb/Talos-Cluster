@@ -82,6 +82,9 @@ spec:
             protocol: http
             targetPort: 5656
     persistence:
+      db:
+        enabled: true
+        size: 2Gi
       config:
         enabled: true
         size: 2Gi
