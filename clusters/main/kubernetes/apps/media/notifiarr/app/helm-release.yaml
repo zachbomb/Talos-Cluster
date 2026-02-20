@@ -40,7 +40,7 @@ spec:
       s3:
         type: s3
         url: ${S3URL}
-        bucket: "${S3PREFIX}-plex"
+        bucket: "${S3PREFIX}-notifiarr"
         accessKey: ${S3ID}
         secretKey: ${S3KEY}
         encrKey: ${S3KEY}
@@ -92,6 +92,7 @@ spec:
               enabled: false
     persistence:
       config:
+        size: 1Gi
         volsync:
           - name: config
             type: restic
