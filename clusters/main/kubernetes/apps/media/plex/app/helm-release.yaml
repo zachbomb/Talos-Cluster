@@ -199,6 +199,14 @@ spec:
           runtimeClassName: "nvidia"
           containers:
             main:
+              resources:
+                requests:
+                  memory: 2Gi
+                  cpu: 500m
+                limits:
+                  memory: 8Gi
+                  cpu: "4"
+                  nvidia.com/gpu: 1
               probes:
                 startup:
                   enabled: true
@@ -247,4 +255,3 @@ spec:
       limits:
         memory: 8Gi
         cpu: "4"
-        nvidia.com/gpu: 1

@@ -42,6 +42,15 @@ spec:
         podSpec:
           runtimeClassName: "nvidia"
           containers:
+            main:
+              resources:
+                requests:
+                  memory: 512Mi
+                  cpu: 25m
+                limits:
+                  nvidia.com/gpu: 1
+                  memory: 4Gi
+                  cpu: 500m
             cache-purge:
               enabled: true
               image:
@@ -298,7 +307,6 @@ spec:
         memory: 512Mi
         cpu: 25m
       limits:
-        nvidia.com/gpu: 1
         memory: 4Gi
         cpu: 500m
     podOptions:
