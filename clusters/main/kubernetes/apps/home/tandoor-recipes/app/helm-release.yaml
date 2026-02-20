@@ -77,6 +77,13 @@ spec:
             port: 10029
             targetPort: 10029
             protocol: http
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              env:
+                ENABLE_PDF_EXPORT: "1"
     cnpg:
       main:
         cluster:
