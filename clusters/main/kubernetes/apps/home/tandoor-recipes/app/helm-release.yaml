@@ -79,7 +79,11 @@ spec:
             protocol: http
     cnpg:
       main:
-        vctSize: 2Gi
+        cluster:
+          storage:
+            size: 2Gi
+          walStorage:
+            size: 2Gi
     persistence:
       config:
         enabled: true
