@@ -92,6 +92,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 10Gi
         main:
           enabled: true
           mountPath: /config
@@ -147,6 +148,7 @@ spec:
           - nolock
       backup:
         enabled: true
+        size: 2Gi
         mountPath: /backups
     autoscaling:
       vpa:

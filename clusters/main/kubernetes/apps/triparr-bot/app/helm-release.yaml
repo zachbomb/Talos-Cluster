@@ -144,6 +144,7 @@ spec:
     persistence:
       data:
         enabled: true
+        size: 2Gi
         mountPath: /app/data
         volsync:
           - name: data

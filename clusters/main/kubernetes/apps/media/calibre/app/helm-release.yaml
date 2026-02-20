@@ -87,6 +87,7 @@ spec:
         enabled: false
     persistence:
       config:
+        size: 2Gi
         volsync:
           - name: config
             type: restic
@@ -155,6 +156,7 @@ spec:
           - nolock
       backup:
         enabled: true
+        size: 2Gi
         mountPath: /backups
     metrics:
       main:
