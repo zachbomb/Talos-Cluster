@@ -44,16 +44,17 @@ spec:
       existingPullSecret: ""
     persistence:
       config:
+        size: 25Gi
         volsync:
           - name: config
             type: restic
             credentials: s3
             dest:
               enabled: true
-              cacheCapacity: 15Gi
+              cacheCapacity: 5Gi
             src:
               enabled: true
-              cacheCapacity: 15Gi
+              cacheCapacity: 5Gi
       media:
         enabled: true
         type: nfs
@@ -126,17 +127,18 @@ spec:
           - nolock
       backup:
         enabled: true
+        size: 5Gi
         mountPath: /config/Backups
         volsync:
-          - name: config
+          - name: backup
             type: restic
             credentials: s3
             dest:
               enabled: true
-              cacheCapacity: 5Gi
+              cacheCapacity: 3Gi
             src:
               enabled: true
-              cacheCapacity: 5Gi
+              cacheCapacity: 3Gi
     plex:
       additionalAdvertiseURL: ""
       disableGDM: false

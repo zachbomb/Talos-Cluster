@@ -115,6 +115,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 2Gi
         mountPath: /app/config
         volsync:
           - name: config

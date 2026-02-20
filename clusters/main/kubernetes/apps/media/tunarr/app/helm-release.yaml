@@ -163,6 +163,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 5Gi
         mountPath: /root
         volsync:
           - name: config
@@ -174,6 +175,7 @@ spec:
               enabled: false
       streams:
         enabled: true
+        size: 2Gi
         mountPath: /tunarr/streams
         volsync:
           - name: streams
@@ -185,6 +187,7 @@ spec:
               enabled: false
       local:
         enabled: true
+        size: 5Gi
         mountPath: /root/.local
         volsync:
           - name: local
@@ -196,15 +199,19 @@ spec:
               enabled: false
       cache:
         enabled: true
+        size: 2Gi
         mountPath: /.cache
       local-root:
         enabled: true
+        size: 2Gi
         mountPath: /.local
       icache:
         enabled: true
+        size: 5Gi
         mountPath: /root/.local/share/tunarr/cache
       msidx:
         enabled: true
+        size: 5Gi
         mountPath: /root/.local/share/tunarr/data.ms
       media:
         enabled: true
@@ -292,6 +299,7 @@ spec:
           - nolock
       transcoding:
         enabled: true
+        size: 5Gi
         mountPath: /.transcode
     securityContext:
       container:

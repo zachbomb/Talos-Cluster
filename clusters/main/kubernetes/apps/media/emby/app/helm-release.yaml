@@ -88,6 +88,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 15Gi
         mountPath: /config
         volsync:
           - name: config
@@ -95,10 +96,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
-              cacheCapacity: 10Gi
+              cacheCapacity: 5Gi
             src:
               enabled: true
-              cacheCapacity: 10Gi
+              cacheCapacity: 5Gi
               trigger:
                 schedule: "15 0 * * *"
       run:

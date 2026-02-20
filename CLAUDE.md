@@ -196,6 +196,25 @@ persistence:
     volsync:        # WRONG: nested under config but not a sibling of the volume
 ```
 
+### PVC Sizing Convention
+
+**Always specify explicit `size:` on every persistence entry that creates a PVC.** TrueCharts defaults to 100Gi if omitted, which wastes Longhorn storage — especially during VolSync backups where clone PVCs are created at full size.
+
+```yaml
+persistence:
+  config:
+    enabled: true
+    size: 2Gi        # ALWAYS specify — TrueCharts defaults to 100Gi
+    mountPath: /config
+    volsync:
+      - name: config
+        type: restic
+        credentials: s3
+        ...
+```
+
+NFS mounts and emptyDir volumes do not need `size:` — only PVC-backed volumes.
+
 ### Recovery Procedures
 
 **Failed Helm release (never succeeded):**

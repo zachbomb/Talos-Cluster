@@ -101,6 +101,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 5Gi
         readOnly: false
         main:
           mountPath: /config
@@ -112,10 +113,10 @@ spec:
             type: restic
             dest:
               enabled: true
-              cacheCapacity: 10Gi
+              cacheCapacity: 3Gi
             src:
               enabled: true
-              cacheCapacity: 10Gi
+              cacheCapacity: 3Gi
       media:
         enabled: true
         type: nfs
@@ -160,6 +161,7 @@ spec:
           - nolock
       backup:
         enabled: true
+        size: 2Gi
         mountPath: /backups
         volsync:
           - name: backup

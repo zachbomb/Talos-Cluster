@@ -79,6 +79,7 @@ spec:
                 key: ""
     persistence:
       configs:
+        size: 2Gi
         volsync:
           - name: config
             type: restic
@@ -90,6 +91,7 @@ spec:
               trigger:
                 schedule: "50 0 * * *"
       logs:
+        size: 2Gi
         volsync:
           - name: logs
             type: restic
@@ -101,16 +103,17 @@ spec:
               trigger:
                 schedule: "50 0 * * *"
       server:
+        size: 5Gi
         volsync:
           - name: server
             type: restic
             credentials: s3
             dest:
               enabled: false
-              cacheCapacity: 20Gi
+              cacheCapacity: 3Gi
             src:
               enabled: true
-              cacheCapacity: 20Gi
+              cacheCapacity: 3Gi
               trigger:
                 schedule: "50 0 * * *"
       transcode-cache:

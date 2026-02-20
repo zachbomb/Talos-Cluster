@@ -84,6 +84,7 @@ spec:
     persistence:
       data:
         enabled: true
+        size: 2Gi
         readOnly: false
         main:
           mountPath: /data
@@ -93,10 +94,10 @@ spec:
             credentials: s3
             dest:
               enabled: false
-              cacheCapacity: 10Gi
+              cacheCapacity: 2Gi
             src:
               enabled: true
-              cacheCapacity: 10Gi
+              cacheCapacity: 2Gi
       media:
         enabled: true
         type: nfs
