@@ -97,8 +97,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
               trigger:
                 schedule: "30 2 * * *"
       backup:
@@ -111,8 +113,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
               trigger:
                 schedule: "0 3 * * *"
       media:

@@ -88,8 +88,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
       media:
         enabled: true
         size: 2Gi
@@ -100,8 +102,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
       static:
         enabled: true
         size: 1Gi
@@ -112,8 +116,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
     autoscaling:
       vpa:
         enabled: false

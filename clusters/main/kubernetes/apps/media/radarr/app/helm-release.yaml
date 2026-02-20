@@ -169,8 +169,10 @@ spec:
             type: restic
             dest:
               enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
     autoscaling:
       vpa:
         enabled: false
