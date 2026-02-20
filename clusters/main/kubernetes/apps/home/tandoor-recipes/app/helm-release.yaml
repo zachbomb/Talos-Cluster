@@ -77,14 +77,37 @@ spec:
             port: 10029
             targetPort: 10029
             protocol: http
+    cnpg:
+      main:
+        enabled: false
     workload:
       main:
         podSpec:
           containers:
             main:
               env:
+                DB_ENGINE: django.db.backends.sqlite3
+                POSTGRES_HOST: ""
+                POSTGRES_PASSWORD: ""
+                POSTGRES_PORT: ""
+                POSTGRES_USER: ""
+                POSTGRES_DB: ""
                 ENABLE_PDF_EXPORT: "1"
     persistence:
+      database:
+        enabled: true
+        size: 1Gi
+        mountPath: /opt/recipes/database
+        volsync:
+          - name: database
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       config:
         enabled: true
         size: 2Gi
