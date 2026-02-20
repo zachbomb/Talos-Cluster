@@ -140,6 +140,8 @@ spec:
           - noatime
           - nodiratime
           - nolock
+      tvshows:
+        enabled: false
     workload:
       main:
         podSpec:
