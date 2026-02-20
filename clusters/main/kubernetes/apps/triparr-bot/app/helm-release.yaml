@@ -152,8 +152,10 @@ spec:
             credentials: s3
             src:
               enabled: true
+              cacheCapacity: 2Gi
             dest:
               enabled: true
+              cacheCapacity: 2Gi
       logs:
         enabled: true
         type: emptyDir

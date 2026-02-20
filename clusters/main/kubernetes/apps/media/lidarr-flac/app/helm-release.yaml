@@ -103,8 +103,10 @@ spec:
             credentials: s3
             dest:
               enabled: true
+              cacheCapacity: 3Gi
             src:
               enabled: true
+              cacheCapacity: 3Gi
       media:
         enabled: true
         type: nfs
