@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: intel-device-plugins-gpu
-      version: 0.34.1  # Match the version from your working guide
+      version: 0.35.0  # Match the version from your working guide
       sourceRef:
         kind: HelmRepository
         name: intel
