@@ -84,13 +84,6 @@ spec:
             main:
               env:
                 ENABLE_PDF_EXPORT: "1"
-    cnpg:
-      main:
-        cluster:
-          storage:
-            size: 2Gi
-          walStorage:
-            size: 2Gi
     persistence:
       config:
         enabled: true
