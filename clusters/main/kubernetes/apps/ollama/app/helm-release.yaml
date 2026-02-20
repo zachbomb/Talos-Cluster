@@ -169,6 +169,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 25Gi
         mountPath: /root/.ollama
         volsync:
           - name: config
@@ -176,12 +177,13 @@ spec:
             credentials: s3
             src:
               enabled: true
-              cacheCapacity: 10Gi
+              cacheCapacity: 5Gi
             dest:
               enabled: false
-              cacheCapacity: 10Gi
+              cacheCapacity: 5Gi
       data:
         enabled: true
+        size: 5Gi
         mountPath: /app/backend/data
         volsync:
           - name: data
@@ -189,10 +191,10 @@ spec:
             credentials: s3
             src:
               enabled: true
-              cacheCapacity: 5Gi
+              cacheCapacity: 3Gi
             dest:
               enabled: false
-              cacheCapacity: 5Gi
+              cacheCapacity: 3Gi
     autoscaling:
       vpa:
         enabled: true
