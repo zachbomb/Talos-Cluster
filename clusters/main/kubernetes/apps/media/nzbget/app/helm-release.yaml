@@ -89,6 +89,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 1Gi
         mountPath: /config
         volsync:
           - name: config
@@ -102,6 +103,7 @@ spec:
                 schedule: "30 2 * * *"
       backup:
         enabled: true
+        size: 1Gi
         mountPath: /backups
         volsync:
           - name: b2

@@ -80,6 +80,7 @@ spec:
     persistence:
       config:
         enabled: true
+        size: 2Gi
         mountPath: /config
         volsync:
           - name: config
@@ -91,6 +92,7 @@ spec:
               enabled: true
       media:
         enabled: true
+        size: 2Gi
         mountPath: /opt/recipes/mediafiles
         volsync:
           - name: media
@@ -102,6 +104,7 @@ spec:
               enabled: true
       static:
         enabled: true
+        size: 1Gi
         mountPath: /opt/recipes/staticfiles
         volsync:
           - name: static
