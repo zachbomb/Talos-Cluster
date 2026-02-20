@@ -86,8 +86,10 @@ spec:
             credentials: s3
             dest:
               enabled: false
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
               trigger:
                 schedule: "50 0 * * *"
       logs:
@@ -98,8 +100,10 @@ spec:
             credentials: s3
             dest:
               enabled: false
+              cacheCapacity: 2Gi
             src:
               enabled: true
+              cacheCapacity: 2Gi
               trigger:
                 schedule: "50 0 * * *"
       server:
