@@ -28,7 +28,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/bazarr
       pullPolicy: IfNotPresent
-      tag: 1.5.5
+      tag: 1.5.6
     credentials:
       s3:
         type: s3
