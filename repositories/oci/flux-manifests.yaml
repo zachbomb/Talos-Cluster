@@ -12,4 +12,4 @@ spec:
     name: ghcr-auth
   ref:
     # renovate: datasource=docker depName=ghcr.io/fluxcd/flux-manifests
-    tag: v2.8.0
+    tag: v2.8.1
