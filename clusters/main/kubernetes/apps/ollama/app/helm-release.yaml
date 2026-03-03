@@ -76,22 +76,28 @@ spec:
       main:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${OLLAMA_IP}
         annotations:
           metallb.io/loadBalancerIPs: ${OLLAMA_IP}
+          metallb.io/allow-shared-ip: "ollama"
         ports:
           main:
             enabled: true
             port: 10686
             targetPort: 10686
             protocol: tcp
+      api:
+        enabled: true
+        type: LoadBalancer
+        targetSelector: main
+        annotations:
+          metallb.io/loadBalancerIPs: ${OLLAMA_IP}
+          metallb.io/allow-shared-ip: "ollama"
+        ports:
           api:
             enabled: true
             port: 11434
             targetPort: 11434
             protocol: tcp
-      api:
-        enabled: false
     ollama:
       registration:
         enabled: true
@@ -169,7 +175,7 @@ spec:
     persistence:
       config:
         enabled: true
-        size: 25Gi
+        size: 50Gi
         mountPath: /root/.ollama
         volsync:
           - name: config
@@ -177,10 +183,10 @@ spec:
             credentials: s3
             src:
               enabled: true
-              cacheCapacity: 5Gi
+              cacheCapacity: 10Gi
             dest:
               enabled: false
-              cacheCapacity: 5Gi
+              cacheCapacity: 10Gi
       data:
         enabled: true
         size: 5Gi
@@ -200,9 +206,9 @@ spec:
         enabled: true
     resources:
       requests:
-        memory: 1Gi
-        cpu: 25m
+        memory: 2Gi
+        cpu: 200m
       limits:
         memory: 16Gi
-        cpu: 500m
+        cpu: "4"
         nvidia.com/gpu: 1
