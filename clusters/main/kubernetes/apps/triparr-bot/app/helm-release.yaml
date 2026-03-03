@@ -98,6 +98,7 @@ spec:
                 ENABLE_ROUTE_ANALYTICS: "true"
                 ENABLE_PROFILE_QUERY: "true"
                 ENABLE_BUDGET_AWARENESS: "true"
+                FEATURE_BOOKING_CLASS_MONITORING: "false"
     credentials:
       s3:
         type: s3
