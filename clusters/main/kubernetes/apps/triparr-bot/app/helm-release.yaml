@@ -175,6 +175,6 @@ spec:
         memory: 256Mi
       limits:
         cpu: "2"
-        memory: 1Gi
+        memory: 2Gi
     podOptions:
       hostUsers: true
