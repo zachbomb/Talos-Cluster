@@ -32,7 +32,7 @@ spec:
     rocmImage:
       repository: docker.io/ollama/ollama
       pullPolicy: IfNotPresent
-      tag: 0.17.6-rocm@sha256:4377862238830cb93e2683a806c4ec58c56aef52056403ac5cc6f4ce11a4da62
+      tag: 0.17.6-rocm@sha256:93af56c3c7046cfefe35a47196e70448d45c6338633bee2c63fbd17dab51e6df
     uiImage:
       repository: ghcr.io/open-webui/open-webui
       pullPolicy: IfNotPresent
