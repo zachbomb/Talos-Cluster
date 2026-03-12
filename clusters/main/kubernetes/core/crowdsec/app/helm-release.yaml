@@ -79,9 +79,6 @@ spec:
               entrypoints:
                 - websecure
               forceTLS: false
-              middlewares:
-                - name: secure-chain
-                  namespace: traefik
       env:
         - name: DISABLE_ONLINE_API
           value: "false"
