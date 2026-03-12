@@ -9,3 +9,4 @@ resources:
   - kyverno-policies/ks.yaml
   - traefik/ks.yaml
   - crowdsec/ks.yaml
+  - network-policies/ks.yaml

@@ -7,3 +7,4 @@ resources:
   - media
   - ollama/ks.yaml
   - triparr-bot/ks.yaml
+  - network-policies/ks.yaml
