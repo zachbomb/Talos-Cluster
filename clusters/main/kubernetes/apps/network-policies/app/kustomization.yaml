@@ -5,3 +5,5 @@ resources:
   - triparr-bot-netpol.yaml
   - ollama-netpol.yaml
   - media-netpol.yaml
+  - home-netpol.yaml
+  - code-server-netpol.yaml
