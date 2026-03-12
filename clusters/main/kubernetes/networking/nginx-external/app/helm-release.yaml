@@ -6,6 +6,7 @@ metadata:
   name: nginx-external
   namespace: nginx-external
 spec:
+  suspend: true
   interval: 15m
   chart:
     spec:
