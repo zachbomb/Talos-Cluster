@@ -44,7 +44,6 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         integrations:
           nginx:
             enabled: false

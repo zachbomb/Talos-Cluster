@@ -48,7 +48,6 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: notifiarr.${BASE_DOMAIN}
             paths:

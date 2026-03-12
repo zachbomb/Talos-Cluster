@@ -132,7 +132,6 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         hosts:
           - host: tunarr.${BASE_DOMAIN}
             paths:
@@ -333,7 +332,6 @@ spec:
           enabled: true
           targetSelector:
             main: codeserver
-          ingressClassName: internal
           integrations:
             nginx:
               enabled: false
