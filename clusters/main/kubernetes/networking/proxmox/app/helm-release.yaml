@@ -29,7 +29,6 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: internal
         annotations:
           nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
           nginx.ingress.kubernetes.io/ssl-passthrough: "true"
