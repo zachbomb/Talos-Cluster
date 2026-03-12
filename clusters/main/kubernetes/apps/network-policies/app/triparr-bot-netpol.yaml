@@ -1,0 +1,33 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: triparr-bot-ingress
+  namespace: triparr-bot
+spec:
+  podSelector:
+    matchLabels: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Traefik ingress traffic
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - port: 3001
+          protocol: TCP
+    # Intra-namespace (app <-> DB)
+    - from:
+        - podSelector: {}
+    # Prometheus metrics scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack
+    # Kyverno admission webhooks
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kyverno
