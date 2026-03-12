@@ -1,0 +1,36 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: crowdsec-ingress
+  namespace: crowdsec
+spec:
+  podSelector:
+    matchLabels: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Traefik bouncer -> LAPI (mTLS)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - port: 8443
+          protocol: TCP
+    # Dashboard ingress via Traefik
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - port: 8080
+          protocol: TCP
+    # Intra-namespace (agent <-> LAPI)
+    - from:
+        - podSelector: {}
+    # Prometheus metrics scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack
