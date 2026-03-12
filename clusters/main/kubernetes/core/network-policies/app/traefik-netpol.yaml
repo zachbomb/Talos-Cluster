@@ -1,0 +1,46 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: traefik-ingress
+  namespace: traefik
+spec:
+  podSelector:
+    matchLabels: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # External traffic (ports 80, 443, 9001) from any source
+    - ports:
+        - port: 80
+          protocol: TCP
+        - port: 443
+          protocol: TCP
+        - port: 9001
+          protocol: TCP
+    # Dashboard/metrics (port 9000) from LAN and cluster only
+    - from:
+        - ipBlock:
+            cidr: 192.168.3.0/24
+        - ipBlock:
+            cidr: 192.168.8.0/24
+        - ipBlock:
+            cidr: 192.168.9.0/24
+        - ipBlock:
+            cidr: 192.168.10.0/24
+        - ipBlock:
+            cidr: 192.168.20.0/24
+        - ipBlock:
+            cidr: 192.168.30.0/24
+        - ipBlock:
+            cidr: 172.16.0.0/16
+        - ipBlock:
+            cidr: 172.17.0.0/16
+      ports:
+        - port: 9000
+          protocol: TCP
+    # Prometheus metrics scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack
