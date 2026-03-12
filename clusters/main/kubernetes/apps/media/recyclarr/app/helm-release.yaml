@@ -67,13 +67,15 @@ spec:
               main: codeserver
             integrations:
               nginx:
-                enabled: true
+                enabled: false
                 ingressClassName: internal
-            traefik:
-              enabled: false
-              middlewares:
-                - name: local
-                  namespace: traefik
+              traefik:
+                enabled: true
+                entrypoints:
+                  - websecure
+                middlewares:
+                  - name: secure-chain
+                    namespace: traefik
               certManager:
                 enabled: true
                 certificateIssuer: wethecommon-prod-cert

@@ -59,8 +59,8 @@ Manifests live in `clusters/main/kubernetes/` organized in 6 dependency layers:
 1. **flux-system** - Flux CD bootstrap, secrets
 2. **kube-system** - CNI (Cilium), metrics-server, device plugins
 3. **system** - Storage (Longhorn, OpenEBS), monitoring (Prometheus), cert-manager, MetalLB
-4. **core** - ClusterIssuers, Kyverno policies, Traefik ingress, DNS services
-5. **networking** - NGINX ingress controllers, Homepage dashboard, external services
+4. **core** - ClusterIssuers, Kyverno policies, Traefik ingress, CrowdSec IPS, DNS services
+5. **networking** - NGINX ingress controllers (legacy, being decommissioned), Homepage dashboard, external services
 6. **apps** - User applications (media stack in `apps/media/`, plus `apps/home/`, `apps/ollama/`, etc.)
 
 ### GitOps Flow
@@ -109,8 +109,9 @@ Each layer has a `kustomization.yaml` that references components via `- ./<compo
 - **Longhorn** - Distributed block storage, **OpenEBS** - Local PV provisioner
 - **VolSync** - Backup/restore to S3 (MinIO) via Restic
 - **Cilium** - CNI with eBPF, **MetalLB** - LoadBalancer (192.168.10.193-254)
-- **NGINX Internal** (192.168.10.193) / **External** (192.168.10.194) - Ingress controllers
-- **Traefik** (192.168.10.196) - Alternative ingress
+- **Traefik** (192.168.10.196) - Primary ingress controller for all apps
+- **CrowdSec** - Intrusion prevention, Traefik bouncer middleware blocks malicious IPs
+- **NGINX Internal** (.193) / **External** (.194) - Legacy, pending decommission (only Flux webhook on external)
 - **cert-manager** - TLS via Let's Encrypt, **Kyverno** - Policy engine
 
 ## Important Patterns
@@ -129,7 +130,7 @@ service:
       metallb.io/loadBalancerIPs: ${APP_IP}
 ```
 
-**Ingress with NGINX internal + cert-manager:**
+**Ingress with Traefik + CrowdSec + cert-manager:**
 ```yaml
 ingress:
   main:
@@ -141,10 +142,15 @@ ingress:
             pathType: Prefix
     integrations:
       nginx:
-        enabled: true
+        enabled: false
         ingressClassName: internal
       traefik:
-        enabled: false
+        enabled: true
+        entrypoints:
+          - websecure
+        middlewares:
+          - name: secure-chain
+            namespace: traefik
       certManager:
         enabled: true
         certificateIssuer: wethecommon-prod-cert
@@ -153,6 +159,8 @@ ingress:
         name: App Name
         group: Group Name
 ```
+
+The `secure-chain` middleware chains CrowdSec bouncer (live IP blocking) → `local-whitelist` (trusted network allowlist). All apps should use this middleware for CrowdSec protection.
 
 **S3 credentials** (required for VolSync):
 ```yaml
@@ -247,6 +255,29 @@ VolSync mover drops ALL capabilities including CAP_CHOWN. Apps running as root t
 - **Traefik middleware chicken-and-egg**: The common library does `lookup()` for `chain-basic` middleware during template rendering, but the middleware is created by the same chart. Fix: temporarily disable ingress, install chart, then re-enable ingress.
 - **`readOnlyRootFilesystem: true` default**: Some apps need writable root FS. Override: `securityContext.container.readOnlyRootFilesystem: false`.
 
+### CrowdSec + Traefik Security
+
+All ingress traffic flows through Traefik with CrowdSec protection:
+
+```
+Client → Traefik (.196) → secure-chain middleware → App
+                              ↓
+                     bouncer (live IP check against CrowdSec LAPI)
+                              ↓
+                     local-whitelist (trusted network bypass)
+```
+
+**Components:**
+- **CrowdSec Agent** - Monitors Traefik access logs, detects attacks via `crowdsecurity/traefik` collection
+- **CrowdSec LAPI** - Central decision engine, enrolled in CrowdSec Console
+- **Traefik Bouncer** - Plugin middleware that queries LAPI and blocks banned IPs in `live` mode
+- **TLS**: Bouncer communicates with LAPI over mTLS (certs auto-reflected to `traefik` namespace)
+
+**Middlewares** (defined in Traefik helm-release `ingressMiddlewares`):
+- `secure-chain` - Chain: bouncer → local-whitelist (use this on all apps)
+- `bouncer` - CrowdSec bouncer plugin, queries `crowdsec.crowdsec.svc.cluster.local:8443`
+- `local-whitelist` - IP allowlist for trusted networks (pod/service CIDRs, LAN subnets)
+
 ### MetalLB IP Conflicts
 
 When many apps install simultaneously, MetalLB auto-assigns IPs from the pool to services missing the `metallb.io/loadBalancerIPs` annotation, potentially stealing IPs reserved for infrastructure. Fix: delete the conflicting services to free the IPs.
@@ -254,6 +285,25 @@ When many apps install simultaneously, MetalLB auto-assigns IPs from the pool to
 ### Longhorn/cert-manager CRDs
 
 Both have CRDs in `templates/crds.yaml` (not `crds/` directory). Flux `crds: CreateReplace` only works for CRDs in `crds/`. Missing CRDs must be applied manually via `helm template`. For cert-manager, ensure `installCRDs: true` in values.
+
+## Operational Scripts
+
+Located in `scripts/` (gitignored). Run from repo root:
+
+```bash
+./scripts/cluster-status          # Overall cluster dashboard (nodes, pods, Flux, Helm, storage, certs)
+./scripts/media-status            # Media stack health (Sonarr/Radarr/SABnzbd APIs, NFS, Plex)
+./scripts/backup-audit [-v]       # VolSync backup staleness detection
+./scripts/volsync-check [--fix]   # VolSync health: stuck pods, PVCs, snapshots
+./scripts/longhorn-cleanup [--fix] # Orphaned volumes, stuck clones, stale snapshots
+./scripts/resource-report [--ns X] # CPU/memory actual vs requested, OOM proximity
+./scripts/helm-debug [release]     # Failed HelmRelease diagnosis with suggested fixes
+./scripts/queue-check [--clean]    # Sonarr/Radarr queue health, auto-remove failed items
+./scripts/storage-check           # Longhorn volume health, PVC capacity, NFS mounts
+./scripts/flux-diff               # Flux failed/suspended resources
+./scripts/ip-audit                # MetalLB IP assignments, conflicts, missing annotations
+./scripts/app-logs <app-name>     # Quick app log access by name
+```
 
 ## Critical Files
 
@@ -268,8 +318,11 @@ Both have CRDs in `templates/crds.yaml` (not `crds/` directory). Flux `crds: Cre
 All IPs defined in `clusterenv.yaml`:
 - VIP: 192.168.10.167 (Control plane), Gateway: 192.168.10.1
 - MetalLB Range: 192.168.10.193-254
-- NGINX Internal: .193, External: .194, Blocky DNS: .195, Traefik: .196
+- Traefik: .196 (primary ingress), Blocky DNS: .195
+- NGINX Internal: .193, External: .194 (legacy, pending decommission)
 - Pod CIDR: 172.16.0.0/16, Service CIDR: 172.17.0.0/16
+
+DNS resolution: Blocky uses k8sgateway which reads Kubernetes Ingress status IPs. Traefik's `publishedservice` automatically updates Ingress status to .196, so DNS resolves all `*.${BASE_DOMAIN}` hostnames to Traefik.
 
 ## Repository Conventions
 
