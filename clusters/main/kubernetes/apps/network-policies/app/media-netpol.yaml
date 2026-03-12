@@ -1,0 +1,49 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: media-ingress
+  namespace: media
+spec:
+  podSelector:
+    matchLabels: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Traefik ingress
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+    # Intra-namespace (all media apps talk to each other)
+    - from:
+        - podSelector: {}
+    # LAN + VLANs (LoadBalancer access, Plex clients, etc.)
+    - from:
+        - ipBlock:
+            cidr: 192.168.3.0/24
+        - ipBlock:
+            cidr: 192.168.8.0/24
+        - ipBlock:
+            cidr: 192.168.9.0/24
+        - ipBlock:
+            cidr: 192.168.10.0/24
+        - ipBlock:
+            cidr: 192.168.20.0/24
+        - ipBlock:
+            cidr: 192.168.30.0/24
+        # Pod/Service CIDRs (Cilium DNAT for LoadBalancer)
+        - ipBlock:
+            cidr: 172.16.0.0/16
+        - ipBlock:
+            cidr: 172.17.0.0/16
+    # Homepage widgets (namespace: networking)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
+    # Prometheus metrics scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack
