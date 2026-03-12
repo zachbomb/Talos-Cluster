@@ -8,7 +8,6 @@ metadata:
     nginx.ingress.kubernetes.io/auth-method: "GET"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
-  ingressClassName: internal
   rules:
     - host: longhorn.${BASE_DOMAIN}
       http:

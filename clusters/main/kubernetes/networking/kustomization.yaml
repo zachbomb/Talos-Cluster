@@ -11,3 +11,4 @@ resources:
   - pihole/ks.yaml
   - proxmox/ks.yaml
   - truenas/ks.yaml
+  - network-policies/ks.yaml
