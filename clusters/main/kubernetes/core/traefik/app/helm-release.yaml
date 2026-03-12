@@ -76,7 +76,10 @@ spec:
 
     additionalArguments:
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls.options=traefik-default@kubernetescrd"
       - "--entrypoints.tcp.address=:9001"
 
     ingressRoute:
@@ -136,6 +139,22 @@ spec:
             #   <CA cert contents>
             #   -----END CERTIFICATE-----
 
+        security-headers:
+          enabled: true
+          type: headers
+          data:
+            headers:
+              sslRedirect: true
+              forceSTSHeader: true
+              stsSeconds: 31536000
+              stsIncludeSubdomains: true
+              stsPreload: true
+              frameDeny: true
+              contentTypeNosniff: true
+              browserXssFilter: true
+              referrerPolicy: "strict-origin-when-cross-origin"
+              permissionsPolicy: "geolocation=(), microphone=(), camera=()"
+
         secure-chain:
           enabled: true
           type: chain
@@ -144,6 +163,8 @@ spec:
               - name: bouncer
                 namespace: traefik
               - name: local-whitelist
+                namespace: traefik
+              - name: security-headers
                 namespace: traefik
 
     workload:
