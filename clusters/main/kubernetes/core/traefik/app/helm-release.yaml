@@ -80,6 +80,7 @@ spec:
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http.tls.options=traefik-default@kubernetescrd"
+      - "--entrypoints.websecure.http.middlewares=traefik-secure-chain@kubernetescrd"
       - "--entrypoints.tcp.address=:9001"
 
     ingressRoute:

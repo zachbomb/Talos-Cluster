@@ -146,9 +146,6 @@ spec:
             enabled: true
             entrypoints:
               - websecure
-            middlewares:
-              - name: secure-chain
-                namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
@@ -345,9 +342,6 @@ spec:
               enabled: true
               entrypoints:
                 - websecure
-              middlewares:
-                - name: secure-chain
-                  namespace: traefik
             certManager:
               enabled: true
               certificateIssuer: wethecommon-prod-cert
