@@ -45,12 +45,14 @@ spec:
         enabled: true
         integrations:
           traefik:
-            enabled: false
+            enabled: true
+            entrypoints:
+              - websecure
             middlewares:
-              - name: local
+              - name: secure-chain
                 namespace: traefik
           nginx:
-            enabled: true
+            enabled: false
             ingressClassName: internal
           certManager:
             enabled: true
