@@ -30,12 +30,14 @@ spec:
             secretName: minio-tls # 🔓 Enable TLS at Ingress level
         integrations:
           nginx:
-            enabled: true
+            enabled: false
             ingressClassName: internal
           traefik:
-            enabled: false
+            enabled: true
+            entrypoints:
+              - websecure
             middlewares:
-              - name: local
+              - name: secure-chain
                 namespace: traefik
           certManager:
             enabled: true

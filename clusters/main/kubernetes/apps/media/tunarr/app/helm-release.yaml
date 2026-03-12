@@ -140,12 +140,14 @@ spec:
                 pathType: Prefix
         integrations:
           nginx:
-            enabled: true
+            enabled: false
             ingressClassName: internal
           traefik:
-            enabled: false
+            enabled: true
+            entrypoints:
+              - websecure
             middlewares:
-              - name: local
+              - name: secure-chain
                 namespace: traefik
           certManager:
             enabled: true
@@ -337,12 +339,14 @@ spec:
           ingressClassName: internal
           integrations:
             nginx:
-              enabled: true
+              enabled: false
               ingressClassName: internal
             traefik:
-              enabled: false
+              enabled: true
+              entrypoints:
+                - websecure
               middlewares:
-                - name: local
+                - name: secure-chain
                   namespace: traefik
             certManager:
               enabled: true
