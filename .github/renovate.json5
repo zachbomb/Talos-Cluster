@@ -3,5 +3,12 @@
   "extends": [
     "config:recommended",
     "github>trueforge-org/truecharts//.github/renovate/main.json5"
+  ],
+  "packageRules": [
+    {
+      "matchPackageNames": ["longhorn"],
+      "enabled": false,
+      "description": "Longhorn 1.11.x has upgrade loop bug on single-node clusters"
+    }
   ]
 }

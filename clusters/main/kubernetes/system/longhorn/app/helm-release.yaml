@@ -21,8 +21,7 @@ spec:
   chart:
     spec:
       chart: longhorn
-      # renovate: registryUrl=https://charts.longhorn.io
-      version: "1.10.2" # renovate:ignore - 1.11.x causes upgrade loop on single-node clusters (waitForOldLonghornManagersToBeFullyRemoved)
+      version: 1.10.2
       sourceRef:
         kind: HelmRepository
         name: home-ops-mirror
