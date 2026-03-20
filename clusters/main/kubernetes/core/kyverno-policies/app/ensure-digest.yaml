@@ -33,6 +33,11 @@ spec:
               kinds:
                 - Pod
               name: '*cnpg*'
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - longhorn-system
     preconditions:
       all:
       - key: "{{request.operation || 'BACKGROUND'}}"
