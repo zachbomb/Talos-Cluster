@@ -28,5 +28,21 @@ spec:
     limits:
       memory: "1Gi"
       cpu: "1000m"
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://cnpg-triparr/
+      endpointURL: ${S3URL}
+      s3Credentials:
+        accessKeyId:
+          name: triparr-db-s3-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: triparr-db-s3-creds
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: "30d"
   monitoring:
     enablePodMonitor: false
