@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: triparr-db-s3-creds
+  namespace: triparr-bot
+type: Opaque
+stringData:
+  ACCESS_KEY_ID: ${S3ID}
+  ACCESS_SECRET_KEY: ${S3KEY}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: triparr-db-daily
+  namespace: triparr-bot
+spec:
+  schedule: "0 2 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: triparr-db
+  method: barmanObjectStore
+  target: prefer-standby
