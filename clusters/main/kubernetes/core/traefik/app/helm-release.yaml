@@ -130,9 +130,8 @@ spec:
           data:
             enabled: true
             crowdsecMode: live
-            crowdsecLapiHost: crowdsec.crowdsec.svc.cluster.local:8443
-            crowdsecLapiScheme: https
-            crowdsecLapiTLSInsecureVerify: false
+            crowdsecLapiHost: crowdsec-service.crowdsec.svc.cluster.local:8080
+            crowdsecLapiScheme: http
             crowdsecLapiKey: ${CROWDSEC_LAPI_KEY}
             # If the plugin supports specifying CA/cert/key files, check docs
             # crowdsecLapiTLSCertificateAuthority: |
