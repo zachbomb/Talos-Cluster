@@ -80,12 +80,12 @@ spec:
         expose:
           default: true
       web:
-        redirectTo:
-          port: websecure
+        exposedPort: 80
 
     additionalArguments:
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.websecure.http.tls=true"
-      - "--entrypoints.websecure.http.tls.options=default@file"
       - "--entrypoints.websecure.http.middlewares=traefik-secure-chain@kubernetescrd"
       - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
       - "--experimental.plugins.bouncer.version=v1.5.1"
