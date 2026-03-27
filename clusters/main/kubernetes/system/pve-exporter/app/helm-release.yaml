@@ -4,7 +4,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: pve-exporter
-  namespace: pve-exporter
+  namespace: monitoring
 spec:
   interval: 15m
   chart:
