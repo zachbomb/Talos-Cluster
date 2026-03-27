@@ -63,11 +63,7 @@ spec:
             widget:
               enabled: false
 
-    persistence:
-      config:
-        enabled: true
-        size: 1Gi
-        mountPath: /usr/share/tessdata
+    persistence: {}
 
     securityContext:
       container:
