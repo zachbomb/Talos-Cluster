@@ -106,6 +106,8 @@ spec:
             middlewares:
               - name: secure-chain
                 namespace: traefik
+              - name: dashboard-redirect
+                namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
@@ -156,6 +158,14 @@ spec:
               browserXssFilter: true
               referrerPolicy: "strict-origin-when-cross-origin"
               permissionsPolicy: "geolocation=(), microphone=(), camera=()"
+
+        dashboard-redirect:
+          enabled: true
+          type: redirect-regex
+          data:
+            regex: "^(https?://[^/]+)/$"
+            replacement: "${1}/dashboard/"
+            permanent: false
 
         secure-chain:
           enabled: true
