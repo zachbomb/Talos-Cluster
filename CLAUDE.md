@@ -16,9 +16,21 @@ The repository contains declarative infrastructure-as-code for a production home
 ### Cluster Management (ClusterTool)
 
 ```bash
-./clustertool genconfig   # Generate Talos machine configurations
-./clustertool init        # Initialize new cluster (first time setup)
-./clustertool info        # Print clustertool binary info
+# ForgeTool (successor to ClusterTool, same config format)
+./forgetool cluster genconfig   # Generate Talos machine configurations
+./forgetool cluster init        # Initialize new cluster (first time setup)
+./forgetool info                # Print forgetool binary info
+./forgetool talos apply         # Apply Talos config to nodes
+./forgetool talos upgrade       # Upgrade Talos + Kubernetes
+./forgetool talos health        # Health check
+./forgetool encrypt             # Encrypt all files per .sops.yaml
+./forgetool decrypt             # Decrypt all files per .sops.yaml
+./forgetool checkcrypt          # Verify encryption compliance
+
+# Legacy ClusterTool (still works, same config)
+./clustertool genconfig         # Generate Talos machine configurations
+./clustertool init              # Initialize new cluster (first time setup)
+./clustertool info              # Print clustertool binary info
 ```
 
 ### Secrets Management (SOPS)
