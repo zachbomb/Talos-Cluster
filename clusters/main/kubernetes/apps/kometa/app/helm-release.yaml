@@ -32,7 +32,6 @@ spec:
             main:
               env:
                 KOMETA_RUN: "true"
-                KOMETA_CONFIG: /config/config.yml
 
     persistence:
       config:

@@ -39,6 +39,16 @@ spec:
                 TUNNEL_METRICS: "0.0.0.0:2000"
 
     service:
+      main:
+        enabled: true
+        primary: true
+        type: ClusterIP
+        ports:
+          main:
+            enabled: true
+            port: 2000
+            targetPort: 2000
+            protocol: tcp
       metrics:
         enabled: true
         type: ClusterIP

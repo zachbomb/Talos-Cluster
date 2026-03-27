@@ -49,17 +49,6 @@ spec:
         type: LoadBalancer
         annotations:
           metallb.io/loadBalancerIPs: "${PIHOLE_K8S_IP}"
-        ports:
-          dns-udp:
-            enabled: true
-            port: 53
-            targetPort: 53
-            protocol: udp
-          dns-tcp:
-            enabled: true
-            port: 53
-            targetPort: 53
-            protocol: tcp
 
     ingress:
       main:
