@@ -54,7 +54,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     metrics:
       main:
-        enabled: false
+        enabled: true
     workload:
       exportarr:
         enabled: false
