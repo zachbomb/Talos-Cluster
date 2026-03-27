@@ -254,6 +254,26 @@ VolSync mover drops ALL capabilities including CAP_CHOWN. Apps running as root t
 - **Container registry**: TrueCharts migrated from `tccr.io` (DEAD, returns NXDOMAIN) to `oci.trueforge.org`. Override images to official sources (e.g., `docker.io/library/traefik`) if needed.
 - **Traefik middleware chicken-and-egg**: The common library does `lookup()` for `chain-basic` middleware during template rendering, but the middleware is created by the same chart. Fix: temporarily disable ingress, install chart, then re-enable ingress.
 - **`readOnlyRootFilesystem: true` default**: Some apps need writable root FS. Override: `securityContext.container.readOnlyRootFilesystem: false`.
+- **CrowdSec chart `secretTemplate: null`**: Chart v0.22.1 renders `secretTemplate: null` in agent Certificate. cert-manager rejects null. Fix: set `tls.certManager.secretTemplate.annotations` to a **non-empty** value (e.g., `crowdsec.io/managed: "true"`). Empty `{}` is falsy in Go templates and doesn't fix it.
+
+### Cilium + Networking
+
+- **ICMP to LoadBalancer IPs**: Cilium BPF with `kubeProxyReplacement: true` does NOT handle ICMP. LoadBalancer IPs won't respond to `ping`. Always test with `curl`, not `ping`.
+- **`externalTrafficPolicy: Local`**: Breaks same-subnet LB traffic with Cilium on single-node clusters. Use `Cluster` instead.
+- **NetworkPolicy container ports**: NetworkPolicies must use **container ports** (e.g., 8000/8443/8080 for upstream Traefik), not service ports (80/443/9000).
+
+### Traefik (Upstream Chart v39+)
+
+- **Chart source**: Migrated from TrueCharts (v30.4.3) to upstream `traefik/traefik` (v39.0.6). IngressClass `traefik` is default.
+- **Container ports**: 8000 (web), 8443 (websecure), 8080 (dashboard/API). NOT 80/443/9000.
+- **Plugin storage**: Use `experimental.plugins` values for the chart to auto-create `/plugins-storage` volume. `additionalArguments` alone doesn't create the volume.
+- **Middlewares**: Defined as standalone CRD manifests in `clusters/main/kubernetes/core/traefik/app/middleware-*.yaml`, not via Helm values.
+
+### CrowdSec + Traefik Bouncer
+
+- **TLS port**: With `tls.enabled: true`, LAPI serves HTTPS on port **8080** (not 8443). The service doesn't expose 8443.
+- **Bouncer scheme**: Must use `crowdsecLapiScheme: https` + `crowdsecLapiTLSInsecureVerify: true` (self-signed cert from CrowdSec internal CA).
+- **Fail-closed**: In `live` mode, if the bouncer can't reach LAPI, ALL traffic is blocked with 403. Debug by temporarily removing bouncer from `secure-chain`.
 
 ### CrowdSec + Traefik Security
 
