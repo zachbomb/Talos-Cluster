@@ -11,10 +11,12 @@ spec:
     mode: warn
   install:
     createNamespace: true
+    crds: CreateReplace
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
+    crds: CreateReplace
     remediation:
       retries: 3
   uninstall:
@@ -22,177 +24,79 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: 30.4.3
+      # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
+      version: 39.0.6
       sourceRef:
         kind: HelmRepository
-        name: truecharts
+        name: traefik
         namespace: flux-system
   values:
-    image:
-      repository: docker.io/library/traefik
-      tag: v3.6.12
-    env:
-      - name: TZ
-        value: America/Los_Angeles
-
-    dashboard:
+    deployment:
       enabled: true
-
-    defaultCertificate: wethecommon-wildcard-cert
+      replicas: 1
 
     service:
-      main:
+      enabled: true
+      type: LoadBalancer
+      annotations:
+        metallb.io/loadBalancerIPs: ${TRAEFIK_IP}
+      spec:
+        externalTrafficPolicy: Local
+
+    logs:
+      general:
+        level: INFO
+      access:
         enabled: true
-        type: LoadBalancer
-        loadBalancerIP: ${TRAEFIK_IP}
-        annotations:
-          metallb.io/loadBalancerIPs: ${TRAEFIK_IP}
-        ports:
-          main:
-            enabled: true
-            port: 9000
-            targetPort: 9000
-            protocol: tcp
-          web:
-            enabled: true
-            port: 80
-            protocol: tcp
-            forwardedHeaders:
-              enabled: true
-          websecure:
-            enabled: true
-            port: 443
-            protocol: tcp
-            forwardedHeaders:
-              enabled: true
-          tcp:
-            enabled: true
-            port: 9001
-            protocol: tcp
-            forwardedHeaders:
-              enabled: true
-      tcp:
-        enabled: false
+        format: json
+
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+
+    tlsOptions:
+      default:
+        minVersion: VersionTLS12
+        maxVersion: VersionTLS13
+        sniStrict: true
+
+    providers:
+      kubernetesCRD:
+        enabled: true
+        allowCrossNamespace: true
+        allowExternalNameServices: true
+      kubernetesIngress:
+        enabled: true
+        publishedService:
+          enabled: true
+
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: certificate-issuer-wethecommon-wildcard-cert
+
+    ports:
+      traefik:
+        expose:
+          default: true
+      web:
+        redirections:
+          port: websecure
+      websecure:
+        tls:
+          enabled: true
+          options: default
+        middlewares:
+          - traefik-secure-chain@kubernetescrd
 
     additionalArguments:
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.websecure.http.tls.options=traefik-default@kubernetescrd"
-      - "--entrypoints.websecure.http.middlewares=traefik-secure-chain@kubernetescrd"
-      - "--entrypoints.tcp.address=:9001"
       - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
       - "--experimental.plugins.bouncer.version=v1.5.1"
-      - "--accesslog=true"
-      - "--accesslog.filepath=/var/log/traefik/access.log"
-      - "--accesslog.format=json"
-      - "--accesslog.bufferingsize=100"
 
-    ingressRoute:
-      dashboard:
-        enabled: true
-
-    ingress:
-      main:
-        enabled: true
-        hosts:
-          - host: traefik-dashboard.${BASE_DOMAIN}
-            paths:
-              - path: /
-                pathType: Prefix
-        integrations:
-          traefik:
-            enabled: true
-            entrypoints:
-              - websecure
-            forceTLS: true
-            middlewares:
-              - name: secure-chain
-                namespace: traefik
-              - name: dashboard-redirect
-                namespace: traefik
-          certManager:
-            enabled: true
-            certificateIssuer: wethecommon-prod-cert
-
-    ingressMiddlewares:
-      traefik:
-        local-whitelist:
-          enabled: true
-          type: ip-allow-list
-          data:
-            sourceRange:
-              - 172.16.0.0/16
-              - 172.17.0.0/16
-              - 192.168.10.0/24
-              - 192.168.20.0/24
-              - 192.168.30.0/24
-              - 192.168.3.0/24
-              - 192.168.9.0/24
-              - 192.168.8.0/24
-
-        bouncer:
-          enabled: true
-          type: plugin-bouncer
-          data:
-            enabled: true
-            crowdsecMode: live
-            crowdsecLapiHost: crowdsec-service.crowdsec.svc.cluster.local:8080
-            crowdsecLapiScheme: http
-            crowdsecLapiKey: ${CROWDSEC_LAPI_KEY}
-            # If the plugin supports specifying CA/cert/key files, check docs
-            # crowdsecLapiTLSCertificateAuthority: |
-            #   -----BEGIN CERTIFICATE-----
-            #   <CA cert contents>
-            #   -----END CERTIFICATE-----
-
-        security-headers:
-          enabled: true
-          type: headers
-          data:
-            headers:
-              sslRedirect: true
-              forceSTSHeader: true
-              stsSeconds: 31536000
-              stsIncludeSubdomains: true
-              stsPreload: true
-              frameDeny: true
-              contentTypeNosniff: true
-              browserXssFilter: true
-              referrerPolicy: "strict-origin-when-cross-origin"
-              permissionsPolicy: "geolocation=(), microphone=(), camera=()"
-
-        dashboard-redirect:
-          enabled: true
-          type: redirect-regex
-          data:
-            regex: "^(https?://[^/]+)/$"
-            replacement: "${1}/dashboard/"
-            permanent: false
-
-        secure-chain:
-          enabled: true
-          type: chain
-          data:
-            middlewares:
-              - name: bouncer
-                namespace: traefik
-              - name: local-whitelist
-                namespace: traefik
-              - name: security-headers
-                namespace: traefik
-
-    workload:
-      main:
-        replicas: 1
-        autoscaling:
-          vpa:
-            enabled: false
     resources:
       requests:
-        memory: 256Mi
         cpu: 10m
+        memory: 256Mi
       limits:
-        memory: 512Mi
         cpu: 500m
+        memory: 512Mi

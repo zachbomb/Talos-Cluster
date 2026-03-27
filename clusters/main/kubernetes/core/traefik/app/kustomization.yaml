@@ -3,4 +3,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - helm-release.yaml
-  - tls-options.yaml
+  - middleware-bouncer.yaml
+  - middleware-local-whitelist.yaml
+  - middleware-secure-chain.yaml

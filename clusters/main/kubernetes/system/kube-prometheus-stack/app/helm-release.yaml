@@ -134,14 +134,15 @@ spec:
         size: 2Gi
       ingress:
         enabled: true
-        ingressClassName: ""
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.tls: "true"
+          cert-manager.io/cluster-issuer: wethecommon-prod-cert
         hosts:
           - grafana.${BASE_DOMAIN}
         tls:
-          - hosts:
+          - secretName: grafana-tls
+            hosts:
               - grafana.${BASE_DOMAIN}
     kubeControllerManager:
       enabled: true
