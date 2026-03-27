@@ -24,6 +24,7 @@ spec:
   values:
     prometheus:
       serviceAccount: metallb-controller
+      namespace: metallb
       serviceMonitor:
         enabled: true
     speaker:
