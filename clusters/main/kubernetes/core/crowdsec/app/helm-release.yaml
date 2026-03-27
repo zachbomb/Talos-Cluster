@@ -33,7 +33,16 @@ spec:
     container_runtime: containerd
     tls:
       enabled: true
+      agent:
+        tlsClientAuth: false
+        certificate:
+          secretTemplate: {}
+      lapi:
+        certificate:
+          secretTemplate: {}
       bouncer:
+        certificate:
+          secretTemplate: {}
         reflector:
           namespaces:
             - traefik
