@@ -98,9 +98,11 @@ spec:
           middlewares:
             - traefik-secure-chain@kubernetescrd
 
-    additionalArguments:
-      - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
-      - "--experimental.plugins.bouncer.version=v1.5.1"
+    experimental:
+      plugins:
+        bouncer:
+          moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+          version: v1.5.1
 
     resources:
       requests:
