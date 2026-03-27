@@ -9,5 +9,6 @@ spec:
       enabled: true
       crowdsecMode: live
       crowdsecLapiHost: crowdsec-service.crowdsec.svc.cluster.local:8080
-      crowdsecLapiScheme: http
+      crowdsecLapiScheme: https
+      crowdsecLapiTLSInsecureVerify: true
       crowdsecLapiKey: "${CROWDSEC_LAPI_KEY}"
