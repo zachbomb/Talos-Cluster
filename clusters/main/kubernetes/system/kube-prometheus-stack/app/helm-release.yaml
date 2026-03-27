@@ -141,8 +141,7 @@ spec:
         hosts:
           - grafana.${BASE_DOMAIN}
         tls:
-          - secretName: grafana-tls
-            hosts:
+          - hosts:
               - grafana.${BASE_DOMAIN}
     kubeControllerManager:
       enabled: true
