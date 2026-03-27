@@ -22,5 +22,8 @@ spec:
     remediation:
       retries: 3
   values:
+    prometheus:
+      serviceMonitor:
+        enabled: true
     speaker:
       ignoreExcludeLB: true

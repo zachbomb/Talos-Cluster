@@ -98,6 +98,11 @@ spec:
           middlewares:
             - traefik-secure-chain@kubernetescrd
 
+    metrics:
+      prometheus:
+        serviceMonitor:
+          enabled: true
+
     experimental:
       plugins:
         bouncer:
