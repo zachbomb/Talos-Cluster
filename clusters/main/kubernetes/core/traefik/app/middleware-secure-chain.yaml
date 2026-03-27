@@ -6,7 +6,9 @@ metadata:
 spec:
   chain:
     middlewares:
-      - name: bouncer
-        namespace: traefik
+      # bouncer temporarily removed - LAPI connectivity issue causes 403 on all traffic
+      # re-add once CrowdSec TLS + bouncer connectivity is verified:
+      # - name: bouncer
+      #   namespace: traefik
       - name: local-whitelist
         namespace: traefik
