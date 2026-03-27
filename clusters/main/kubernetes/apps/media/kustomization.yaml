@@ -30,3 +30,4 @@ resources:
   - tunarr/ks.yaml
   - deluge/ks.yaml
   - flaresolverr/ks.yaml
+  - immich/ks.yaml

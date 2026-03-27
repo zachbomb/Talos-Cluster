@@ -1,0 +1,82 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: searxng
+  namespace: searxng
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: searxng
+      version: 11.0.6
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    service:
+      main:
+        enabled: true
+        type: ClusterIP
+        ports:
+          main:
+            enabled: true
+            port: 10105
+            protocol: http
+
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: search.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+            middlewares:
+              - name: secure-chain
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: SearXNG
+            description: Privacy Search Engine
+            group: Tools
+            widget:
+              enabled: false
+
+    persistence:
+      config:
+        enabled: true
+        size: 1Gi
+        mountPath: /etc/searxng
+
+    securityContext:
+      container:
+        readOnlyRootFilesystem: false
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

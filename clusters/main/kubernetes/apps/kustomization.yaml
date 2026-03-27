@@ -5,6 +5,11 @@ resources:
   - code-server/ks.yaml
   - home
   - media
+  - it-tools/ks.yaml
+  - kometa/ks.yaml
   - ollama/ks.yaml
+  - paperless-ngx/ks.yaml
+  - searxng/ks.yaml
+  - stirling-pdf/ks.yaml
   - triparr-bot/ks.yaml
   - network-policies/ks.yaml

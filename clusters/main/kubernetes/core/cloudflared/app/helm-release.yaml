@@ -36,6 +36,29 @@ spec:
             main:
               env:
                 TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
+                TUNNEL_METRICS: "0.0.0.0:2000"
+
+    service:
+      metrics:
+        enabled: true
+        type: ClusterIP
+        ports:
+          metrics:
+            enabled: true
+            port: 2000
+            targetPort: 2000
+            protocol: tcp
+
+    metrics:
+      main:
+        enabled: true
+        type: servicemonitor
+        targetSelector: metrics
+        endpoints:
+          - path: /metrics
+            port: metrics
+        prometheusRule:
+          enabled: false
 
     securityContext:
       container:

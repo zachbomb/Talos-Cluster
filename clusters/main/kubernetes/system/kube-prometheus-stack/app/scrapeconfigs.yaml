@@ -1,0 +1,54 @@
+---
+# ScrapeConfig CRs for external services.
+# Prometheus auto-discovers these via scrapeConfigSelectorNilUsesHelmValues: false.
+#
+# Home Assistant: requires `prometheus:` in configuration.yaml
+# Homebridge: requires homebridge-prometheus-exporter plugin (port 36123)
+# Pi-hole (bare-metal): Pi-hole v6+ exposes /api/metrics natively
+
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: homeassistant
+  namespace: kube-prometheus-stack
+spec:
+  staticConfigs:
+    - targets:
+        - "192.168.10.191:8123"
+      labels:
+        job: homeassistant
+  metricsPath: /api/prometheus
+  authorization:
+    credentials:
+      name: homeassistant-token
+      key: token
+  scrapeInterval: 1m
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: homebridge
+  namespace: kube-prometheus-stack
+spec:
+  staticConfigs:
+    - targets:
+        - "192.168.10.190:36123"
+      labels:
+        job: homebridge
+  metricsPath: /metrics
+  scrapeInterval: 1m
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: pihole-baremetal
+  namespace: kube-prometheus-stack
+spec:
+  staticConfigs:
+    - targets:
+        - "192.168.10.3:80"
+      labels:
+        job: pihole
+        instance: baremetal
+  metricsPath: /api/metrics
+  scrapeInterval: 1m

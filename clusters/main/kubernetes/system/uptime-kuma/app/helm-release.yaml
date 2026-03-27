@@ -1,0 +1,82 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: uptime-kuma
+  namespace: uptime-kuma
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: uptime-kuma
+      version: 14.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${UPTIME_KUMA_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${UPTIME_KUMA_IP}
+        ports:
+          main:
+            enabled: true
+            port: 3001
+            protocol: http
+
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: uptime.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+            middlewares:
+              - name: secure-chain
+                namespace: traefik
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Uptime Kuma
+            group: Monitoring
+            widget:
+              enabled: true
+              custom:
+                url: "http://${UPTIME_KUMA_IP}:3001"
+
+    persistence:
+      config:
+        enabled: true
+        size: 2Gi
+        mountPath: /app/data
+
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

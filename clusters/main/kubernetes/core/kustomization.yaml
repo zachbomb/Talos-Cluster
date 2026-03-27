@@ -7,6 +7,8 @@ resources:
   - system-upgrade-controller-plans/ks.yaml
   - cloudflared/ks.yaml
   - kyverno-policies/ks.yaml
+  - nebula-sync/ks.yaml
+  - pihole-k8s/ks.yaml
   - traefik/ks.yaml
   - crowdsec/ks.yaml
   - network-policies/ks.yaml

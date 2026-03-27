@@ -9,8 +9,10 @@ resources:
   - cloudnative-pg.yaml
   - coredns.yaml
   - crowdsec.yaml
+  - dcgm-exporter.yaml
   - csi-driver-nfs.yaml
   - descheduler.yaml
+  - grafana.yaml
   - home-ops-mirror.yaml
   - ingress-nginx.yaml
   - intel.yaml
