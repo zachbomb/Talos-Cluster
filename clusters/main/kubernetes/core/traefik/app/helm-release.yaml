@@ -84,6 +84,10 @@ spec:
       - "--entrypoints.tcp.address=:9001"
       - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
       - "--experimental.plugins.bouncer.version=v1.5.1"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--accesslog.format=json"
+      - "--accesslog.bufferingsize=100"
 
     ingressRoute:
       dashboard:
