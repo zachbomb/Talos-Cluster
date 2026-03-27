@@ -82,6 +82,8 @@ spec:
       - "--entrypoints.websecure.http.tls.options=traefik-default@kubernetescrd"
       - "--entrypoints.websecure.http.middlewares=traefik-secure-chain@kubernetescrd"
       - "--entrypoints.tcp.address=:9001"
+      - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      - "--experimental.plugins.bouncer.version=v1.5.1"
 
     ingressRoute:
       dashboard:
