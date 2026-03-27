@@ -41,7 +41,7 @@ spec:
       annotations:
         metallb.io/loadBalancerIPs: ${TRAEFIK_IP}
       spec:
-        externalTrafficPolicy: Local
+        externalTrafficPolicy: Cluster
 
     logs:
       general:
