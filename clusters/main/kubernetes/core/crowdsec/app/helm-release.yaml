@@ -36,7 +36,8 @@ spec:
       certManager:
         enabled: true
         secretTemplate:
-          annotations: {}
+          annotations:
+            crowdsec.io/managed: "true"
           labels: {}
       bouncer:
         reflector:
