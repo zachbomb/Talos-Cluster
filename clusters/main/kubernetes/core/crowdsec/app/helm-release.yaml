@@ -32,7 +32,12 @@ spec:
     TZ: America/Los_Angeles
     container_runtime: containerd
     tls:
-      enabled: false
+      enabled: true
+      certManager:
+        enabled: true
+        secretTemplate:
+          annotations: {}
+          labels: {}
       bouncer:
         reflector:
           namespaces:
