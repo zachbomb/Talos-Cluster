@@ -124,10 +124,25 @@ spec:
         - deployments=[*]
         - persistentvolumeclaims=[*]
     grafana:
-      enabled: false
+      enabled: true
       forceDeployDashboards: true
       defaultDashboardsEnabled: true
       forceDeployDatasources: true
+      adminPassword: admin
+      persistence:
+        enabled: true
+        size: 2Gi
+      ingress:
+        enabled: true
+        ingressClassName: ""
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        hosts:
+          - grafana.${BASE_DOMAIN}
+        tls:
+          - secretName: grafana-tls
+            hosts:
+              - grafana.${BASE_DOMAIN}
     kubeControllerManager:
       enabled: true
       service:
