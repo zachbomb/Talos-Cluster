@@ -115,4 +115,4 @@ spec:
     autoscaling:
       vpa:
         enabled: false
-    service: null
+    service: {}
