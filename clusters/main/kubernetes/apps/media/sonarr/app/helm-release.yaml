@@ -76,7 +76,7 @@ spec:
                 key: ${SONARR_API}
     metrics:
       main:
-        enabled: false
+        enabled: true
         endpoints:
           - path: /metrics
             port: metrics

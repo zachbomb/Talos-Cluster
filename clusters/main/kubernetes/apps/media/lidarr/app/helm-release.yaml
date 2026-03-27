@@ -43,7 +43,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
     metrics:
       main:
-        enabled: false
+        enabled: true
         endpoints:
           - path: /metrics
             port: metrics

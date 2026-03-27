@@ -142,7 +142,7 @@ spec:
         mountPath: /backups
     metrics:
       main:
-        enabled: false
+        enabled: true
     resources:
       requests:
         memory: 512Mi
