@@ -144,6 +144,27 @@ spec:
           - secretName: grafana-tls
             hosts:
               - grafana.${BASE_DOMAIN}
+      additionalDataSources:
+        - name: Loki
+          type: loki
+          url: http://loki.loki.svc.cluster.local:3100
+          access: proxy
+          isDefault: false
+          jsonData:
+            maxLines: 250
+      imageRenderer:
+        enabled: true
+        replicas: 1
+        image:
+          repository: grafana/grafana-image-renderer
+          tag: latest
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
     kubeControllerManager:
       enabled: true
       service:

@@ -1,16 +1,24 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - alloy/ks.yaml
   - cert-manager/ks.yaml
   - cloudnative-pg/ks.yaml
+  - dcgm-exporter/ks.yaml
+  - graphite-exporter/ks.yaml
   - kube-prometheus-stack/ks.yaml
   - kubernetes-reflector/ks.yaml
+  - loki/ks.yaml
   - longhorn/ks.yaml
   - metallb/ks.yaml
   - openebs/ks.yaml
+  - pve-exporter/ks.yaml
+  - smartctl-exporter/ks.yaml
   - snapshot-controller/ks.yaml
   #- spegel/ks.yaml  # Disabled - P2P image cache useless on single-node, re-enable if multi-node
   - system-upgrade-controller/ks.yaml
+  - unpoller/ks.yaml
+  - uptime-kuma/ks.yaml
   - volsync/ks.yaml
   - kyverno/ks.yaml
   - traefik-crds/ks.yaml

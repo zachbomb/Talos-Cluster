@@ -1,0 +1,38 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# NOTE: On this cluster, smartctl-exporter only sees the Talos VM's virtual disks,
+# NOT the physical drives in TrueNAS. For physical disk SMART monitoring,
+# run smartctl-exporter or Scrutiny directly on TrueNAS.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: smartctl-exporter
+  namespace: smartctl-exporter
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: prometheus-smartctl-exporter
+      version: 0.16.0
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    serviceMonitor:
+      enabled: true
+      interval: 5m
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi

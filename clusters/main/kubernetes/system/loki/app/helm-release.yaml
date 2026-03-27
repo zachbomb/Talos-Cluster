@@ -1,0 +1,123 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: loki
+spec:
+  interval: 15m
+  timeout: 15m
+  chart:
+    spec:
+      chart: loki
+      version: 6.55.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # Single-binary / monolithic mode — ideal for single-node clusters
+    deploymentMode: SingleBinary
+    singleBinary:
+      replicas: 1
+      resources:
+        requests:
+          cpu: 50m
+          memory: 256Mi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+      persistence:
+        enabled: true
+        size: 30Gi
+
+    # Disable components not needed in monolithic mode
+    backend:
+      replicas: 0
+    read:
+      replicas: 0
+    write:
+      replicas: 0
+    ingester:
+      replicas: 0
+    querier:
+      replicas: 0
+    queryFrontend:
+      replicas: 0
+    queryScheduler:
+      replicas: 0
+    distributor:
+      replicas: 0
+    compactor:
+      replicas: 0
+    indexGateway:
+      replicas: 0
+    bloomCompactor:
+      replicas: 0
+    bloomGateway:
+      replicas: 0
+
+    # Disable built-in MinIO — use filesystem storage
+    minio:
+      enabled: false
+
+    # Disable self-monitoring to save resources
+    monitoring:
+      selfMonitoring:
+        enabled: false
+        grafanaAgent:
+          installOperator: false
+      lokiCanary:
+        enabled: false
+
+    # Disable gateway (nginx) — not needed for internal access
+    gateway:
+      enabled: false
+
+    # Loki config
+    loki:
+      auth_enabled: false
+      commonConfig:
+        replication_factor: 1
+      storage:
+        type: filesystem
+      schemaConfig:
+        configs:
+          - from: "2024-01-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: index_
+              period: 24h
+      limits_config:
+        retention_period: 14d
+        ingestion_rate_mb: 10
+        ingestion_burst_size_mb: 20
+      compactor:
+        working_directory: /var/loki/compactor
+        retention_enabled: true
+        delete_request_store: filesystem
+
+    # Chunk cache — disable memcached, use embedded
+    chunksCache:
+      enabled: false
+    resultsCache:
+      enabled: false
+
+    # ServiceMonitor for Prometheus
+    serviceMonitor:
+      enabled: true
+      interval: 1m
+
+    test:
+      enabled: false

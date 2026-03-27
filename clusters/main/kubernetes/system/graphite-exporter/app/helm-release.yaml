@@ -1,0 +1,132 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# TrueNAS metrics via Graphite protocol:
+#   1. Deploy this exporter (receives Graphite on port 9109, exposes Prometheus on 9108)
+#   2. In TrueNAS UI: System > Reporting > set Remote Graphite Server to ${GRAPHITE_EXPORTER_IP}
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: graphite-exporter
+  namespace: graphite-exporter
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 4.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    controllers:
+      main:
+        containers:
+          main:
+            image:
+              repository: prom/graphite-exporter
+              tag: v0.16.0
+            args:
+              - --graphite.listen-address=:9109
+              - --graphite.mapping-config=/etc/graphite-exporter/graphite-mapping.yaml
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+
+    service:
+      main:
+        controller: main
+        type: LoadBalancer
+        annotations:
+          metallb.io/loadBalancerIPs: "${GRAPHITE_EXPORTER_IP}"
+        ports:
+          graphite:
+            port: 9109
+            protocol: TCP
+          metrics:
+            port: 9108
+            protocol: TCP
+
+    serviceMonitor:
+      main:
+        serviceName: graphite-exporter
+        endpoints:
+          - port: metrics
+            scheme: http
+            path: /metrics
+            interval: 1m
+
+    persistence:
+      config:
+        type: configMap
+        name: graphite-exporter-mapping
+        globalMounts:
+          - path: /etc/graphite-exporter
+
+    configMaps:
+      mapping:
+        data:
+          graphite-mapping.yaml: |
+            # TrueNAS Graphite metric mapping
+            # Metrics arrive as: servers.<hostname>.<plugin>.<type>.<metric>
+            mappings:
+              - match: "servers.*.cpu-*.cpu.*"
+                name: "truenas_cpu_usage"
+                labels:
+                  host: "$1"
+                  cpu: "$2"
+                  mode: "$3"
+              - match: "servers.*.memory.*"
+                name: "truenas_memory_${3}"
+                labels:
+                  host: "$1"
+              - match: "servers.*.df-*.df_complex-*"
+                name: "truenas_disk_space"
+                labels:
+                  host: "$1"
+                  filesystem: "$2"
+                  state: "$3"
+              - match: "servers.*.disk-*.disk_*.*"
+                name: "truenas_disk_io"
+                labels:
+                  host: "$1"
+                  disk: "$2"
+                  direction: "$3"
+              - match: "servers.*.interface-*.if_*.*"
+                name: "truenas_network_io"
+                labels:
+                  host: "$1"
+                  interface: "$2"
+                  direction: "$3"
+              - match: "servers.*.uptime.uptime"
+                name: "truenas_uptime_seconds"
+                labels:
+                  host: "$1"
+              - match: "servers.*.load.load.*"
+                name: "truenas_load"
+                labels:
+                  host: "$1"
+                  period: "$2"
+              - match: "servers.*.swap.*"
+                name: "truenas_swap_${2}"
+                labels:
+                  host: "$1"
+              - match: "servers.*.processes.*"
+                name: "truenas_processes_${2}"
+                labels:
+                  host: "$1"
+              - match: "servers.*.*.*"
+                name: "truenas_${2}_${3}"
+                labels:
+                  host: "$1"
