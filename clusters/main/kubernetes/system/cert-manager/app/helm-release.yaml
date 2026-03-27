@@ -30,3 +30,7 @@ spec:
     dns01RecursiveNameserversOnly: false
     # Enable certificate owner references
     enableCertificateOwnerRef: true
+    prometheus:
+      enabled: true
+      servicemonitor:
+        enabled: true
