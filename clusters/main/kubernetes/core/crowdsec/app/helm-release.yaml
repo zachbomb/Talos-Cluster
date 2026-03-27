@@ -32,17 +32,8 @@ spec:
     TZ: America/Los_Angeles
     container_runtime: containerd
     tls:
-      enabled: true
-      agent:
-        tlsClientAuth: false
-        certificate:
-          secretTemplate: {}
-      lapi:
-        certificate:
-          secretTemplate: {}
+      enabled: false
       bouncer:
-        certificate:
-          secretTemplate: {}
         reflector:
           namespaces:
             - traefik
