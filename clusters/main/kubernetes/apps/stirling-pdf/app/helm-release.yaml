@@ -67,6 +67,7 @@ spec:
       config:
         enabled: true
         size: 1Gi
+        mountPath: /usr/share/tessdata
 
     securityContext:
       container:
