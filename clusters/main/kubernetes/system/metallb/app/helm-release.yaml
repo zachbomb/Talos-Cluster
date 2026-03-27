@@ -23,6 +23,7 @@ spec:
       retries: 3
   values:
     prometheus:
+      serviceAccount: metallb-controller
       serviceMonitor:
         enabled: true
     speaker:
