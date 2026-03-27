@@ -10,15 +10,20 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # External traffic (ports 80, 443, 9001) from any source
+    # External traffic from any source
+    # Upstream traefik chart uses container ports 8000 (web), 8443 (websecure)
     - ports:
         - port: 80
           protocol: TCP
         - port: 443
           protocol: TCP
+        - port: 8000
+          protocol: TCP
+        - port: 8443
+          protocol: TCP
         - port: 9001
           protocol: TCP
-    # Dashboard/metrics (port 9000) from LAN and cluster only
+    # Dashboard/metrics from LAN and cluster only
     - from:
         - ipBlock:
             cidr: 192.168.3.0/24
@@ -37,6 +42,8 @@ spec:
         - ipBlock:
             cidr: 172.17.0.0/16
       ports:
+        - port: 8080
+          protocol: TCP
         - port: 9000
           protocol: TCP
     # Prometheus metrics scraping
