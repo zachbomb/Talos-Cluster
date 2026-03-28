@@ -41,7 +41,21 @@ spec:
           main:
             enabled: true
             port: 10105
+            targetPort: 8080
             protocol: http
+
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              probes:
+                liveness:
+                  port: 8080
+                readiness:
+                  port: 8080
+                startup:
+                  port: 8080
 
     ingress:
       main:
