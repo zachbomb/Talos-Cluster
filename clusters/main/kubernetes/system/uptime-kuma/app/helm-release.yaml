@@ -61,6 +61,7 @@ spec:
             enabled: true
             entrypoints:
               - websecure
+              - web
             middlewares:
               - name: secure-chain
                 namespace: traefik
