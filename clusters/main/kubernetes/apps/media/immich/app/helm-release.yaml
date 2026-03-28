@@ -120,6 +120,14 @@ spec:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
 
+    cnpg:
+      main:
+        cluster:
+          storage:
+            size: 5Gi
+          walStorage:
+            size: 2Gi
+
     resources:
       requests:
         cpu: 50m
