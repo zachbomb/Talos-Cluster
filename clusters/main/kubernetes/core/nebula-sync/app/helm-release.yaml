@@ -9,7 +9,9 @@ metadata:
   name: nebula-sync
   namespace: networking
 spec:
+  releaseName: nebula-sync
   interval: 15m
+  timeout: 20m
   chart:
     spec:
       chart: nebula-sync
@@ -19,7 +21,6 @@ spec:
         name: truecharts
         namespace: flux-system
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
