@@ -63,7 +63,19 @@ spec:
             widget:
               enabled: false
 
-    persistence: {}
+    persistence:
+      configs:
+        enabled: true
+        size: 1Gi
+      custom-files:
+        enabled: true
+        size: 1Gi
+      logs:
+        enabled: true
+        size: 1Gi
+      tessdata:
+        enabled: true
+        size: 1Gi
 
     securityContext:
       container:
