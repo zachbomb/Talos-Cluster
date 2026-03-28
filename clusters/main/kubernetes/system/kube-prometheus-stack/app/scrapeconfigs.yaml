@@ -4,7 +4,7 @@
 #
 # Home Assistant: requires `prometheus:` in configuration.yaml
 # Homebridge: requires homebridge-prometheus-exporter plugin (port 36123)
-# Pi-hole (bare-metal): Pi-hole v6+ exposes /api/metrics natively
+# Pi-hole v6 has no native /api/metrics — would need pihole-exporter
 
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: ScrapeConfig
@@ -36,19 +36,4 @@ spec:
       labels:
         job: homebridge
   metricsPath: /metrics
-  scrapeInterval: 1m
----
-apiVersion: monitoring.coreos.com/v1alpha1
-kind: ScrapeConfig
-metadata:
-  name: pihole-baremetal
-  namespace: kube-prometheus-stack
-spec:
-  staticConfigs:
-    - targets:
-        - "192.168.10.3:80"
-      labels:
-        job: pihole
-        instance: baremetal
-  metricsPath: /api/metrics
   scrapeInterval: 1m
