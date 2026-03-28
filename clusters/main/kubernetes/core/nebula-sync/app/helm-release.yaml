@@ -34,7 +34,7 @@ spec:
             main:
               env:
                 PRIMARY: "http://192.168.10.3|${PIHOLE_BARE_METAL_PASS}"
-                REPLICAS: "http://${PIHOLE_K8S_IP}|${PIHOLE_K8S_PASS}"
+                REPLICAS: "http://pihole-k8s.networking.svc:9089|${PIHOLE_K8S_PASS}"
                 CRON: "*/15 * * * *"
                 CLIENT_SKIP_TLS_VERIFICATION: "true"
                 SYNC_CONFIG_DNS: "true"
