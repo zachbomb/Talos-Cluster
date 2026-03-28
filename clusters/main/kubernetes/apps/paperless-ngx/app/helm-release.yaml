@@ -6,8 +6,9 @@ metadata:
   name: paperless-ngx
   namespace: tools
 spec:
+  releaseName: paperless-ngx
   interval: 15m
-  timeout: 15m
+  timeout: 20m
   chart:
     spec:
       chart: paperless-ngx
@@ -17,7 +18,6 @@ spec:
         name: truecharts
         namespace: flux-system
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
@@ -63,7 +63,6 @@ spec:
             enabled: true
             entrypoints:
               - websecure
-              - web
             middlewares:
               - name: secure-chain
                 namespace: traefik

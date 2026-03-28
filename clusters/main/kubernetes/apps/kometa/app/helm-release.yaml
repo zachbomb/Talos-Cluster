@@ -8,7 +8,9 @@ metadata:
   name: kometa
   namespace: media
 spec:
+  releaseName: kometa
   interval: 15m
+  timeout: 20m
   chart:
     spec:
       chart: kometa
@@ -18,7 +20,6 @@ spec:
         name: truecharts
         namespace: flux-system
   install:
-    createNamespace: true
     remediation:
       retries: 3
   upgrade:
