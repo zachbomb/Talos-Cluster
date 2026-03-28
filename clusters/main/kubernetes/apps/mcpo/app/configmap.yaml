@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcpo-config
+  namespace: mcpo
+data:
+  config.json: |
+    {
+      "mcpServers": {
+        "reddit": {
+          "command": "uvx",
+          "args": [
+            "--from",
+            "git+https://github.com/adhikasp/mcp-reddit.git",
+            "mcp-reddit"
+          ]
+        },
+        "discord": {
+          "command": "npx",
+          "args": ["mcp-discord"],
+          "env": {
+            "DISCORD_TOKEN": "${TRIPARR_DISCORD_TOKEN}",
+            "DISCORD_GUILD_ID": "1365085096998207559"
+          }
+        },
+        "context7": {
+          "command": "npx",
+          "args": ["-y", "@upstash/context7-mcp"]
+        }
+      }
+    }

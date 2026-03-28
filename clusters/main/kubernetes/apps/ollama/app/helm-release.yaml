@@ -104,8 +104,9 @@ spec:
       whisper:
         model: "base"
       rag:
-        model_device_type: "cpu"
-        model: "all-MiniLM-L6-v2"
+        embedding_engine: "ollama"
+        model: "nomic-embed-text"
+        model_device_type: "cuda"
     workload:
       main:
         podSpec:
@@ -160,8 +161,9 @@ spec:
                 ENABLE_SIGNUP: "true"
                 DEFAULT_USER_ROLE: "pending"
                 WHISPER_MODEL: "base"
-                RAG_EMBEDDING_MODEL: "all-MiniLM-L6-v2"
-                RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cpu"
+                RAG_EMBEDDING_ENGINE: "ollama"
+                RAG_EMBEDDING_MODEL: "nomic-embed-text"
+                RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cuda"
                 WEBUI_SECRET_KEY:
                   secretKeyRef:
                     name: ollama-secrets
