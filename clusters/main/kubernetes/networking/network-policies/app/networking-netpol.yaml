@@ -41,3 +41,8 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: kube-prometheus-stack
+    # Uptime Kuma health checks (namespace: monitoring)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
