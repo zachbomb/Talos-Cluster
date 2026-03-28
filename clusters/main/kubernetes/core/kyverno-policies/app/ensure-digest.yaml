@@ -51,6 +51,9 @@ spec:
             imageRegistry:
               reference: "{{ element.image }}"
               jmesPath: "resolvedImage"
+              imageRegistryCredentials:
+                secrets:
+                  - regcred-dockerhub
         patchStrategicMerge:
           spec:
             containers:
