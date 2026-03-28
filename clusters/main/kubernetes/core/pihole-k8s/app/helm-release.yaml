@@ -23,6 +23,15 @@ spec:
     remediation:
       retries: 3
   values:
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-pihole-k8s"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
     workload:
       main:
         podSpec:
@@ -98,6 +107,16 @@ spec:
         enabled: true
         size: 1Gi
         mountPath: /etc/pihole
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: false
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       dnsmasq:
         enabled: true
         size: 256Mi
