@@ -39,6 +39,16 @@ spec:
       mlImageType: mlImage
       enable_ml: true
       enable_typesense: false
+      metrics:
+        enabled: true
+
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              env:
+                IMMICH_TELEMETRY_INCLUDE: "all"
 
     service:
       main:
