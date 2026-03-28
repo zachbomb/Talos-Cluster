@@ -25,6 +25,15 @@ spec:
     remediation:
       retries: 3
   values:
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-paperless"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
     service:
       main:
         enabled: true
@@ -73,10 +82,30 @@ spec:
         enabled: true
         size: 10Gi
         mountPath: /usr/src/paperless/data
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            dest:
+              enabled: false
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       media:
         enabled: true
         size: 20Gi
         mountPath: /usr/src/paperless/media
+        volsync:
+          - name: media
+            type: restic
+            credentials: s3
+            dest:
+              enabled: false
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       consume:
         enabled: true
         size: 5Gi

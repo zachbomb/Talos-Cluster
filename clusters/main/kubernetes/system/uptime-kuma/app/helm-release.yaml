@@ -23,6 +23,15 @@ spec:
     remediation:
       retries: 3
   values:
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-uptime-kuma"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
     service:
       main:
         enabled: true
@@ -72,6 +81,16 @@ spec:
         enabled: true
         size: 2Gi
         mountPath: /app/data
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
 
     resources:
       requests:

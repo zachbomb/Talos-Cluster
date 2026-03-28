@@ -25,11 +25,30 @@ spec:
     remediation:
       retries: 3
   values:
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-kometa"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
     persistence:
       config:
         enabled: true
         size: 1Gi
         mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
 
     securityContext:
       container:

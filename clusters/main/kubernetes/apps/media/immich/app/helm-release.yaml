@@ -25,6 +25,15 @@ spec:
     remediation:
       retries: 3
   values:
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-immich"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
     immich:
       # CPU-based ML (GPU slots nearly full with Ollama)
       mlImageType: mlImage
@@ -94,10 +103,30 @@ spec:
         enabled: true
         size: 10Gi
         mountPath: /usr/src/app/upload/upload
+        volsync:
+          - name: uploads
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       thumbs:
         enabled: true
         size: 10Gi
         mountPath: /usr/src/app/upload/thumbs
+        volsync:
+          - name: thumbs
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       video:
         enabled: true
         size: 5Gi
@@ -110,6 +139,16 @@ spec:
         enabled: true
         size: 5Gi
         mountPath: /usr/src/app/upload/backups
+        volsync:
+          - name: backups
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
 
     securityContext:
       container:
