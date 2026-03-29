@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: neo4j
-          image: neo4j:5-community
+          image: docker.io/library/neo4j:5.26.6-community
           ports:
             - name: http
               containerPort: 7474
