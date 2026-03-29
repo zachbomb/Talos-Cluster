@@ -30,6 +30,8 @@ spec:
               value: "neo4j/pibb-ops-graph"
             - name: NEO4J_PLUGINS
               value: '["apoc"]'
+            - name: NEO4J_server_config_strict__validation_enabled
+              value: "false"
             - name: NEO4J_server_memory_heap_initial__size
               value: "256m"
             - name: NEO4J_server_memory_heap_max__size

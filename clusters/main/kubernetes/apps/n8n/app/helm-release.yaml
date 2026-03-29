@@ -41,19 +41,18 @@ spec:
     ingress:
       enabled: true
       className: traefik
-      hosts:
-        - host: n8n.${BASE_DOMAIN}
-          paths:
-            - path: /
-              pathType: Prefix
-      tls:
-        - hosts:
-            - n8n.${BASE_DOMAIN}
-          secretName: n8n-tls-0
       annotations:
         cert-manager.io/cluster-issuer: wethecommon-prod-cert
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
         traefik.ingress.kubernetes.io/router.middlewares: traefik-secure-chain@kubernetescrd
+      hosts:
+        - host: n8n.${BASE_DOMAIN}
+          paths:
+            - /
+      tls:
+        - hosts:
+            - n8n.${BASE_DOMAIN}
+          secretName: n8n-tls-0
     persistence:
       enabled: true
       size: 2Gi
