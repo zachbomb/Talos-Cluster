@@ -168,6 +168,11 @@ spec:
                 CHUNK_SIZE: "512"
                 CHUNK_OVERLAP: "64"
                 RAG_TOP_K: "20"
+                VECTOR_DB: "pgvector"
+                DATABASE_URL:
+                  secretKeyRef:
+                    name: openwebui-db-app
+                    key: uri
                 WEBUI_SECRET_KEY:
                   secretKeyRef:
                     name: ollama-secrets
