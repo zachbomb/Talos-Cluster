@@ -164,6 +164,10 @@ spec:
                 RAG_EMBEDDING_ENGINE: "ollama"
                 RAG_EMBEDDING_MODEL: "nomic-embed-text"
                 RAG_EMBEDDING_MODEL_DEVICE_TYPE: "cuda"
+                RAG_SYSTEM_CONTEXT: "true"
+                CHUNK_SIZE: "512"
+                CHUNK_OVERLAP: "64"
+                RAG_TOP_K: "20"
                 WEBUI_SECRET_KEY:
                   secretKeyRef:
                     name: ollama-secrets
