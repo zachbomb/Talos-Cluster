@@ -1,0 +1,30 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: openwebui-db
+  namespace: ollama
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.5
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: 5Gi
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 10m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  postgresql:
+    parameters:
+      shared_buffers: "128MB"
+      max_connections: "50"
+    shared_preload_libraries:
+      - "vector"
+  bootstrap:
+    initdb:
+      database: openwebui
+      owner: openwebui
+      postInitSQL:
+        - "CREATE EXTENSION IF NOT EXISTS vector;"
