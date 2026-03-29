@@ -169,10 +169,7 @@ spec:
                 CHUNK_OVERLAP: "64"
                 RAG_TOP_K: "20"
                 VECTOR_DB: "pgvector"
-                DATABASE_URL:
-                  secretKeyRef:
-                    name: openwebui-db-app
-                    key: uri
+                DATABASE_URL: "postgresql://openwebui:lh0of17euyZs8SOPzSkvEP9wdbxmtqyaKQNEl80dhvhhGRImKgxb4vHThcA8Sa3U@openwebui-db-rw.ollama:5432/openwebui"
                 WEBUI_SECRET_KEY:
                   secretKeyRef:
                     name: ollama-secrets
