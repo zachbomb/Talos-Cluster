@@ -168,7 +168,6 @@ spec:
                 CHUNK_SIZE: "512"
                 CHUNK_OVERLAP: "64"
                 RAG_TOP_K: "20"
-                VECTOR_DB: "pgvector"
                 DATABASE_URL: "postgresql://openwebui:lh0of17euyZs8SOPzSkvEP9wdbxmtqyaKQNEl80dhvhhGRImKgxb4vHThcA8Sa3U@openwebui-db-rw.ollama:5432/openwebui"
                 WEBUI_SECRET_KEY:
                   secretKeyRef:

@@ -20,11 +20,7 @@ spec:
     parameters:
       shared_buffers: "128MB"
       max_connections: "50"
-    shared_preload_libraries:
-      - "vector"
   bootstrap:
     initdb:
       database: openwebui
       owner: openwebui
-      postInitSQL:
-        - "CREATE EXTENSION IF NOT EXISTS vector;"
