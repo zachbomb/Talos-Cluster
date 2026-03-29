@@ -8,6 +8,7 @@ resources:
   - it-tools/ks.yaml
   - kometa/ks.yaml
   - mcpo/ks.yaml
+  - neo4j/ks.yaml
   - ollama/ks.yaml
   - paperless-ngx/ks.yaml
   - searxng/ks.yaml
