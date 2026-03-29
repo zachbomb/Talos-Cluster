@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: n8n
+  namespace: n8n
+spec:
+  releaseName: n8n
+  interval: 15m
+  timeout: 10m
+  chart:
+    spec:
+      chart: n8n
+      version: "1.1.0"
+      sourceRef:
+        kind: HelmRepository
+        name: n8n
+        namespace: flux-system
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    n8n:
+      encryption_key: "${TRIPARR_ENCRYPTION_KEY}"
+    config:
+      generic:
+        timezone: "America/New_York"
+      executions:
+        pruneData: "true"
+        pruneDataMaxAge: 168
+    service:
+      type: LoadBalancer
+      port: 5678
+      annotations:
+        metallb.io/loadBalancerIPs: "${MYSPEED_IP}"
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+        - host: n8n.${BASE_DOMAIN}
+          paths:
+            - path: /
+      tls:
+        - hosts:
+            - n8n.${BASE_DOMAIN}
+          secretName: n8n-tls-0
+      annotations:
+        cert-manager.io/cluster-issuer: wethecommon-prod-cert
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.middlewares: traefik-secure-chain@kubernetescrd
+    persistence:
+      enabled: true
+      size: 2Gi
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
