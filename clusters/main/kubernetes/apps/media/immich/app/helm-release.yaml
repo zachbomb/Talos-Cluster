@@ -120,21 +120,20 @@ spec:
         size: 2Gi
       library:
         size: 1Gi
-      # Media NFS — mounted in all 3 workloads (microservices needs it for library scan)
       media:
         enabled: true
         type: nfs
         server: 192.168.10.123
         path: /mnt/Pibbs-Horde/media/data
+        mountPath: /media
         mountOptions:
           - nfsvers=4
           - tcp
-        main:
-          mountPath: /media
-        microservices:
-          mountPath: /media
-        machinelearning:
-          mountPath: /media
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
 
     securityContext:
       container:
