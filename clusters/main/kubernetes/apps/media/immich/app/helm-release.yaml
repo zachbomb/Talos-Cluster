@@ -92,21 +92,33 @@ spec:
             widget:
               enabled: false
 
-    # Immich data (uploads, thumbs, profile, encoded-video, backups)
     persistence:
-      config:
-        enabled: true
-        size: 20Gi
-        mountPath: /usr/src/app/upload
+      backups:
+        size: 2Gi
+        mountPath: /usr/src/app/upload/backups
         volsync:
-          - name: config
+          - name: backups
             type: restic
             credentials: s3
             dest:
-              enabled: false
+              enabled: true
+              cacheCapacity: 2Gi
             src:
               enabled: true
-              cacheCapacity: 5Gi
+              cacheCapacity: 2Gi
+      library:
+        size: 2Gi
+        mountPath: /usr/src/app/upload/library
+        volsync:
+          - name: library
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
       media:
         enabled: true
         type: nfs
