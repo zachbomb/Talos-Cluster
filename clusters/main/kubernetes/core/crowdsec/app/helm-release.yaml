@@ -61,8 +61,8 @@ spec:
           value: "crowdsecurity/cri-logs"
         - name: COLLECTIONS
           value: "crowdsecurity/traefik"
-        - name: DISABLE_PARSERS
-          value: "crowdsecurity/whitelists"
+        # whitelists parser re-enabled — prevents banning private IPs (192.168.0.0/16, 10.0.0.0/8)
+        # Previously disabled, caused self-banning during Immich cert failures
       metrics:
         enabled: true
         serviceMonitor:
