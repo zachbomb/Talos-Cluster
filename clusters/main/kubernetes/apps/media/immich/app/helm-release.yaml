@@ -107,6 +107,19 @@ spec:
             src:
               enabled: true
               cacheCapacity: 5Gi
+      # Chart auto-creates these — set explicit sizes to avoid 100Gi defaults
+      uploads:
+        size: 5Gi
+      thumbs:
+        size: 5Gi
+      profile:
+        size: 1Gi
+      video:
+        size: 5Gi
+      backups:
+        size: 2Gi
+      library:
+        size: 1Gi
       # Media NFS (same as Plex/Radarr/Sonarr)
       media:
         enabled: true
