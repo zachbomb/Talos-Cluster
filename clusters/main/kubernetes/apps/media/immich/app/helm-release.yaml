@@ -120,7 +120,7 @@ spec:
         size: 2Gi
       library:
         size: 1Gi
-      # Media NFS (same as Plex/Radarr/Sonarr)
+      # Media NFS (same as Plex/Radarr/Sonarr) — mounted in all workloads for library scan
       media:
         enabled: true
         type: nfs
@@ -130,6 +130,7 @@ spec:
         mountOptions:
           - nfsvers=4
           - tcp
+        targetSelectAll: true
 
     securityContext:
       container:
