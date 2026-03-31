@@ -115,8 +115,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
-              cacheCapacity: 2Gi
+              enabled: false
             src:
               enabled: true
               cacheCapacity: 2Gi
@@ -129,8 +128,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
-              cacheCapacity: 2Gi
+              enabled: false
             src:
               enabled: true
               cacheCapacity: 2Gi
@@ -151,8 +149,7 @@ spec:
             type: restic
             credentials: s3
             dest:
-              enabled: true
-              cacheCapacity: 2Gi
+              enabled: false
             src:
               enabled: true
               cacheCapacity: 2Gi
