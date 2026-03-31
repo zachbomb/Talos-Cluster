@@ -40,7 +40,6 @@ spec:
           - "--port"
           - "8000"
         podSpec:
-          runtimeClassName: "nvidia"
           containers:
             main:
               resources:
@@ -48,7 +47,7 @@ spec:
                   memory: 2Gi
                   cpu: 500m
                 limits:
-                  nvidia.com/gpu: 1
+                  gpu.intel.com/i915: 1
                   memory: 8Gi
                   cpu: "4"
             cache-purge:

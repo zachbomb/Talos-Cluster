@@ -142,11 +142,7 @@ spec:
       limits:
         memory: 4Gi
         cpu: 500m
-        nvidia.com/gpu: 1
-    workload:
-      main:
-        podSpec:
-          runtimeClassName: nvidia
+        gpu.intel.com/i915: 1
     autoscaling:
       vpa:
         enabled: true
