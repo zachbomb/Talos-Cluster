@@ -35,8 +35,7 @@ spec:
         encrKey: ${S3KEY}
 
     immich:
-      # CPU-based ML (GPU slots nearly full with Ollama)
-      mlImageType: mlImage
+      mlImageType: cudaImage
       enable_ml: true
       enable_typesense: false
       metrics:
@@ -49,6 +48,19 @@ spec:
             main:
               env:
                 IMMICH_TELEMETRY_INCLUDE: "all"
+      machinelearning:
+        podSpec:
+          runtimeClassName: "nvidia"
+          containers:
+            machinelearning:
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 512Mi
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+                  nvidia.com/gpu: 1
 
     service:
       main:
