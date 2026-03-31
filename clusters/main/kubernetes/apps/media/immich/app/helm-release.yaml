@@ -147,6 +147,15 @@ spec:
             size: 5Gi
           walStorage:
             size: 2Gi
+        backups:
+          enabled: true
+          credentials: s3
+          scheduledBackups:
+            - name: daily
+              schedule: "0 3 * * *"
+              backupOwnerReference: self
+              immediate: true
+          retentionPolicy: "14d"
 
     resources:
       requests:
