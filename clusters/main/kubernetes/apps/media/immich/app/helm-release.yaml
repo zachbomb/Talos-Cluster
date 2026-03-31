@@ -134,34 +134,13 @@ spec:
           - noatime
           - nodiratime
           - nolock
-      media-micro:
-        enabled: true
-        type: nfs
-        server: 192.168.10.123
-        path: /mnt/Pibbs-Horde/media/data
-        mountPath: /media
-        mountOptions:
-          - nfsvers=4
-          - tcp
-          - intr
-          - hard
-          - noatime
-          - nodiratime
-          - nolock
-      media-ml:
-        enabled: true
-        type: nfs
-        server: 192.168.10.123
-        path: /mnt/Pibbs-Horde/media/data
-        mountPath: /media
-        mountOptions:
-          - nfsvers=4
-          - tcp
-          - intr
-          - hard
-          - noatime
-          - nodiratime
-          - nolock
+        targetSelector:
+          main:
+            main: {}
+          microservices:
+            microservices: {}
+          machinelearning:
+            machinelearning: {}
 
     securityContext:
       container:
