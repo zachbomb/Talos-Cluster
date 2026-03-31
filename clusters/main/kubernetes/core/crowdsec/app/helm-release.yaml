@@ -106,7 +106,6 @@ spec:
       service:
         enabled: true
         type: LoadBalancer
-        loadBalancerIP: ${CROWDSEC_IP}
         annotations:
           metallb.io/loadBalancerIPs: ${CROWDSEC_IP}
         ports:

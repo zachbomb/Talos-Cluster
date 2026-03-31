@@ -29,6 +29,9 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          envFrom:
+            - secretRef:
+                name: mcpo-secrets
           volumeMounts:
             - name: config
               mountPath: /config
@@ -36,17 +39,17 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 128Mi
+              memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 1000m
+              memory: 1Gi
           startupProbe:
             httpGet:
               path: /docs
               port: 8000
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 10
-            failureThreshold: 12
+            failureThreshold: 18
           livenessProbe:
             httpGet:
               path: /docs

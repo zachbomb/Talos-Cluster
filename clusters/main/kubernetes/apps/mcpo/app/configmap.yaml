@@ -26,6 +26,59 @@ data:
         "context7": {
           "command": "npx",
           "args": ["-y", "@upstash/context7-mcp"]
+        },
+        "google-maps": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-google-maps"],
+          "env": {
+            "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
+          }
+        },
+        "wikipedia": {
+          "command": "npx",
+          "args": ["-y", "wikipedia-mcp"]
+        },
+        "prometheus": {
+          "command": "uvx",
+          "args": ["prometheus-mcp-server"],
+          "env": {
+            "PROMETHEUS_URL": "http://kube-prometheus-stack-prometheus.kube-prometheus-stack.svc.cluster.local:9090"
+          }
+        },
+        "grafana": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-grafana"],
+          "env": {
+            "GRAFANA_URL": "http://kube-prometheus-stack-grafana.kube-prometheus-stack.svc.cluster.local",
+            "GRAFANA_API_TOKEN": "${GRAFANA_API_TOKEN}"
+          }
+        },
+        "letterboxd": {
+          "command": "uvx",
+          "args": [
+            "--from",
+            "git+https://github.com/racimy/letterboxd-mcp.git",
+            "letterboxd-mcp"
+          ],
+          "env": {
+            "LETTERBOXD_USERNAME": "${LETTERBOXD_USERNAME}",
+            "LETTERBOXD_PASSWORD": "${LETTERBOXD_PASSWORD}"
+          }
+        },
+        "truenas": {
+          "command": "uvx",
+          "args": ["truenas-mcp-server"],
+          "env": {
+            "TRUENAS_URL": "https://192.168.10.122:444",
+            "TRUENAS_API_KEY": "${TRUENAS_API_KEY}"
+          }
+        },
+        "cloudflare": {
+          "command": "npx",
+          "args": ["-y", "@anthropic/cloudflare-mcp"],
+          "env": {
+            "CLOUDFLARE_API_TOKEN": "${CLOUDFLARE_API_TOKEN}"
+          }
         }
       }
     }
