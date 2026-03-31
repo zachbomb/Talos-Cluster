@@ -152,7 +152,6 @@ spec:
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
-    runtimeClassName: "nvidia"
     ingress:
       main:
         enabled: true
@@ -197,7 +196,6 @@ spec:
     workload:
       main:
         podSpec:
-          runtimeClassName: "nvidia"
           containers:
             main:
               resources:
@@ -207,7 +205,7 @@ spec:
                 limits:
                   memory: 8Gi
                   cpu: "4"
-                  nvidia.com/gpu: 1
+                  gpu.intel.com/i915: 1
               probes:
                 startup:
                   enabled: true
