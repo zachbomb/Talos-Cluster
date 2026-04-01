@@ -1,0 +1,138 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: shelfmark
+  namespace: media
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: app-template
+      version: 17.0.3
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    image:
+      repository: ghcr.io/calibrain/shelfmark
+      pullPolicy: Always
+      tag: latest
+    TZ: America/Los_Angeles
+    portal:
+      open:
+        enabled: false
+    global:
+      stopAll: false
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-shelfmark"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: shelfmark.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Shelfmark
+            description: Book Ingest Manager
+            group: Media
+            icon: ""
+            widget:
+              enabled: false
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${SHELFMARK_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${SHELFMARK_IP}
+        ports:
+          main:
+            port: 8084
+            targetPort: 8084
+            protocol: http
+    persistence:
+      config:
+        enabled: true
+        size: 1Gi
+        mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 1Gi
+            src:
+              enabled: true
+              cacheCapacity: 1Gi
+              trigger:
+                schedule: 40 0 * * *
+      books:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/books-ingest
+        server: 192.168.10.123
+        mountPath: /books
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+    env:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Los_Angeles
+      INGEST_DIR: /books
+    securityContext:
+      container:
+        readOnlyRootFilesystem: false
+      pod:
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+    metrics:
+      main:
+        enabled: false
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 10m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    autoscaling:
+      vpa:
+        enabled: false
