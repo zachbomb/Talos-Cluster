@@ -10,15 +10,7 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # Traefik bouncer -> LAPI (mTLS)
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: traefik
-      ports:
-        - port: 8443
-          protocol: TCP
-    # Dashboard ingress via Traefik
+    # Traefik bouncer -> LAPI (HTTPS on 8080) + dashboard ingress
     - from:
         - namespaceSelector:
             matchLabels:

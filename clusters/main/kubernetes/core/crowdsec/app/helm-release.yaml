@@ -113,10 +113,6 @@ spec:
             port: 8080
             targetPort: 8080
             protocol: TCP
-          https:
-            port: 8443
-            targetPort: 8443
-            protocol: TCP
     autoscaling:
       vpa:
         enabled: false
