@@ -137,6 +137,21 @@ spec:
           machinelearning:
             machinelearning: {}
 
+      mlcache:
+        enabled: true
+        type: emptyDir
+        mountPath: /.config
+        targetSelector:
+          machinelearning:
+            machinelearning: {}
+      mldata:
+        enabled: true
+        type: emptyDir
+        mountPath: /.cache
+        targetSelector:
+          machinelearning:
+            machinelearning: {}
+
     securityContext:
       container:
         readOnlyRootFilesystem: false
