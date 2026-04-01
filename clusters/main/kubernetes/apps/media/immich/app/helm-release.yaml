@@ -18,12 +18,15 @@ spec:
         name: truecharts
         namespace: flux-system
   install:
+    timeout: 30m
     remediation:
       retries: 3
+      remediateLastFailure: false
   upgrade:
-    cleanupOnFail: true
+    cleanupOnFail: false
     remediation:
       retries: 3
+      remediateLastFailure: false
   values:
     credentials:
       s3:
@@ -158,7 +161,7 @@ spec:
           scheduledBackups:
             - name: daily
               schedule: "0 3 * * *"
-              backupOwnerReference: self
+              backupOwnerReference: none
               immediate: true
           retentionPolicy: "14d"
 
