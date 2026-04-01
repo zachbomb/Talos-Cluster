@@ -219,9 +219,9 @@ spec:
         enabled: true
     resources:
       requests:
-        memory: 512Mi
+        memory: 2Gi
         cpu: 50m
       limits:
-        memory: 4Gi
+        memory: 8Gi
         cpu: "4"
         nvidia.com/gpu: 1
