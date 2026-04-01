@@ -7,3 +7,13 @@ resources:
   - alertmanagerconfig.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
+  - grafana-dashboard-dcgm-gpu.yaml
+  - grafana-dashboard-proxmox.yaml
+  - grafana-dashboard-unpoller.yaml
+  - grafana-dashboard-exportarr.yaml
+  - grafana-dashboard-nginx-ingress.yaml
+  - grafana-dashboard-blocky.yaml
+  - grafana-dashboard-uptime-kuma.yaml
+  - grafana-dashboard-cloudflared.yaml
+  - grafana-dashboard-smartctl.yaml
+  - grafana-dashboard-graphite.yaml
