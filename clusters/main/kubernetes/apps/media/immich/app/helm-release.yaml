@@ -143,14 +143,16 @@ spec:
         mountPath: /.config
         targetSelector:
           machinelearning:
-            machinelearning: {}
+            machinelearning:
+              mountPath: /.config
       mldata:
         enabled: true
         type: emptyDir
         mountPath: /.cache
         targetSelector:
           machinelearning:
-            machinelearning: {}
+            machinelearning:
+              mountPath: /.cache
 
     securityContext:
       container:
