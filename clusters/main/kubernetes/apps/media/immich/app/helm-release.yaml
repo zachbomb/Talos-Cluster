@@ -49,6 +49,15 @@ spec:
             main:
               env:
                 IMMICH_TELEMETRY_INCLUDE: "all"
+      machinelearning:
+        podSpec:
+          containers:
+            machinelearning:
+              env:
+                MPLCONFIGDIR: /tmp/matplotlib
+                HF_HOME: /tmp/huggingface
+                XDG_CONFIG_HOME: /tmp/config
+                XDG_CACHE_HOME: /tmp/cache
 
     service:
       main:
@@ -136,23 +145,6 @@ spec:
             microservices: {}
           machinelearning:
             machinelearning: {}
-
-      mlcache:
-        enabled: true
-        type: emptyDir
-        mountPath: /.config
-        targetSelector:
-          machinelearning:
-            machinelearning:
-              mountPath: /.config
-      mldata:
-        enabled: true
-        type: emptyDir
-        mountPath: /.cache
-        targetSelector:
-          machinelearning:
-            machinelearning:
-              mountPath: /.cache
 
     securityContext:
       container:
