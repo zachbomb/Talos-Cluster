@@ -20,13 +20,11 @@ spec:
   install:
     timeout: 30m
     remediation:
-      retries: 3
-      remediateLastFailure: false
+      retries: 0
   upgrade:
     cleanupOnFail: false
     remediation:
-      retries: 3
-      remediateLastFailure: false
+      retries: 0
   values:
     credentials:
       s3:
