@@ -27,7 +27,7 @@ spec:
     image:
       repository: ghcr.io/faustvii/readarr
       pullPolicy: IfNotPresent
-      tag: 0.9.0
+      tag: 0.9.1
     portal:
       open:
         enabled: false
