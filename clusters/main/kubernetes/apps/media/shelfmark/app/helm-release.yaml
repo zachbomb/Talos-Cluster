@@ -119,10 +119,11 @@ spec:
       INGEST_DIR: /books
     securityContext:
       container:
+        runAsUser: 0
+        runAsGroup: 0
         readOnlyRootFilesystem: false
       pod:
-        fsGroup: 568
-        fsGroupChangePolicy: OnRootMismatch
+        fsGroup: 0
     metrics:
       main:
         enabled: false
