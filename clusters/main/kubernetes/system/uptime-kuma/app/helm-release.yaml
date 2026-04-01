@@ -90,6 +90,10 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
 
+    metrics:
+      main:
+        enabled: false
+
     resources:
       requests:
         cpu: 10m
