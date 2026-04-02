@@ -58,6 +58,10 @@ spec:
                 HF_HOME: /tmp/huggingface
                 XDG_CONFIG_HOME: /tmp/config
                 XDG_CACHE_HOME: /tmp/cache
+              securityContext:
+                runAsUser: 0
+                runAsGroup: 0
+                readOnlyRootFilesystem: false
 
     service:
       main:
