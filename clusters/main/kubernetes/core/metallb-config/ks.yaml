@@ -4,6 +4,8 @@ metadata:
   name: metallb-config
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: metallb
   interval: 10m
   path: clusters/main/kubernetes/core/metallb-config/app
   prune: true

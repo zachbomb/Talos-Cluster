@@ -4,6 +4,8 @@ metadata:
   name: triparr-bot
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: sonarr
   interval: 10m
   path: clusters/main/kubernetes/apps/triparr-bot/app
   prune: true

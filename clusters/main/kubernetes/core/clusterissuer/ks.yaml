@@ -4,6 +4,8 @@ metadata:
   name: clusterissuer
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: cert-manager
   interval: 10m
   path: clusters/main/kubernetes/core/clusterissuer/app
   prune: true

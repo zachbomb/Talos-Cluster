@@ -4,6 +4,8 @@ metadata:
   name: tautulli
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/apps/media/tautulli/app
   prune: true

@@ -4,6 +4,8 @@ metadata:
   name: paperless-ngx
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: sonarr
   interval: 10m
   path: clusters/main/kubernetes/apps/paperless-ngx/app
   prune: true

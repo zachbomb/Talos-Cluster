@@ -4,6 +4,8 @@ metadata:
   name: dcgm-exporter
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/system/dcgm-exporter/app
   prune: true

@@ -4,6 +4,8 @@ metadata:
   name: kube-prometheus-stack
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/system/kube-prometheus-stack/app
   prune: true

@@ -4,6 +4,8 @@ metadata:
   name: tunarr
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: plex
   interval: 10m
   path: clusters/main/kubernetes/apps/media/tunarr/app
   prune: true

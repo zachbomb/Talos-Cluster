@@ -4,6 +4,8 @@ metadata:
   name: kyverno-policies
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: kyverno
   interval: 10m
   path: clusters/main/kubernetes/core/kyverno-policies/app
   prune: true
