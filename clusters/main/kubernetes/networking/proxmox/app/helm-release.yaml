@@ -21,6 +21,10 @@ spec:
         enabled: true
         type: ExternalIP
         externalIP: 192.168.10.30
+        integrations:
+          traefik:
+            enabled: true
+            insecureSkipVerify: true
         ports:
           main:
             enabled: true
