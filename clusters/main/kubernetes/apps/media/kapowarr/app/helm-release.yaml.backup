@@ -61,7 +61,7 @@ spec:
             name: Kapowarr
             widget:
               custom:
-                key: ***REMOVED***
+                key: ${KAPOWARR_API}
               enabled: true
         hosts:
           - host: kapowarr."${BASE_DOMAIN}"

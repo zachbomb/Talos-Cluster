@@ -1,3 +1,6 @@
+# Scripts directory contains hardcoded credentials (API keys, passwords, tokens)
+scripts/
+
 age.agekey
 ^clustertool.exe
 ^clustertool*
