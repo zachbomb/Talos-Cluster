@@ -4,6 +4,8 @@ metadata:
   name: radarr
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: bazarr
   interval: 10m
   path: clusters/main/kubernetes/apps/media/radarr/app
   prune: true

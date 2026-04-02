@@ -4,6 +4,8 @@ metadata:
   name: homepage
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: traefik
   interval: 10m
   path: clusters/main/kubernetes/networking/homepage/app
   prune: true

@@ -4,6 +4,8 @@ metadata:
   name: volsync
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/system/volsync/app
   prune: true

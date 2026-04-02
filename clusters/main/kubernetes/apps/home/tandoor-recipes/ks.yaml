@@ -4,6 +4,8 @@ metadata:
   name: tandoor-recipes
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: sonarr
   interval: 10m
   path: clusters/main/kubernetes/apps/home/tandoor-recipes/app
   prune: true

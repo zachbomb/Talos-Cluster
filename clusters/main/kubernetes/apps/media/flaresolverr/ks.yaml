@@ -4,6 +4,8 @@ metadata:
   name: flaresolverr
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/apps/media/flaresolverr/app
   prune: true

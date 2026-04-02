@@ -4,6 +4,8 @@ metadata:
   name: calibre-web
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/apps/media/calibre-web/app
   prune: true

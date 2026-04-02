@@ -5,6 +5,8 @@ metadata:
   name: lidarr-liz
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: lidarr
   interval: 10m
   path: ./clusters/main/kubernetes/apps/media/lidarr-liz/app
   prune: true

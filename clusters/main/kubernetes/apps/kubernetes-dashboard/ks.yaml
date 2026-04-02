@@ -4,6 +4,8 @@ metadata:
   name: kubernetes-dashboard
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/apps/kubernetes-dashboard/app
   prune: true

@@ -4,6 +4,8 @@ metadata:
   name: plex
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: sonarr
   interval: 10m
   path: clusters/main/kubernetes/apps/media/plex/app
   prune: true

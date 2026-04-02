@@ -4,6 +4,8 @@ metadata:
   name: deluge
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: bazarr
   interval: 10m
   path: clusters/main/kubernetes/apps/media/deluge/app
   prune: true

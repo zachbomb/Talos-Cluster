@@ -4,6 +4,8 @@ metadata:
   name: traefik
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: traefik-crds
   interval: 10m
   path: clusters/main/kubernetes/core/traefik/app
   prune: true

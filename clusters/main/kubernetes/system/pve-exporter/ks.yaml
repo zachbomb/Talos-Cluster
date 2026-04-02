@@ -4,6 +4,8 @@ metadata:
   name: pve-exporter
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: longhorn
   interval: 10m
   path: clusters/main/kubernetes/system/pve-exporter/app
   prune: true

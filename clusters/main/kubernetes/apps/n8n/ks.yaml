@@ -4,6 +4,8 @@ metadata:
   name: n8n
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: sonarr
   interval: 10m
   path: clusters/main/kubernetes/apps/n8n/app
   prune: true

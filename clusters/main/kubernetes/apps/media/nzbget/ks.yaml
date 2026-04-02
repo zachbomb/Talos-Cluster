@@ -4,6 +4,8 @@ metadata:
   name: nzbget
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: bazarr
   interval: 10m
   path: clusters/main/kubernetes/apps/media/nzbget/app
   prune: true

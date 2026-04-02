@@ -4,6 +4,8 @@ metadata:
   name: readarr
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: bazarr
   interval: 10m
   path: clusters/main/kubernetes/apps/media/readarr/app
   prune: true
