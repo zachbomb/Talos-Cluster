@@ -61,8 +61,6 @@ spec:
           value: "crowdsecurity/cri-logs"
         - name: COLLECTIONS
           value: "crowdsecurity/traefik"
-        - name: POSTOVERFLOWS
-          value: "crowdsecurity/whitelists"
       metrics:
         enabled: true
         serviceMonitor:
