@@ -96,7 +96,7 @@ spec:
           tls:
             enabled: true
           middlewares:
-            - traefik-secure-chain@kubernetescrd
+            - traefik-bouncer@kubernetescrd
 
     metrics:
       prometheus:
