@@ -59,11 +59,20 @@ spec:
               port: 9222
             failureThreshold: 30
             periodSeconds: 5
+          env:
+            - name: HOME
+              value: /home/chrome
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
             runAsNonRoot: true
             readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: chrome-data
           persistentVolumeClaim:
