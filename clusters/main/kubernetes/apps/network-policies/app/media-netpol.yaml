@@ -52,3 +52,8 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
+    # Triparr bot → FlareSolverr (anti-bot bypass for FR24/BA scrapers)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: triparr-bot
