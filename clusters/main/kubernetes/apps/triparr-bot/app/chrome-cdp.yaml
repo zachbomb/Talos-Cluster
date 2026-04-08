@@ -61,7 +61,7 @@ spec:
             periodSeconds: 5
           env:
             - name: HOME
-              value: /home/chrome
+              value: /chrome-data
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
