@@ -26,7 +26,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: chrome
-          image: ghcr.io/zachbomb/triparr-bot-chrome@sha256:796adb88e9507fe5f2b75f264bccd704d5415b4927e18485df679cba0b7f7508
+          image: ghcr.io/zachbomb/triparr-bot-chrome@sha256:b9076b1d18a534b9fda7d0e1c58dc75313f1090cc767909d334a61ca2a30de43
           imagePullPolicy: IfNotPresent
           ports:
             - name: cdp
