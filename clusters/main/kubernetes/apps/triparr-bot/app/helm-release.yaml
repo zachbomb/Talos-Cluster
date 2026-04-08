@@ -99,6 +99,55 @@ spec:
                 ENABLE_PROFILE_QUERY: "true"
                 ENABLE_BUDGET_AWARENESS: "true"
                 FEATURE_BOOKING_CLASS_MONITORING: "false"
+                # Availability scrapers (require Chrome sidecar for CDP)
+                ENABLE_BA_SCRAPER: "true"
+                ENABLE_ANA_SCRAPER: "true"
+                BA_CDP_URL: "http://127.0.0.1:9222"
+                BA_CHROME_PROFILE: "/chrome-data/ba-profile"
+            # Chrome CDP sidecar — real Google Chrome for Akamai WAF bypass
+            # BA Avios and ANA scrapers connect via CDP (ws://localhost:9222)
+            # Image has google-chrome-stable with correct TLS/JA3 fingerprint
+            chrome:
+              enabled: true
+              imageSelector: chromeImage
+              probes:
+                liveness:
+                  enabled: true
+                  type: tcp
+                  port: 9222
+                  spec:
+                    initialDelaySeconds: 15
+                    periodSeconds: 30
+                readiness:
+                  enabled: true
+                  type: tcp
+                  port: 9222
+                  spec:
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 9222
+                  spec:
+                    failureThreshold: 30
+                    periodSeconds: 5
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 256Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+              securityContext:
+                runAsUser: 1000
+                runAsGroup: 1000
+                runAsNonRoot: true
+                readOnlyRootFilesystem: false
+    chromeImage:
+      repository: ghcr.io/zachbomb/triparr-bot-chrome
+      tag: "latest"
+      pullPolicy: Always
     credentials:
       s3:
         type: s3
@@ -162,6 +211,18 @@ spec:
         enabled: true
         type: emptyDir
         mountPath: /app/logs
+      # Chrome sidecar profile data — persists Akamai clearance cookies across restarts
+      chrome-data:
+        enabled: true
+        size: 1Gi
+        mountPath: /chrome-data
+      # Shared memory for Chrome — Chromium needs larger /dev/shm than default 64MB
+      dshm:
+        enabled: true
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 512Mi
+        mountPath: /dev/shm
     securityContext:
       container:
         runAsUser: 1000
