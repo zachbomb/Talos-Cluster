@@ -47,12 +47,12 @@ spec:
           livenessProbe:
             tcpSocket:
               port: 9222
-            initialDelaySeconds: 15
+            initialDelaySeconds: 20
             periodSeconds: 30
           readinessProbe:
             tcpSocket:
               port: 9222
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
           startupProbe:
             tcpSocket:
