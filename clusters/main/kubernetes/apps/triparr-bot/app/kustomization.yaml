@@ -5,3 +5,4 @@ resources:
   - cnpg-cluster.yaml
   - cnpg-barman.yaml
   - helm-release.yaml
+  - chrome-cdp.yaml

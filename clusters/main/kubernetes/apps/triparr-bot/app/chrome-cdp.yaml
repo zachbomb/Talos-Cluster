@@ -1,0 +1,106 @@
+# Chrome CDP server — real Google Chrome with DevTools Protocol endpoint
+# Used by BAScraper and ANAScraper for Akamai WAF bypass
+# Separate deployment (not sidecar) for simpler lifecycle management
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chrome-cdp
+  namespace: triparr-bot
+  labels:
+    app.kubernetes.io/name: chrome-cdp
+    app.kubernetes.io/part-of: triparr-bot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chrome-cdp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chrome-cdp
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: chrome
+          image: ghcr.io/zachbomb/triparr-bot-chrome:latest
+          imagePullPolicy: Always
+          ports:
+            - name: cdp
+              containerPort: 9222
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+          volumeMounts:
+            - name: chrome-data
+              mountPath: /chrome-data
+            - name: dshm
+              mountPath: /dev/shm
+          livenessProbe:
+            tcpSocket:
+              port: 9222
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 9222
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          startupProbe:
+            tcpSocket:
+              port: 9222
+            failureThreshold: 30
+            periodSeconds: 5
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false
+      volumes:
+        - name: chrome-data
+          persistentVolumeClaim:
+            claimName: chrome-cdp-data
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi
+      imagePullSecrets:
+        - name: triparr-bot-app-template-ghcr-pull-secret
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chrome-cdp-data
+  namespace: triparr-bot
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chrome-cdp
+  namespace: triparr-bot
+  labels:
+    app.kubernetes.io/name: chrome-cdp
+    app.kubernetes.io/part-of: triparr-bot
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: chrome-cdp
+  ports:
+    - name: cdp
+      port: 9222
+      targetPort: 9222
+      protocol: TCP
