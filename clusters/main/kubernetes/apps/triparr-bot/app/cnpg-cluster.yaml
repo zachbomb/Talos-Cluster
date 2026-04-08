@@ -20,7 +20,7 @@ spec:
         - CREATE EXTENSION IF NOT EXISTS "pgcrypto"
         - CREATE EXTENSION IF NOT EXISTS "pg_trgm"
   storage:
-    size: 10Gi
+    size: 80Gi
   resources:
     requests:
       memory: "512Mi"
