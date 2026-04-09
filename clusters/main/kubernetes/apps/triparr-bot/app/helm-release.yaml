@@ -104,6 +104,7 @@ spec:
                 ENABLE_ANA_SCRAPER: "true"
                 BA_CDP_URL: "http://chrome-cdp.triparr-bot.svc.cluster.local:9222"
                 BA_CHROME_PROFILE: "/tmp/ba-profile"
+                FLARESOLVERR_URL: "http://flaresolverr.media.svc.cluster.local:8191"
     credentials:
       s3:
         type: s3
