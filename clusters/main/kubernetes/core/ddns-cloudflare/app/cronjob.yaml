@@ -19,7 +19,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: ddns
-              image: curlimages/curl:8.10.1
+              image: python:3.12-alpine
               imagePullPolicy: IfNotPresent
               envFrom:
                 - secretRef:
@@ -27,51 +27,79 @@ spec:
               resources:
                 requests:
                   cpu: 10m
-                  memory: 16Mi
+                  memory: 32Mi
                 limits:
                   cpu: 100m
-                  memory: 64Mi
+                  memory: 96Mi
               securityContext:
-                runAsUser: 100
-                runAsGroup: 101
+                runAsUser: 65534
+                runAsGroup: 65534
                 runAsNonRoot: true
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
                 capabilities:
                   drop: ["ALL"]
               command:
-                - /bin/sh
+                - python3
                 - -c
                 - |
-                  set -eu
-                  # parse JSON without jq: extract first "content":"..." value
-                  extract_content() {
-                    sed -n 's/.*"content":"\([^"]*\)".*/\1/p' | head -1
-                  }
-                  extract_success() {
-                    sed -n 's/.*"success":\(true\|false\).*/\1/p' | head -1
-                  }
-                  CURRENT_IP=$(curl -fsS https://ifconfig.me 2>/dev/null || curl -fsS https://api.ipify.org)
-                  if [ -z "$CURRENT_IP" ]; then
-                    echo "ERROR: could not determine WAN IP"
-                    exit 1
-                  fi
-                  DNS_IP=$(curl -fsS "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${RECORD_ID}" \
-                    -H "Authorization: Bearer ${CF_TOKEN}" | extract_content)
-                  if [ "$CURRENT_IP" = "$DNS_IP" ]; then
-                    echo "$(date -u +%FT%TZ) ${RECORD_NAME} unchanged at ${CURRENT_IP}"
-                    exit 0
-                  fi
-                  echo "$(date -u +%FT%TZ) ${RECORD_NAME} changed: ${DNS_IP} -> ${CURRENT_IP}"
-                  RESULT=$(curl -fsS -X PATCH \
-                    "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${RECORD_ID}" \
-                    -H "Authorization: Bearer ${CF_TOKEN}" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"content\":\"${CURRENT_IP}\",\"ttl\":300}")
-                  SUCCESS=$(echo "$RESULT" | extract_success)
-                  if [ "$SUCCESS" = "true" ]; then
-                    echo "$(date -u +%FT%TZ) updated ${RECORD_NAME} -> ${CURRENT_IP}"
-                  else
-                    echo "$(date -u +%FT%TZ) ERROR: $RESULT"
-                    exit 1
-                  fi
+                  import os, sys, json, urllib.request, urllib.error
+                  from datetime import datetime
+
+                  cf_token   = os.environ['CF_TOKEN']
+                  zone_id    = os.environ['ZONE_ID']
+                  record_id  = os.environ['RECORD_ID']
+                  record_name = os.environ['RECORD_NAME']
+
+                  def http(url, method='GET', body=None):
+                      data = json.dumps(body).encode() if body else None
+                      req = urllib.request.Request(url, data=data, method=method)
+                      req.add_header('Authorization', f'Bearer {cf_token}')
+                      if body:
+                          req.add_header('Content-Type', 'application/json')
+                      with urllib.request.urlopen(req, timeout=15) as r:
+                          return r.read().decode()
+
+                  def now():
+                      return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+                  current_ip = None
+                  for url in ('https://ifconfig.me/ip', 'https://api.ipify.org', 'https://icanhazip.com'):
+                      try:
+                          with urllib.request.urlopen(url, timeout=10) as r:
+                              current_ip = r.read().decode().strip()
+                              if current_ip: break
+                      except Exception as e:
+                          print(f'{now()} {url} failed: {e}', file=sys.stderr)
+
+                  if not current_ip:
+                      print(f'{now()} ERROR: could not determine WAN IP')
+                      sys.exit(1)
+
+                  try:
+                      resp = http(f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}')
+                      dns_ip = json.loads(resp)['result']['content']
+                  except Exception as e:
+                      print(f'{now()} ERROR: GET CF record failed: {e}')
+                      sys.exit(1)
+
+                  if current_ip == dns_ip:
+                      print(f'{now()} {record_name} unchanged at {current_ip}')
+                      sys.exit(0)
+
+                  print(f'{now()} {record_name} changed: {dns_ip} -> {current_ip}')
+                  try:
+                      resp = http(
+                          f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}',
+                          method='PATCH',
+                          body={'content': current_ip, 'ttl': 300},
+                      )
+                      d = json.loads(resp)
+                      if d.get('success'):
+                          print(f'{now()} updated {record_name} -> {current_ip}')
+                      else:
+                          print(f'{now()} ERROR: CF rejected update: {d}')
+                          sys.exit(1)
+                  except Exception as e:
+                      print(f'{now()} ERROR: PATCH CF record failed: {e}')
+                      sys.exit(1)
