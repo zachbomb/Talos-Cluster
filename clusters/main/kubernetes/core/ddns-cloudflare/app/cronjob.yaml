@@ -14,9 +14,12 @@ spec:
       template:
         spec:
           restartPolicy: OnFailure
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: ddns
-              image: alpine:3.20
+              image: curlimages/curl:8.10.1
               imagePullPolicy: IfNotPresent
               envFrom:
                 - secretRef:
@@ -29,8 +32,8 @@ spec:
                   cpu: 100m
                   memory: 64Mi
               securityContext:
-                runAsUser: 65534
-                runAsGroup: 65534
+                runAsUser: 100
+                runAsGroup: 101
                 runAsNonRoot: true
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
@@ -41,14 +44,20 @@ spec:
                 - -c
                 - |
                   set -eu
-                  apk add --no-cache curl jq >/dev/null 2>&1 || true
+                  # parse JSON without jq: extract first "content":"..." value
+                  extract_content() {
+                    sed -n 's/.*"content":"\([^"]*\)".*/\1/p' | head -1
+                  }
+                  extract_success() {
+                    sed -n 's/.*"success":\(true\|false\).*/\1/p' | head -1
+                  }
                   CURRENT_IP=$(curl -fsS https://ifconfig.me 2>/dev/null || curl -fsS https://api.ipify.org)
                   if [ -z "$CURRENT_IP" ]; then
                     echo "ERROR: could not determine WAN IP"
                     exit 1
                   fi
                   DNS_IP=$(curl -fsS "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${RECORD_ID}" \
-                    -H "Authorization: Bearer ${CF_TOKEN}" | jq -r '.result.content')
+                    -H "Authorization: Bearer ${CF_TOKEN}" | extract_content)
                   if [ "$CURRENT_IP" = "$DNS_IP" ]; then
                     echo "$(date -u +%FT%TZ) ${RECORD_NAME} unchanged at ${CURRENT_IP}"
                     exit 0
@@ -59,7 +68,7 @@ spec:
                     -H "Authorization: Bearer ${CF_TOKEN}" \
                     -H "Content-Type: application/json" \
                     -d "{\"content\":\"${CURRENT_IP}\",\"ttl\":300}")
-                  SUCCESS=$(echo "$RESULT" | jq -r '.success')
+                  SUCCESS=$(echo "$RESULT" | extract_success)
                   if [ "$SUCCESS" = "true" ]; then
                     echo "$(date -u +%FT%TZ) updated ${RECORD_NAME} -> ${CURRENT_IP}"
                   else
