@@ -6,6 +6,7 @@ resources:
   - metallb-config/ks.yaml
   - system-upgrade-controller-plans/ks.yaml
   - cloudflared/ks.yaml
+  - ddns-cloudflare/ks.yaml
   - kyverno-policies/ks.yaml
   - nebula-sync/ks.yaml
   - pihole-k8s/ks.yaml
