@@ -1,3 +1,15 @@
+---
+# ClusterImageCatalog declares (postgres-major → image) so CNPG knows the pg major
+# without parsing the image tag (which starts with pgvector version, not pg version).
+apiVersion: postgresql.cnpg.io/v1
+kind: ClusterImageCatalog
+metadata:
+  name: pgvector
+spec:
+  images:
+    - major: 18
+      image: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
+---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -5,9 +17,11 @@ metadata:
   namespace: goodmem
 spec:
   instances: 1
-  # CNPG-built pgvector image (postgres-extensions-containers). Tag format is
-  # <pgvector-version>-<pg-major>-<debian>. CNPG validates tag must start with a number.
-  imageName: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
+  imageCatalogRef:
+    apiGroup: postgresql.cnpg.io
+    kind: ClusterImageCatalog
+    name: pgvector
+    major: 18
   postgresql:
     parameters:
       shared_buffers: "256MB"
