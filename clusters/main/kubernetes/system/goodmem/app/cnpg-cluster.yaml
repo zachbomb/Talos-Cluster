@@ -5,10 +5,9 @@ metadata:
   namespace: goodmem
 spec:
   instances: 1
-  # pgvector is required for GoodMem's vector store. Official pgvector image works but
-  # lacks CNPG's barman bootstrap helpers — if backups fail, switch to a CNPG-built
-  # pgvector image (e.g., ghcr.io/cloudnative-pg/postgresql-pgvector:17) or build custom.
-  imageName: pgvector/pgvector:pg17
+  # CNPG-built pgvector image (postgres-extensions-containers). Tag format is
+  # <pgvector-version>-<pg-major>-<debian>. CNPG validates tag must start with a number.
+  imageName: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
   postgresql:
     parameters:
       shared_buffers: "256MB"
