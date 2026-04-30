@@ -40,6 +40,7 @@ spec:
             main:
               env:
                 FTLCONF_dns_upstreams: "1.1.1.1;1.0.0.1"
+                FTLCONF_dns_listeningMode: "all"
                 FTLCONF_webserver_api_password: "${PIHOLE_K8S_PASS}"
                 PIHOLE_UID: "0"
                 PIHOLE_GID: "0"
