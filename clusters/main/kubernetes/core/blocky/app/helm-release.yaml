@@ -55,27 +55,48 @@ spec:
     customDNS:
       customTTL: 1h
       filterUnmappedTypes: true
+      rewrite: []
       mapping:
-        sf.wethecommon.com: 192.168.10.196
-        proxy.sf.wethecommon.com: 192.168.10.196
-        traefik.sf.wethecommon.com: 192.168.10.196
-        external.sf.wethecommon.com: 192.168.10.194
-        zachstudio.sf.wethecommon.com: 192.168.10.194
-        traefik-dashboard.local.wethecommon.com: 192.168.10.4
-        pihole.lan: 192.168.10.3
-        pihole-k8s.lan: 192.168.10.244
-        proxmox.lan: 192.168.10.30
-        talos.lan: 192.168.10.89
-        nvr.lan: 192.168.10.100
-        roon.lan: 192.168.10.102
-        truenas.lan: 192.168.10.122
-        homebridge.lan: 192.168.10.190
-        homeassistant.lan: 192.168.10.191
-        altpi.lan: 192.168.10.10
-        appletv-livingroom.lan: 192.168.10.145
-        appletv-guestbedroom.lan: 192.168.10.150
-        zach-desktop.lan: 192.168.10.154
-        dns.lan: 192.168.10.2
+        - domain: sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: proxy.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: traefik.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: external.sf.wethecommon.com
+          dnsserver: 192.168.10.194
+        - domain: zachstudio.sf.wethecommon.com
+          dnsserver: 192.168.10.194
+        - domain: traefik-dashboard.local.wethecommon.com
+          dnsserver: 192.168.10.4
+        - domain: pihole.lan
+          dnsserver: 192.168.10.3
+        - domain: pihole-k8s.lan
+          dnsserver: 192.168.10.244
+        - domain: proxmox.lan
+          dnsserver: 192.168.10.30
+        - domain: talos.lan
+          dnsserver: 192.168.10.89
+        - domain: nvr.lan
+          dnsserver: 192.168.10.100
+        - domain: roon.lan
+          dnsserver: 192.168.10.102
+        - domain: truenas.lan
+          dnsserver: 192.168.10.122
+        - domain: homebridge.lan
+          dnsserver: 192.168.10.190
+        - domain: homeassistant.lan
+          dnsserver: 192.168.10.191
+        - domain: altpi.lan
+          dnsserver: 192.168.10.10
+        - domain: appletv-livingroom.lan
+          dnsserver: 192.168.10.145
+        - domain: appletv-guestbedroom.lan
+          dnsserver: 192.168.10.150
+        - domain: zach-desktop.lan
+          dnsserver: 192.168.10.154
+        - domain: dns.lan
+          dnsserver: 192.168.10.2
     bootstrapDns:
       ips: []
       upstream: "1.1.1.1"
