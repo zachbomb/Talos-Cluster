@@ -61,6 +61,8 @@ spec:
           dnsserver: 192.168.10.196
         - domain: proxy.sf.wethecommon.com
           dnsserver: 192.168.10.196
+        - domain: goodmem.sf.wethecommon.com
+          dnsserver: 192.168.10.196
         - domain: traefik.sf.wethecommon.com
           dnsserver: 192.168.10.196
         - domain: external.sf.wethecommon.com

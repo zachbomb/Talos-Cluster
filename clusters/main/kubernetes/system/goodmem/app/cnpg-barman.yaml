@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: goodmem-db-s3-creds
+  namespace: goodmem
+type: Opaque
+stringData:
+  ACCESS_KEY_ID: ${S3ID}
+  ACCESS_SECRET_KEY: ${S3KEY}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: goodmem-db-daily
+  namespace: goodmem
+spec:
+  schedule: "0 3 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: goodmem-db
+  method: barmanObjectStore
+  target: prefer-standby

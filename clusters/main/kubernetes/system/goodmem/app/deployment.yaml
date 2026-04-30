@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goodmem
+  namespace: goodmem
+  labels:
+    app.kubernetes.io/name: goodmem
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: goodmem
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: goodmem
+    spec:
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: goodmem
+          image: ghcr.io/pair-systems-inc/goodmem/server:latest
+          imagePullPolicy: Always
+          ports:
+            - name: rest
+              containerPort: 8080
+              protocol: TCP
+            - name: grpc
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GOODMEM_REST_PORT
+              value: "8080"
+            - name: GOODMEM_GRPC_PORT
+              value: "9090"
+            - name: GOODMEM_TLS_DISABLED
+              value: "true"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: goodmem-db-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: goodmem-db-app
+                  key: password
+            - name: DB_URL
+              value: jdbc:postgresql://goodmem-db-rw.goodmem.svc.cluster.local:5432/goodmem?sslmode=disable
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /v1/system/info
+              port: rest
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /v1/system/info
+              port: rest
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 3

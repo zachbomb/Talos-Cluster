@@ -4,6 +4,7 @@ resources:
   - alloy/ks.yaml
   - cert-manager/ks.yaml
   - cloudnative-pg/ks.yaml
+  - goodmem/ks.yaml
   - dcgm-exporter/ks.yaml
   - graphite-exporter/ks.yaml
   - kube-prometheus-stack/ks.yaml

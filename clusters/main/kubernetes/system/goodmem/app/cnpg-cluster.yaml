@@ -1,0 +1,54 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: goodmem-db
+  namespace: goodmem
+spec:
+  instances: 1
+  # pgvector is required for GoodMem's vector store. Official pgvector image works but
+  # lacks CNPG's barman bootstrap helpers — if backups fail, switch to a CNPG-built
+  # pgvector image (e.g., ghcr.io/cloudnative-pg/postgresql-pgvector:17) or build custom.
+  imageName: pgvector/pgvector:pg17
+  postgresql:
+    parameters:
+      shared_buffers: "256MB"
+      effective_cache_size: "768MB"
+      max_connections: "100"
+    pg_hba:
+      - host all all 10.0.0.0/8 md5
+      - host all all 172.16.0.0/16 md5
+  bootstrap:
+    initdb:
+      database: goodmem
+      owner: goodmem_user
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS "vector"
+        - CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+        - CREATE EXTENSION IF NOT EXISTS "pgcrypto"
+  storage:
+    size: 10Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://cnpg-goodmem/
+      endpointURL: ${S3URL}
+      s3Credentials:
+        accessKeyId:
+          name: goodmem-db-s3-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: goodmem-db-s3-creds
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: "30d"
+  monitoring:
+    enablePodMonitor: false

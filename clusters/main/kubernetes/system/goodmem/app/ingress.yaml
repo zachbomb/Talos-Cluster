@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: goodmem
+  namespace: goodmem
+  annotations:
+    cert-manager.io/cluster-issuer: wethecommon-prod-cert
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-secure-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: System
+    gethomepage.dev/name: GoodMem
+    gethomepage.dev/icon: mdi-brain
+    gethomepage.dev/href: https://goodmem.${BASE_DOMAIN}
+    gethomepage.dev/description: "Memory / RAG infrastructure"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - goodmem.${BASE_DOMAIN}
+      secretName: goodmem-tls-0
+  rules:
+    - host: goodmem.${BASE_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: goodmem
+                port:
+                  name: rest

@@ -19,3 +19,4 @@ mounts/*.backup.yaml
 current-ip-assignments.txt
 .decrypted~*
 .mcp.json
+.remember/
