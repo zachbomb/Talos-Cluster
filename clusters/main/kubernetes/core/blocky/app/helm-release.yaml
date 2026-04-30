@@ -52,6 +52,30 @@ spec:
             domain: dns01.clouddns.com
     defaultUpstreams:
       - "https://1.1.1.1/dns-query"
+    customDNS:
+      customTTL: 1h
+      filterUnmappedTypes: true
+      mapping:
+        sf.wethecommon.com: 192.168.10.196
+        proxy.sf.wethecommon.com: 192.168.10.196
+        traefik.sf.wethecommon.com: 192.168.10.196
+        external.sf.wethecommon.com: 192.168.10.194
+        zachstudio.sf.wethecommon.com: 192.168.10.194
+        traefik-dashboard.local.wethecommon.com: 192.168.10.4
+        pihole.lan: 192.168.10.3
+        pihole-k8s.lan: 192.168.10.244
+        proxmox.lan: 192.168.10.30
+        talos.lan: 192.168.10.89
+        nvr.lan: 192.168.10.100
+        roon.lan: 192.168.10.102
+        truenas.lan: 192.168.10.122
+        homebridge.lan: 192.168.10.190
+        homeassistant.lan: 192.168.10.191
+        altpi.lan: 192.168.10.10
+        appletv-livingroom.lan: 192.168.10.145
+        appletv-guestbedroom.lan: 192.168.10.150
+        zach-desktop.lan: 192.168.10.154
+        dns.lan: 192.168.10.2
     bootstrapDns:
       ips: []
       upstream: "1.1.1.1"
