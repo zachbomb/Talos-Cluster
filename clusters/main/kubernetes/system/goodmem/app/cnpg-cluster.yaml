@@ -1,15 +1,3 @@
----
-# ClusterImageCatalog declares (postgres-major → image) so CNPG knows the pg major
-# without parsing the image tag (which starts with pgvector version, not pg version).
-apiVersion: postgresql.cnpg.io/v1
-kind: ClusterImageCatalog
-metadata:
-  name: pgvector
-spec:
-  images:
-    - major: 18
-      image: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
----
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -17,11 +5,9 @@ metadata:
   namespace: goodmem
 spec:
   instances: 1
-  imageCatalogRef:
-    apiGroup: postgresql.cnpg.io
-    kind: ClusterImageCatalog
-    name: pgvector
-    major: 18
+  # Tensorchord's CNPG operand image — postgres 17 + pgvector + vchord baked in.
+  # Same vendor used by media/immich-cnpg-main, so it's proven in this cluster.
+  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:17-1.1.1
   postgresql:
     parameters:
       shared_buffers: "256MB"
