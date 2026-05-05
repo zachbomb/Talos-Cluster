@@ -40,6 +40,11 @@ spec:
       type: LoadBalancer
       annotations:
         metallb.io/loadBalancerIPs: ${TRAEFIK_IP}
+        # PROXY protocol header forwards real client IP from MetalLB to Traefik.
+        # Pairs with `proxyProtocol.trustedIPs` on the websecure entrypoint below.
+        # Without this, LAN client IPs are SNAT'd to node IPs by kube-proxy
+        # (externalTrafficPolicy=Cluster) and become invisible to allowlist middleware.
+        metallb.io/use-proxy-protocol: "true"
       spec:
         externalTrafficPolicy: Cluster
 
@@ -92,6 +97,21 @@ spec:
         expose:
           default: true
         exposedPort: 443
+        # Trust X-Forwarded-For/CF-Connecting-IP from cloudflared pod IPs and
+        # node IPs so middleware (CrowdSec bouncer, IP allowlists) can see the
+        # real client IP for tunneled traffic.
+        forwardedHeaders:
+          trustedIPs:
+            - 172.16.0.0/16    # pod CIDR (cloudflared)
+            - 172.17.0.0/16    # service CIDR
+            - 192.168.10.0/24  # LAN (Traefik node, MetalLB)
+        # Accept PROXY protocol from MetalLB so LAN client IPs are preserved
+        # past kube-proxy's SNAT.
+        proxyProtocol:
+          trustedIPs:
+            - 172.16.0.0/16
+            - 172.17.0.0/16
+            - 192.168.10.0/24
         http:
           tls:
             enabled: true

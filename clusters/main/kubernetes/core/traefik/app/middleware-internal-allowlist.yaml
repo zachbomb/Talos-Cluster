@@ -1,0 +1,24 @@
+---
+# IP allowlist for internal-only services.
+# Excludes pod/service CIDRs (172.16/16, 172.17/16) so cloudflared-tunneled
+# traffic can't impersonate "local" — only LAN/VPN/Travel client IPs pass.
+#
+# Requires Traefik forwardedHeaders.trustedIPs + proxyProtocol.trustedIPs
+# to actually see the real client IP. Without those, this middleware
+# evaluates against the SNAT'd source IP which would be wrong.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: internal-allowlist
+  namespace: traefik
+spec:
+  ipAllowList:
+    sourceRange:
+      - 192.168.10.0/24   # LAN
+      - 192.168.20.0/24   # other VLAN
+      - 192.168.30.0/24   # IoT (allow if you want admin UIs reachable from there)
+      - 192.168.3.0/24    # WireGuard VPN
+      - 192.168.8.0/24    # Travel
+      - 192.168.9.0/24    # Travel
+    ipStrategy:
+      depth: 1            # take last entry of X-Forwarded-For (real client per cloudflared)

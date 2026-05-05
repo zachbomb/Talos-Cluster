@@ -6,4 +6,6 @@ resources:
   - middleware-bouncer.yaml
   - middleware-local-whitelist.yaml
   - middleware-secure-chain.yaml
+  - middleware-internal-allowlist.yaml
+  - middleware-internal-secure-chain.yaml
   - tls-options.yaml

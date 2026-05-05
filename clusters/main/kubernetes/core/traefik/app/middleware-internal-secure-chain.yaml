@@ -1,0 +1,16 @@
+---
+# Internal-services chain: CrowdSec bouncer (ban-list defense) + LAN/VPN allowlist.
+# Use on every Internal service ingress (admin UIs, *arr, dev tools, dashboards).
+# Public services should use `secure-chain` (existing) or a future `public-chain`.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: internal-secure-chain
+  namespace: traefik
+spec:
+  chain:
+    middlewares:
+      - name: bouncer
+        namespace: traefik
+      - name: internal-allowlist
+        namespace: traefik
