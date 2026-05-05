@@ -116,7 +116,7 @@ data:
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "decimals": 3,
           "fieldConfig": {
@@ -173,7 +173,7 @@ data:
               "alias": "Solar Produktion",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -223,7 +223,7 @@ data:
               "alias": "Strom Verbrauch",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -312,7 +312,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "fieldConfig": {
             "defaults": {
@@ -369,7 +369,7 @@ data:
             {
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -419,7 +419,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "description": "",
           "fieldConfig": {
@@ -487,7 +487,7 @@ data:
               "alias": "Exported Energy",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -538,7 +538,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "description": "",
           "fieldConfig": {
@@ -595,7 +595,7 @@ data:
               "alias": "Solar Produktion",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -642,7 +642,7 @@ data:
               "alias": "Stromverbrauch",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -694,7 +694,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "$${DS_INFLUXDB}"
           },
           "gridPos": {
             "h": 3,
@@ -742,7 +742,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "fieldConfig": {
             "defaults": {
@@ -826,7 +826,7 @@ data:
               "alias": "Datum",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -872,7 +872,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_INFLUXDB}"
+            "uid": "$${DS_INFLUXDB}"
           },
           "description": "",
           "gridPos": {
@@ -899,7 +899,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "description": "",
           "fieldConfig": {
@@ -968,7 +968,7 @@ data:
             {
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [],
               "measurement": "kWh",
@@ -1005,7 +1005,7 @@ data:
             {
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -1055,7 +1055,7 @@ data:
         {
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "description": "",
           "fieldConfig": {
@@ -1101,7 +1101,7 @@ data:
               "alias": "Exported Energy",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
@@ -1156,7 +1156,7 @@ data:
           "dashes": false,
           "datasource": {
             "type": "influxdb",
-            "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+            "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
           },
           "decimals": 3,
           "fieldConfig": {
@@ -1213,7 +1213,7 @@ data:
               "alias": "Inverter Power",
               "datasource": {
                 "type": "influxdb",
-                "uid": "${DS_HOMEASSISTENT-INFLUXDB}"
+                "uid": "$${DS_HOMEASSISTENT-INFLUXDB}"
               },
               "groupBy": [
                 {
