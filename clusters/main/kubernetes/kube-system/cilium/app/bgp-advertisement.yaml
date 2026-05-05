@@ -13,6 +13,5 @@ spec:
         addresses:
           - LoadBalancerIP
       selector:
-        matchExpressions:
-          - key: kubernetes.io/service-name
-            operator: Exists
+        matchLabels:
+          app.kubernetes.io/managed-by: Helm
