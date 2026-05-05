@@ -30,20 +30,21 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    L2Advertisements:
-      - name: main
-        addressPools:
-          - main
+    # L2Advertisements removed 2026-05-05 (U5 cutover). Cilium BGP now
+    # advertises every active LB IP as /32 to UDM-SE; UDM has
+    # proxy_arp_pvlan=1 on br0, so it answers ARP for those /32s for
+    # same-subnet LAN clients. See:
+    #   docs/network/udm-se-bgp.md
+    #   docs/network/udm-se/15-cluster-bgp.sh (UDM persistence)
     ipAddressPools:
       - name: main
         autoAssign: false
         avoidBuggyIPs: true
         addresses:
           - ${METALLB_RANGE}
-      # BGP-only pool — IPs assigned from this pool are NOT L2-announced
-      # (no L2Advertisement references it); they're only reachable via
-      # Cilium BGP advertisement to UDM-SE. Used for the BGP cutover
-      # pilot (U4) and any service we want exclusively on BGP.
+      # BGP-only pilot pool — keeps .192 reserved for future "BGP-only
+      # by intention" experiments. Functionally identical to main now
+      # that L2Advertisements are gone, but kept as a marker.
       - name: bgp-pilot
         autoAssign: false
         avoidBuggyIPs: false
