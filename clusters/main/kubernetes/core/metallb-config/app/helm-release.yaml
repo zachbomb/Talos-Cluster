@@ -40,3 +40,12 @@ spec:
         avoidBuggyIPs: true
         addresses:
           - ${METALLB_RANGE}
+      # BGP-only pool — IPs assigned from this pool are NOT L2-announced
+      # (no L2Advertisement references it); they're only reachable via
+      # Cilium BGP advertisement to UDM-SE. Used for the BGP cutover
+      # pilot (U4) and any service we want exclusively on BGP.
+      - name: bgp-pilot
+        autoAssign: false
+        avoidBuggyIPs: false
+        addresses:
+          - 192.168.10.192/32
