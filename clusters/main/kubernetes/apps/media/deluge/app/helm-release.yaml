@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: deluge
-      # renovate: datasource=helm depName=deluge repository=oci://oci.trueforge.org/truecharts
+      # renovate: datasource=helm depName=deluge registryUrl=oci://oci.trueforge.org/truecharts
       version: 22.2.0
       sourceRef:
         kind: HelmRepository
