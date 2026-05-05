@@ -1,0 +1,19 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/cilium.io/ciliumbgpclusterconfig_v2.json
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: udm-bgp
+spec:
+  nodeSelector:
+    matchLabels:
+      kubernetes.io/hostname: k8s-control-1
+  bgpInstances:
+    - name: instance-64512
+      localASN: 64512
+      peers:
+        - name: udm-se
+          peerASN: 64513
+          peerAddress: 192.168.10.1
+          peerConfigRef:
+            name: udm-se
