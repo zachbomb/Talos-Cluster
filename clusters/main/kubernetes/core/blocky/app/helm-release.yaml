@@ -65,6 +65,77 @@ spec:
           dnsserver: 192.168.10.196
         - domain: traefik.sf.wethecommon.com
           dnsserver: 192.168.10.196
+        # Internal-only services (lockdown plan 2026-05-05) — LAN/VPN reaches Traefik directly
+        - domain: pihole.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: pihole-k8s.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: proxmox.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: truenas.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: minio.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: longhorn.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: grafana.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: uptime.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: homepage.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: code.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: sonarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: radarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: lidarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: lidarr-flac.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: lidarr-liz.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: readarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: bazarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: prowlarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: kapowarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: mylar.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: sabnzbd.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: nzbget.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: deluge.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tunarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tunarr-code.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: dizquetv.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tdarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tinymediamanager.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: doplarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: notifiarr-code.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: sabnzbd-code.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tautulli-code.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: homepage-code.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: n8n.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: ollama.sf.wethecommon.com
+          dnsserver: 192.168.10.196
         - domain: external.sf.wethecommon.com
           dnsserver: 192.168.10.194
         - domain: zachstudio.sf.wethecommon.com
