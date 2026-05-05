@@ -57,6 +57,9 @@ spec:
               seccompProfile:
                 type: RuntimeDefault
     defaultPodOptions:
+      # bjw-s common v5 defaults this to false for security; system-upgrade-controller
+      # explicitly needs the K8s API token to manage Plan/Job CRs.
+      automountServiceAccountToken: true
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
