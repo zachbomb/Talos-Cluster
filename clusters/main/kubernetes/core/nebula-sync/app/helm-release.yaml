@@ -37,7 +37,14 @@ spec:
                 REPLICAS: "http://pihole-k8s.networking.svc:9089|${PIHOLE_K8S_PASS}"
                 CRON: "*/15 * * * *"
                 CLIENT_SKIP_TLS_VERIFICATION: "true"
-                SYNC_CONFIG_DNS: "true"
+                # SYNC_CONFIG_* all false: nebula-sync ≤0.11.2 sends PATCH
+                # /api/config without the {"config":{...}} wrapper that
+                # Pi-hole v6.4+ requires, AND Pi-hole rejects items set via
+                # ENV vars. Track upstream issue:
+                # https://github.com/lovelaze/nebula-sync/issues/163
+                # We don't need cross-Pi-hole DNS config mirroring anyway —
+                # cluster DNS state is managed via Blocky helm-release.
+                SYNC_CONFIG_DNS: "false"
                 SYNC_CONFIG_DHCP: "false"
                 SYNC_CONFIG_NTP: "false"
                 SYNC_CONFIG_RESOLVER: "false"
