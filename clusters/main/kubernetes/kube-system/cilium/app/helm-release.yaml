@@ -91,3 +91,13 @@ spec:
     rollOutCiliumPods: true
     bgpControlPlane:
       enabled: true
+    l2announcements:
+      enabled: true
+      leaseDuration: 15s
+      leaseRenewDeadline: 5s
+      leaseRetryPeriod: 2s
+    k8sClientRateLimit:
+      qps: 50
+      burst: 100
+    externalIPs:
+      enabled: true
