@@ -122,8 +122,6 @@ spec:
           dnsserver: 192.168.10.196
         - domain: tinymediamanager.sf.wethecommon.com
           dnsserver: 192.168.10.196
-        - domain: doplarr.sf.wethecommon.com
-          dnsserver: 192.168.10.196
         - domain: notifiarr-code.sf.wethecommon.com
           dnsserver: 192.168.10.196
         - domain: sabnzbd-code.sf.wethecommon.com
