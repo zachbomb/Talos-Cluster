@@ -67,7 +67,7 @@ data:
       "panels": [
         {
           "collapsed": false,
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "gridPos": {
             "h": 1,
             "w": 24,
@@ -80,7 +80,7 @@ data:
           "type": "row"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -144,7 +144,7 @@ data:
           "type": "stat"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -206,7 +206,7 @@ data:
           "type": "stat"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -268,7 +268,7 @@ data:
           "type": "stat"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -337,7 +337,7 @@ data:
         },
         {
           "collapsed": false,
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "gridPos": {
             "h": 1,
             "w": 24,
@@ -350,7 +350,7 @@ data:
           "type": "row"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "description": "",
           "fieldConfig": {
             "defaults": {
@@ -414,7 +414,7 @@ data:
             "label": "Others",
             "threshold": 0
           },
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -458,7 +458,7 @@ data:
           "valueName": "current"
         },
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": "$${DS_PROMETHEUS}",
           "description": "",
           "fieldConfig": {
             "defaults": {
