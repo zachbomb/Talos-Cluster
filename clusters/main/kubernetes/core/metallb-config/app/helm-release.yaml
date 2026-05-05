@@ -30,12 +30,21 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    # L2Advertisements removed 2026-05-05 (U5 cutover). Cilium BGP now
-    # advertises every active LB IP as /32 to UDM-SE; UDM has
-    # proxy_arp_pvlan=1 on br0, so it answers ARP for those /32s for
-    # same-subnet LAN clients. See:
-    #   docs/network/udm-se-bgp.md
-    #   docs/network/udm-se/15-cluster-bgp.sh (UDM persistence)
+    # L2Advertisements RESTORED 2026-05-05 after Proxmox host reboot
+    # exposed the proxy_arp_pvlan architecture flaw: Linux's proxy ARP
+    # is all-or-nothing — with pvlan=1, UDM answered ARP for ALL IPs it
+    # had routes to (including the cluster node .89 and VIP .167),
+    # which intercepted control-plane traffic. With pvlan=0, BGP-only
+    # LB IPs are unreachable from same-subnet LAN clients.
+    #
+    # Proper fix (TODO): Cilium L2 Announcements — node answers ARP via
+    # eBPF, integrates cleanly with kubeProxyReplacement+BGP.
+    # Until then: BGP advertisement remains active for off-subnet
+    # visibility, MetalLB L2 handles same-subnet ARP.
+    L2Advertisements:
+      - name: main
+        addressPools:
+          - main
     ipAddressPools:
       - name: main
         autoAssign: false
