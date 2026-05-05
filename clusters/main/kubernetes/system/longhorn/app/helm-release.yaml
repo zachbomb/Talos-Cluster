@@ -48,7 +48,9 @@ spec:
     service:
       ui:
         type: LoadBalancer
-        loadBalancerIP: ${LONGHORN_IP}
+        # MetalLB v0.13+ rejects setting both spec.loadBalancerIP AND the
+        # annotation. spec.loadBalancerIP is deprecated in K8s 1.24+;
+        # annotation-only is the modern pattern for upstream charts.
         annotations:
           metallb.io/loadBalancerIPs: ${LONGHORN_IP}
         port: 80
