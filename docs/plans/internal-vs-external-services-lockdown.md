@@ -119,6 +119,27 @@ spec:
         namespace: traefik
 ```
 
+## Execution log (2026-05-05)
+
+- ✅ **Phase 1 — DNS lockdown applied.** 35 internal services in Pi-hole `.3`, Blocky customDNS, and Cloudflare records converted from proxied CNAME → unproxied A → 192.168.10.196. n8n.sf added (was missing). Verified split-horizon: LAN/VPN routes to Traefik, public DNS returns unrouteable IP.
+- ✅ **Phase 2 — forwardedHeaders.** Traefik now trusts X-Forwarded-For from cloudflared pod CIDR + LAN; CrowdSec sees real external IPs for tunnel traffic.
+- ❌ **proxyProtocol attempted, reverted.** MetalLB L2 mode + Cilium kubeProxyReplacement doesn't reliably inject PROXY headers. Enforcing it broke all LAN HTTPS. Reverted to forwardedHeaders-only.
+- ⏸ **Phase 3 — IP allowlist deferred to BGP migration.** Without preserving real LAN client IPs (currently SNAT'd to 172.16.x.x), per-app IP allowlists either (a) include 172.16/16 and admit cloudflared too, or (b) exclude it and block LAN. The clean fix is MetalLB BGP mode; that's its own project.
+- ✅ **VPN DNS pushed updated.** UDM Travel Portal `dhcpd_dns_1` changed from `192.168.3.1` (UDM gateway) → `192.168.10.2` (HA VIP). VPN clients now resolve internal hostnames via Pi-hole. *Existing peers must regenerate their `.conf` to get the new DNS line.*
+- ✅ **Cloudflare tunnel ingress allowlist.** Replaced wildcard `*sf.wethecommon.com` rule with 22 explicit Public hostnames + apex + 404 catch-all. Tunnel version 23. Internal hostnames hitting the tunnel get 404; only listed Public services forward to Traefik.
+- 🟡 **Cloudflare Access setup in progress.** GitHub IDP for `tools`, `search`, `pdf`, `paperless`. Allowlist: GitHub username `zachbomb` only. Awaiting team name + new token + GitHub OAuth credentials.
+
+## Final defense-in-depth state per service
+
+| Defense layer | Internal services | Public services |
+|---|---|---|
+| Cloudflare DNS | A 192.168.10.196 unproxied (private IP) | CNAME wethecommon.com proxied |
+| Cloudflare edge | 403 (no proxy route) | Forwards to tunnel |
+| Cloudflared tunnel | 404 (catch-all) | Forwards to Traefik (22 explicit hosts) |
+| Cloudflare Access (planned) | n/a | Auth wall on tools/search/pdf/paperless |
+| Traefik | CrowdSec bouncer (global, real-IP via XFF) | Same |
+| Local DNS (Pi-hole + Blocky) | A 192.168.10.196 (LAN/VPN access) | A 192.168.10.196 (LAN bypass) |
+
 ## Open issues / gotchas
 
 - **MetalLB + externalTrafficPolicy=Cluster** SNATs LAN traffic to node IPs.

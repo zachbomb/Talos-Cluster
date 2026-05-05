@@ -136,6 +136,49 @@ spec:
           dnsserver: 192.168.10.196
         - domain: ollama.sf.wethecommon.com
           dnsserver: 192.168.10.196
+        # Public services — also resolved locally so LAN/VPN clients bypass
+        # the Cloudflare path (and any Access auth wall). External clients
+        # still go through Cloudflare proxy → tunnel.
+        - domain: plex.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: emby.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: overseerr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: photos.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: roon.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tautulli.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: notifiarr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: calibre.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: calibre-web.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: cwa.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: shelfmark.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: homeassistant.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: homebridge.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tandoor.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: tools.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: search.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: paperless.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: pdf.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: flux-webhook.sf.wethecommon.com
+          dnsserver: 192.168.10.196
+        - domain: triparr.sf.wethecommon.com
+          dnsserver: 192.168.10.196
         - domain: external.sf.wethecommon.com
           dnsserver: 192.168.10.194
         - domain: zachstudio.sf.wethecommon.com
