@@ -20,16 +20,12 @@ spec:
       - 192.168.3.0/24    # WireGuard VPN
       - 192.168.8.0/24    # Travel
       - 192.168.9.0/24    # Travel
-    ipStrategy:
-      # excludedIPs strips known proxy hops (cloudflared pod CIDR) from the
-      # XFF chain, then evaluates the next IP up. For direct LAN clients
-      # with no XFF header, Traefik falls back to the connection's remote
-      # address (the real client IP). This handles both:
-      #   - Direct LAN: no XFF → uses RemoteAddr (e.g. 192.168.10.154) ✓
-      #   - Cloudflare tunnel: XFF=<ext>,172.16.0.62 → excludes pod IP →
-      #     evaluates <ext> (will be rejected unless in 192.168.x.x) ✓
-      # depth: 1 alone failed for LAN clients — Traefik uses XFF only when
-      # the field is set, and direct connections don't set it.
-      excludedIPs:
-        - 172.16.0.0/16   # pod CIDR (cloudflared, all in-cluster intermediaries)
-        - 172.17.0.0/16   # service CIDR
+    # No ipStrategy — Traefik defaults to RemoteAddr, which is correct for:
+    #   - Direct LAN/VPN clients: RemoteAddr = real client IP (Cilium L2 +
+    #     kubeProxyReplacement preserves source on single-node) → matched
+    #     against sourceRange.
+    #   - Cloudflare tunnel clients: RemoteAddr = cloudflared pod IP
+    #     (172.16.0.62) which is NOT in any sourceRange entry → 403,
+    #     correctly rejecting external traffic for internal-only services.
+    # ipStrategy.depth: N requires XFF to be set (fails on direct LAN).
+    # ipStrategy.excludedIPs filters XFF only, doesn't fall back to RemoteAddr.
