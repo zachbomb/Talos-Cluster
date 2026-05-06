@@ -44,7 +44,7 @@ spec:
       annotations:
         cert-manager.io/cluster-issuer: wethecommon-prod-cert
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
-        traefik.ingress.kubernetes.io/router.middlewares: traefik-secure-chain@kubernetescrd
+        traefik.ingress.kubernetes.io/router.middlewares: traefik-internal-secure-chain@kubernetescrd
       hosts:
         - host: n8n.${BASE_DOMAIN}
           paths:

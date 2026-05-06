@@ -5,9 +5,11 @@ metadata:
   namespace: longhorn-system
   annotations:
     cert-manager.io/cluster-issuer: wethecommon-prod-cert
-    nginx.ingress.kubernetes.io/auth-method: "GET"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-internal-secure-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
+  ingressClassName: traefik
   rules:
     - host: longhorn.${BASE_DOMAIN}
       http:

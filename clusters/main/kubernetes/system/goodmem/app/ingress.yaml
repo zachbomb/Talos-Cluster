@@ -6,7 +6,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: wethecommon-prod-cert
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.middlewares: traefik-secure-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-internal-secure-chain@kubernetescrd
     traefik.ingress.kubernetes.io/router.tls: "true"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/group: System
