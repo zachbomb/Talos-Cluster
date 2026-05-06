@@ -21,4 +21,15 @@ spec:
       - 192.168.8.0/24    # Travel
       - 192.168.9.0/24    # Travel
     ipStrategy:
-      depth: 1            # take last entry of X-Forwarded-For (real client per cloudflared)
+      # excludedIPs strips known proxy hops (cloudflared pod CIDR) from the
+      # XFF chain, then evaluates the next IP up. For direct LAN clients
+      # with no XFF header, Traefik falls back to the connection's remote
+      # address (the real client IP). This handles both:
+      #   - Direct LAN: no XFF → uses RemoteAddr (e.g. 192.168.10.154) ✓
+      #   - Cloudflare tunnel: XFF=<ext>,172.16.0.62 → excludes pod IP →
+      #     evaluates <ext> (will be rejected unless in 192.168.x.x) ✓
+      # depth: 1 alone failed for LAN clients — Traefik uses XFF only when
+      # the field is set, and direct connections don't set it.
+      excludedIPs:
+        - 172.16.0.0/16   # pod CIDR (cloudflared, all in-cluster intermediaries)
+        - 172.17.0.0/16   # service CIDR
