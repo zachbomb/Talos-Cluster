@@ -49,6 +49,10 @@ spec:
     ingress:
       main:
         enabled: true
+        annotations:
+          # Override TrueCharts default tc-basic-secure-headers with the
+          # internal-secure-chain (bouncer + internal-allowlist).
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-internal-secure-chain@kubernetescrd
         hosts:
           - host: uptime.${BASE_DOMAIN}
             paths:
@@ -62,9 +66,6 @@ spec:
             enabled: true
             entrypoints:
               - websecure
-            middlewares:
-              - name: internal-secure-chain
-                namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
