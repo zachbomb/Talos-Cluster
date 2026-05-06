@@ -55,6 +55,10 @@ spec:
             enabled: true
             entrypoints:
               - websecure
+            middlewares:
+              - name: internal-secure-chain
+                namespace: traefik
+                expandObjectName: false
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
