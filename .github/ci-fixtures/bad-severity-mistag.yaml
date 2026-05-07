@@ -1,0 +1,24 @@
+# Negative fixture for the prometheus-rules-ci CI guard.
+#
+# Deliberately mis-tagged severity ("warn" instead of "warning"). The CI guard
+# MUST fail when this fixture is validated. If the guard passes this file, the
+# severity-enum check has regressed.
+#
+# Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U8)
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: bad-severity-mistag
+  namespace: kube-prometheus-stack
+spec:
+  groups:
+    - name: bad
+      rules:
+        - alert: SomethingBroke
+          expr: vector(1)
+          for: 1m
+          labels:
+            severity: warn  # WRONG: must be one of {critical, warning, info}
+          annotations:
+            summary: this should fail CI

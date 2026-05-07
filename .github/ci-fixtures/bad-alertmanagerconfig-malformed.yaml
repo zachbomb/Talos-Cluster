@@ -1,0 +1,18 @@
+# Negative fixture for the prometheus-rules-ci CI guard.
+#
+# Malformed `route.matchers` field — string instead of array. kubeconform MUST
+# reject this against the prometheus-operator AlertmanagerConfig CRD schema.
+#
+# Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U8)
+
+apiVersion: monitoring.coreos.com/v1beta1
+kind: AlertmanagerConfig
+metadata:
+  name: bad-malformed
+  namespace: kube-prometheus-stack
+spec:
+  route:
+    receiver: "null"
+    matchers: "severity=critical"  # WRONG: must be an array of MatcherSpec objects
+  receivers:
+    - name: "null"
