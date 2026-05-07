@@ -1,0 +1,17 @@
+---
+# Traefik Middleware for the Discord callback endpoint.
+#
+# CrowdSec bouncer ONLY — NOT chained with local-whitelist. Discord's
+# servers POST from public-internet IPs and must NOT be IP-allowlisted at
+# the Traefik layer. Cloudflare WAF + R8 Ed25519 signature verify in the
+# receiver are the layered defenses (per origin R11).
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: discord-callback-chain
+  namespace: alert-remediation
+spec:
+  chain:
+    middlewares:
+      - name: bouncer
+        namespace: traefik

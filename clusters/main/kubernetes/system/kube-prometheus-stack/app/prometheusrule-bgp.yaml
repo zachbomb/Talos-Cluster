@@ -1,0 +1,88 @@
+---
+# BGP session-state PrometheusRule + flap-classification companion rule.
+#
+# Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U9, U10)
+# Origin: docs/brainstorms/2026-05-07-cluster-alerting-hitl-requirements.md (R4, R5)
+#
+# The flap-classification recording rule uses the canonical PromQL form pinned
+# in origin R4: sum_over_time(changes(ALERTS{alertstate="firing"}[1m])[30m:1m]).
+# The naive changes(ALERTS_FOR_STATE{...}[30m]) form is broken because
+# ALERTS_FOR_STATE disappears on resolve rather than transitioning, causing
+# changes() to under-count flap cycles.
+#
+# AlertmanagerConfig (alertmanagerconfig.yaml) routes alerts with
+# bgp_flap_active="true" through the warning channel instead of critical
+# (severity demotion).
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cilium-bgp
+  namespace: kube-prometheus-stack
+spec:
+  groups:
+    # Flap classification recording rule (U10) — defined first because the
+    # alerting rule below references it. Records bgp_flap_active=1 when the
+    # underlying condition has flapped 4+ times in 30min.
+    - name: cilium-bgp-flap
+      interval: 1m
+      rules:
+        # No `labels:` block — see suppression note below. The recording rule
+        # emits a single label-less indicator (1 when flapping, otherwise the
+        # series is absent because of the `>= 4` threshold).
+        - record: bgp_flap_active
+          expr: |
+            (sum_over_time(
+              changes(ALERTS{alertname="BGPSessionDown",alertstate="firing"}[1m])[30m:1m]
+            ) >= 4) * 1
+
+    - name: cilium-bgp
+      interval: 30s
+      rules:
+        # POC critical alert per origin R5. Suppressed via `unless on()` when
+        # the flap recording rule is active, so BGPSessionFlapping (warning)
+        # takes over instead. Pattern: same condition, two alert rules,
+        # mutually exclusive via PromQL set-cardinality `unless`.
+        #
+        # Note on `unless on()`: empty matching set means "suppress LHS if ANY
+        # row exists on RHS". The naive `unless on(alertname)` form is broken
+        # because the LHS metric (cilium_bgp_control_plane_session_state) has
+        # no `alertname` label — the join would never match and demotion
+        # would silently fail. The label-less recording rule (above) plus
+        # `unless on()` is the correct shape for a single-alert demotion.
+        - alert: BGPSessionDown
+          expr: |
+            (cilium_bgp_control_plane_session_state{neighbor="192.168.10.1:179"} != 1)
+            unless on() (bgp_flap_active == 1)
+          for: 60s
+          labels:
+            severity: critical
+            remediation: bgp-recovery
+          annotations:
+            summary: Cilium BGP session to UDM-SE is non-Established
+            description: |
+              cilium_bgp_control_plane_session_state for neighbor 192.168.10.1:179
+              has been != 1 (Established) for 60s+. LB IPs in 192.168.10.192/26
+              may not be reachable from outside the cluster. Layer 1 (UDM cron
+              healthcheck at /etc/cron.d/cluster-bgp-healthcheck) self-heals
+              within ≈5min; if it doesn't, click Approve to invoke the
+              bgp-recovery playbook (re-runs /data/on_boot.d/15-cluster-bgp.sh
+              over SSH).
+
+        # Flapping variant: fires when flap recording rule is active, demoting
+        # severity from critical to warning. Routes through Notifiarr instead
+        # of Discord-direct, preventing alert fatigue during rapid flap.
+        - alert: BGPSessionFlapping
+          expr: bgp_flap_active == 1
+          for: 0s
+          labels:
+            severity: warning
+            alertname_source: BGPSessionDown
+          annotations:
+            summary: Cilium BGP session to UDM-SE is flapping
+            description: |
+              BGP session state has transitioned firing↔resolved 4+ times within
+              the last 30 minutes. Demoting severity to warning to prevent alert
+              fatigue. Investigate root cause (UDM-side route flap, cable issue,
+              transient L2 problem). Original critical alert (BGPSessionDown) is
+              suppressed via PromQL `unless` while flap is active.

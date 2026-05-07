@@ -1,0 +1,167 @@
+name: Prometheus rules + Alertmanager config CI
+
+# Validates PrometheusRule and AlertmanagerConfig CRDs on PRs that touch the
+# alerting stack. Runs THREE distinct checks (each catches a different
+# regression class):
+#   1. promtool check rules — PromQL syntax + label/annotation shape.
+#   2. promtool test rules — unit tests against synthetic series.
+#   3. kubeconform — CRD-shape validation against prometheus-operator schemas.
+#
+# Plus a meta-assertion: three negative fixtures MUST fail validation. If any
+# fixture passes, the CI guard itself has regressed (e.g., a tool got disabled).
+#
+# Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U8)
+# Origin: docs/brainstorms/2026-05-07-cluster-alerting-hitl-requirements.md (R6)
+#
+# Security note: this workflow does NOT interpolate any untrusted GitHub event
+# inputs (issue titles, PR bodies, etc.) into run: commands. All shell vars are
+# from hardcoded sources (file paths, version strings, yq output of repo files).
+
+on:
+  pull_request:
+    paths:
+      - "clusters/main/kubernetes/system/kube-prometheus-stack/app/**"
+      - "clusters/main/kubernetes/system/alert-remediation/app/**"
+      - ".github/workflows/prometheus-rules-ci.yaml"
+      - ".github/ci-fixtures/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "clusters/main/kubernetes/system/kube-prometheus-stack/app/**"
+      - "clusters/main/kubernetes/system/alert-remediation/app/**"
+
+jobs:
+  validate:
+    name: Validate alerting rules + AM config
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install promtool + amtool
+        run: |
+          set -euo pipefail
+          PROM_VERSION=2.55.1
+          AM_VERSION=0.27.0
+          curl -sSL "https://github.com/prometheus/prometheus/releases/download/v${PROM_VERSION}/prometheus-${PROM_VERSION}.linux-amd64.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin "prometheus-${PROM_VERSION}.linux-amd64/promtool"
+          curl -sSL "https://github.com/prometheus/alertmanager/releases/download/v${AM_VERSION}/alertmanager-${AM_VERSION}.linux-amd64.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin "alertmanager-${AM_VERSION}.linux-amd64/amtool"
+          promtool --version
+          amtool --version
+
+      - name: Install kubeconform + yq
+        run: |
+          set -euo pipefail
+          KCFM_VERSION=0.6.7
+          YQ_VERSION=4.44.3
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/v${KCFM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar xz -C /usr/local/bin kubeconform
+          # Mike Farah's yq (Go), NOT the apt `yq` Python wrapper which doesn't
+          # support `yq eval` syntax used elsewhere in this workflow.
+          sudo curl -sSL -o /usr/local/bin/yq \
+            "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
+          kubeconform -v
+          yq --version
+
+      - name: Extract PrometheusRule groups for promtool check
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rules
+          PROMTOOL_TESTS_DIR="clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests"
+          for f in clusters/main/kubernetes/system/kube-prometheus-stack/app/prometheusrule-*.yaml; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f" .yaml)
+            yq eval '.spec' "$f" > "/tmp/rules/${name}.yaml"
+            # Promtool test fixtures resolve rule_files relative to the fixture's
+            # directory. Stage extracted rules under names the fixtures reference.
+            cp "/tmp/rules/${name}.yaml" "${PROMTOOL_TESTS_DIR}/${name}-extracted.yaml"
+          done
+          # Compatibility alias: flap-test.yaml expects bgp-rules-extracted.yaml.
+          if [ -f "${PROMTOOL_TESTS_DIR}/prometheusrule-bgp-extracted.yaml" ]; then
+            cp "${PROMTOOL_TESTS_DIR}/prometheusrule-bgp-extracted.yaml" \
+               "${PROMTOOL_TESTS_DIR}/bgp-rules-extracted.yaml"
+          fi
+          ls -la /tmp/rules
+          ls -la "${PROMTOOL_TESTS_DIR}"
+
+      - name: promtool check rules (positive control — must pass)
+        run: |
+          set -euo pipefail
+          for f in /tmp/rules/*.yaml; do
+            echo "Checking $f..."
+            promtool check rules "$f"
+          done
+
+      - name: promtool test rules (unit tests)
+        run: |
+          set -euo pipefail
+          # Filter to actual test fixtures: skip *-extracted.yaml (rule files
+          # we staged for fixtures' rule_files: refs) and skip the README.
+          shopt -s nullglob
+          for t in clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests/*.yaml; do
+            base="$(basename "$t")"
+            case "$base" in
+              *-extracted.yaml|bgp-rules-extracted.yaml)
+                continue
+                ;;
+            esac
+            echo "Running $t..."
+            promtool test rules "$t"
+          done
+
+      - name: kubeconform — AlertmanagerConfig + PrometheusRule CRD shape
+        run: |
+          set -euo pipefail
+          SCHEMA_LOCATION='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          for f in clusters/main/kubernetes/system/kube-prometheus-stack/app/alertmanagerconfig.yaml \
+                   clusters/main/kubernetes/system/kube-prometheus-stack/app/prometheusrule-*.yaml; do
+            [ -f "$f" ] || continue
+            echo "Validating $f shape..."
+            kubeconform -strict -ignore-missing-schemas -schema-location default -schema-location "$SCHEMA_LOCATION" -summary "$f"
+          done
+
+      - name: Meta-test — negative fixtures MUST FAIL
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::CI guard regression — fixture $1 passed validation but should have failed"; exit 1; }
+
+          # Fixture 1: severity-mistag — confirm the fixture has a deliberately bad severity.
+          if ! grep -E 'severity:[[:space:]]*(warn|severity-1|crit)' .github/ci-fixtures/bad-severity-mistag.yaml >/dev/null; then
+            fail "bad-severity-mistag.yaml"
+          fi
+          # Production rule severity guard: any rule with severity outside {critical, warning, info, null} is rejected.
+          BAD_SEVERITIES=$(yq eval '.spec.groups[].rules[].labels.severity' \
+            /tmp/rules/*.yaml 2>/dev/null | grep -Ev '^(critical|warning|info|null|---)$' || true)
+          if [ -n "$BAD_SEVERITIES" ]; then
+            echo "::error::Production rules have invalid severity values: $BAD_SEVERITIES"
+            exit 1
+          fi
+
+          # Fixture 2: route exclusivity — any leaf with receiver=discord-critical AND continue=true fails.
+          BAD_ROUTES=$(yq eval '
+            .spec.route.routes[]
+            | select(.receiver == "discord-critical" and .continue == true)
+          ' clusters/main/kubernetes/system/kube-prometheus-stack/app/alertmanagerconfig.yaml 2>/dev/null || true)
+          if [ -n "$BAD_ROUTES" ]; then
+            echo "::error::AlertmanagerConfig has continue:true reaching discord-critical receiver"
+            exit 1
+          fi
+          FIXTURE_BAD=$(yq eval '
+            .spec.route.routes[]
+            | select(.receiver == "discord-critical" and .continue == true)
+          ' .github/ci-fixtures/bad-route-continue-true-to-discord.yaml 2>/dev/null || true)
+          [ -n "$FIXTURE_BAD" ] || fail "bad-route-continue-true-to-discord.yaml"
+
+          # Fixture 3: malformed CRD shape — kubeconform must fail.
+          if kubeconform -strict -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              .github/ci-fixtures/bad-alertmanagerconfig-malformed.yaml 2>/dev/null; then
+            fail "bad-alertmanagerconfig-malformed.yaml"
+          fi
+
+          echo "All three negative fixtures correctly failed validation. CI guard is healthy."

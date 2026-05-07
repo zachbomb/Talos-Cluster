@@ -1,0 +1,41 @@
+---
+# BGP-recovery playbook — per-playbook ServiceAccount with minimal RBAC.
+# Per origin R13 + rev-2 split-secrets finding: the playbook SA can ONLY
+# read udm-ssh-secret. It cannot read alert-remediation-secrets (bot token,
+# replay secret, allowlist) — a compromised playbook image cannot exfiltrate
+# those credentials.
+#
+# This SA is referenced by the playbook's jobSpec in
+# alert-remediation-config.yaml's playbook-registry.yaml data.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: hitl-playbook-bgp-recovery
+  namespace: alert-remediation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hitl-playbook-bgp-recovery
+  namespace: alert-remediation
+rules:
+  # ONLY the UDM SSH key. NOT alert-remediation-secrets. NOT pods/exec.
+  # NOT any workload mutation verb.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["udm-ssh-secret"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hitl-playbook-bgp-recovery
+  namespace: alert-remediation
+subjects:
+  - kind: ServiceAccount
+    name: hitl-playbook-bgp-recovery
+    namespace: alert-remediation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: hitl-playbook-bgp-recovery

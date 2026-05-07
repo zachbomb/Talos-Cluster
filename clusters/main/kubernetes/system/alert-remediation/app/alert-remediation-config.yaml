@@ -1,0 +1,80 @@
+---
+# Non-sensitive config for the HITL receiver. Per origin R20:
+#   - discord-app-public-key is public material (Discord developer portal
+#     publishes it openly); ConfigMap, NOT a Secret. Storing as Secret would
+#     falsely signal sensitivity, complicate rotation, and clutter SOPS scope.
+#   - udm-known-hosts is the SSH host-key fingerprint of UDM-SE — public.
+#   - playbook-registry.yaml is the in-cluster index that the receiver loads
+#     at startup to resolve `remediation: <playbook>` labels to playbook
+#     manifests.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-remediation-config
+  namespace: alert-remediation
+data:
+  # Populated externally per docs/runbooks/alerting-discord-bot-setup.md.
+  # Hex-encoded Discord application public key from the developer portal.
+  discord-app-public-key: REPLACE_ME_HEX_64_CHARS_DISCORD_APP_PUBLIC_KEY
+  # SSH host-key pin for UDM-SE (192.168.10.1). Generate via:
+  #   ssh-keyscan -t ed25519 192.168.10.1
+  # and paste the resulting line here. StrictHostKeyChecking=yes in the
+  # playbook Job will refuse to connect if this doesn't match.
+  udm-known-hosts: |
+    REPLACE_ME_PASTE_OUTPUT_OF_ssh-keyscan_-t_ed25519_192.168.10.1_HERE
+  # Registry of playbooks the receiver knows about. The receiver matches
+  # alerts' `remediation: <name>` label against entries here. New playbooks
+  # add a YAML manifest under this directory + a registry entry.
+  playbook-registry.yaml: |
+    playbooks:
+      - name: bgp-recovery
+        matches:
+          remediation: bgp-recovery
+        serviceAccountName: hitl-playbook-bgp-recovery
+        rateLimitSeconds: 300
+        jobSpec:
+          activeDeadlineSeconds: 240
+          backoffLimit: 0
+          template:
+            spec:
+              restartPolicy: Never
+              serviceAccountName: hitl-playbook-bgp-recovery
+              containers:
+                - name: ssh-runner
+                  image: alpine:3.20
+                  command: ["/bin/sh", "-c"]
+                  args:
+                    - |
+                      set -euo pipefail
+                      apk add --no-cache openssh-client
+                      ssh -o ConnectTimeout=10 \
+                          -o ServerAliveInterval=15 \
+                          -o ServerAliveCountMax=4 \
+                          -o BatchMode=yes \
+                          -o StrictHostKeyChecking=yes \
+                          -o UserKnownHostsFile=/etc/ssh/known_hosts \
+                          -i /etc/ssh/key/udm \
+                          hitl@192.168.10.1 \
+                          "sh /data/on_boot.d/15-cluster-bgp.sh"
+                  volumeMounts:
+                    - name: ssh-key
+                      mountPath: /etc/ssh/key
+                      readOnly: true
+                    - name: known-hosts
+                      mountPath: /etc/ssh/known_hosts
+                      subPath: udm-known-hosts
+                      readOnly: true
+              volumes:
+                - name: ssh-key
+                  secret:
+                    secretName: udm-ssh-secret
+                    defaultMode: 0o400
+                    items:
+                      - key: udm-ssh-private-key
+                        path: udm
+                - name: known-hosts
+                  configMap:
+                    name: alert-remediation-config
+                    items:
+                      - key: udm-known-hosts
+                        path: udm-known-hosts

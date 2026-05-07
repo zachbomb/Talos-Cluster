@@ -1,0 +1,29 @@
+---
+# Public-facing IngressRoute for Discord interaction callbacks.
+#
+# Hostname `discord-hitl.${BASE_DOMAIN}` is added to the existing Cloudflare
+# Tunnel (manual op per docs/runbooks/alerting-cloudflare-tunnel-add-host.md).
+# Cloudflare WAF rule in front gates on Ed25519 signature header presence
+# and rate-limits 10 req/s per source.
+#
+# Middleware chain is bouncer-only (NO internal-secure-chain — endpoint
+# must accept public-internet sources).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`discord-hitl.${BASE_DOMAIN}`)
+      kind: Rule
+      middlewares:
+        - name: discord-callback-chain
+          namespace: alert-remediation
+      services:
+        - name: alert-remediation-hitl
+          port: 8080
+  tls:
+    secretName: alert-remediation-hitl-tls
