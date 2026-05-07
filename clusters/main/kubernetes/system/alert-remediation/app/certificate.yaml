@@ -1,0 +1,24 @@
+---
+# cert-manager Certificate provisioning the TLS Secret referenced by
+# ingressroute.yaml. Traefik IngressRoute resources don't trigger
+# cert-manager's automatic certificate provisioning the way standard
+# Kubernetes Ingress objects do (via the `cert-manager.io/cluster-issuer`
+# annotation), so we create the Certificate explicitly.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+spec:
+  secretName: alert-remediation-hitl-tls
+  issuerRef:
+    name: wethecommon-prod-cert
+    kind: ClusterIssuer
+  dnsNames:
+    - discord-hitl.${BASE_DOMAIN}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  duration: 2160h     # 90d — Let's Encrypt default
+  renewBefore: 360h   # 15d before expiry

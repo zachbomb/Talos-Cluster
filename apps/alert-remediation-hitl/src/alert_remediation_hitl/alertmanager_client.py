@@ -48,21 +48,30 @@ class AlertmanagerClient:
     async def create_silence(
         self,
         *,
-        fingerprint: str,
+        labels: dict[str, str],
         creator: str,
         comment: str,
         duration_seconds: int,
     ) -> str:
-        """Create an AM silence keyed on the alert fingerprint.
+        """Create an AM silence matching the given alert label set.
+
+        AM matchers operate on alert *labels*, not on metadata like
+        fingerprint. Pass the alert's full label set (alertname, severity,
+        instance, etc.) and we build one matcher per label so the silence
+        is as specific as the alert.
 
         Returns the silence id so it can be expired later (cancel-on-resolve).
         """
+        if not labels:
+            raise ValueError("create_silence requires at least one label to match against")
         now = dt.datetime.now(tz=dt.timezone.utc)
         ends = now + dt.timedelta(seconds=duration_seconds)
+        matchers = [
+            {"name": k, "value": v, "isRegex": False, "isEqual": True}
+            for k, v in sorted(labels.items())
+        ]
         body = {
-            "matchers": [
-                {"name": "fingerprint", "value": fingerprint, "isRegex": False, "isEqual": True}
-            ],
+            "matchers": matchers,
             "startsAt": now.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             "endsAt": ends.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             "createdBy": creator,
@@ -79,16 +88,28 @@ class AlertmanagerClient:
         if resp.status_code not in (200, 404):
             resp.raise_for_status()
 
-    async def list_silences_by_fingerprint(self, fingerprint: str) -> list[dict[str, Any]]:
-        """Used during reconciliation to find a silence created by us for a given fingerprint."""
+    async def list_silences_for_labels(self, labels: dict[str, str]) -> list[dict[str, Any]]:
+        """Find active silences whose matcher set fully equals the given labels.
+
+        Used by the reconciler's cancel-on-resolve path: we created the
+        silence with `matchers = [{name=k, value=v} for each label]`, so we
+        can find it by checking that the silence's matcher set equals the
+        full label set we know about.
+        """
+        if not labels:
+            return []
         resp = await self._client.get(f"{self._base_url}/api/v2/silences")
         resp.raise_for_status()
+        target = {(k, v) for k, v in labels.items()}
         out = []
         for silence in resp.json():
             if silence.get("status", {}).get("state") == "expired":
                 continue
-            for matcher in silence.get("matchers", []):
-                if matcher.get("name") == "fingerprint" and matcher.get("value") == fingerprint:
-                    out.append(silence)
-                    break
+            silence_set = {
+                (m.get("name"), m.get("value"))
+                for m in silence.get("matchers", [])
+                if not m.get("isRegex")
+            }
+            if silence_set == target:
+                out.append(silence)
         return out

@@ -20,8 +20,8 @@ See https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rule
 ## Fixtures here
 
 - `flap-test.yaml` (added in U10) — covers the BGP flap-classification rule.
-  Three cases: 4 firing edges in 10min → flap_active=1; 3 edges → not active;
-  4 edges spread across 31min → not active at minute 31 (window-edge case).
+  Three cases: 4 firing edges in 10 m → flap_active=1; 3 edges → not active;
+  4 edges spread across 31 m → not active at minute 31 (window-edge case).
 
 ## Running locally
 

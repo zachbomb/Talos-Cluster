@@ -14,7 +14,7 @@ from alert_remediation_hitl.state import State, StateStore
 def am_mock() -> MagicMock:
     am = MagicMock()
     am.get_alert_state = AsyncMock(return_value=None)
-    am.list_silences_by_fingerprint = AsyncMock(return_value=[])
+    am.list_silences_for_labels = AsyncMock(return_value=[])
     am.expire_silence = AsyncMock(return_value=None)
     return am
 
@@ -39,7 +39,7 @@ async def test_snoozed_alert_resolved_during_downtime(
     store.upsert_pending(fp, alertname="X", playbook="bgp-recovery", correlation_id="m1")
     store.transition(fp, from_states=[State.PENDING], to_state=State.SNOOZED)
     am_mock.get_alert_state.return_value = None  # alert resolved
-    am_mock.list_silences_by_fingerprint.return_value = [{"id": "sil-1"}]
+    am_mock.list_silences_for_labels.return_value = [{"id": "sil-1"}]
     rec = Reconciler(
         store=store, am_client=am_mock, job_dispatcher=jobs_mock, retry_pending_post=retry_mock
     )

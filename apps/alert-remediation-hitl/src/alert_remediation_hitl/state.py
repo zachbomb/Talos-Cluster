@@ -62,6 +62,7 @@ class StateRow:
     job_name: str | None
     playbook: str | None
     audit_json: str | None
+    alert_labels_json: str | None
 
     @classmethod
     def from_row(cls, row: sqlite3.Row) -> "StateRow":
@@ -79,7 +80,15 @@ class StateRow:
             job_name=row["job_name"],
             playbook=row["playbook"],
             audit_json=row["audit_json"],
+            alert_labels_json=row["alert_labels_json"],
         )
+
+    @property
+    def alert_labels(self) -> dict[str, str]:
+        """Decoded label set used for AM silence matchers (R15)."""
+        if not self.alert_labels_json:
+            return {}
+        return json.loads(self.alert_labels_json)
 
 
 _SCHEMA = """
@@ -96,7 +105,8 @@ CREATE TABLE IF NOT EXISTS hitl_state (
     snooze_until TEXT,
     job_name TEXT,
     playbook TEXT,
-    audit_json TEXT
+    audit_json TEXT,
+    alert_labels_json TEXT
 );
 CREATE INDEX IF NOT EXISTS hitl_state_state_idx ON hitl_state(state);
 """
@@ -149,27 +159,34 @@ class StateStore:
         alertname: str | None,
         playbook: str | None,
         correlation_id: str | None,
+        alert_labels: dict[str, str] | None = None,
     ) -> None:
         """Insert a Pending row OR refresh an existing one.
 
         Idempotent for AM webhook redelivery — repeated POSTs of the same
         fingerprint do not error or duplicate state.
+
+        Stores the alert's full label set so that snooze (R15) can build
+        AM silence matchers from real labels rather than the (non-existent
+        as a label) `fingerprint` matcher — see CR-Critical fix.
         """
         now = self._now_iso()
+        labels_json = json.dumps(alert_labels) if alert_labels else None
         with self._lock:
             self._conn.execute(
                 """
                 INSERT INTO hitl_state (
                     fingerprint, state, alertname, playbook, correlation_id,
-                    created_at, updated_at
-                ) VALUES (?, 'Pending', ?, ?, ?, ?, ?)
+                    alert_labels_json, created_at, updated_at
+                ) VALUES (?, 'Pending', ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(fingerprint) DO UPDATE SET
                     correlation_id = COALESCE(hitl_state.correlation_id, excluded.correlation_id),
                     alertname = COALESCE(hitl_state.alertname, excluded.alertname),
                     playbook = COALESCE(hitl_state.playbook, excluded.playbook),
+                    alert_labels_json = COALESCE(excluded.alert_labels_json, hitl_state.alert_labels_json),
                     updated_at = excluded.updated_at
                 """,
-                (fingerprint, alertname, playbook, correlation_id, now, now),
+                (fingerprint, alertname, playbook, correlation_id, labels_json, now, now),
             )
 
     def set_correlation_id(self, fingerprint: str, correlation_id: str) -> None:

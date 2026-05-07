@@ -81,17 +81,19 @@ class _TokenBucket:
         self._lock = asyncio.Lock()
 
     async def acquire(self) -> None:
-        async with self._lock:
-            now = time.monotonic()
-            elapsed = now - self.last_refill
-            self.tokens = min(self.rate, self.tokens + elapsed * self.rate)
-            self.last_refill = now
-            if self.tokens >= 1.0:
-                self.tokens -= 1.0
-                return
-            wait = (1.0 - self.tokens) / self.rate
-        await asyncio.sleep(wait)
-        await self.acquire()
+        # Iterative loop — recursion would risk stack overflow under sustained
+        # rate-limit waits.
+        while True:
+            async with self._lock:
+                now = time.monotonic()
+                elapsed = now - self.last_refill
+                self.tokens = min(self.rate, self.tokens + elapsed * self.rate)
+                self.last_refill = now
+                if self.tokens >= 1.0:
+                    self.tokens -= 1.0
+                    return
+                wait = (1.0 - self.tokens) / self.rate
+            await asyncio.sleep(wait)
 
 
 class DiscordClient:

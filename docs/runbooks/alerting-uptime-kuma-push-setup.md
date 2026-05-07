@@ -88,7 +88,7 @@ exporter.
 
 ## Verification
 
-- Inside uptime-kuma UI, all four monitors should be green within 5 min of setup.
+- Inside uptime-kuma UI, all three monitors (`cluster-watchdog`, `prometheus-health`, `notifiarr-health`) should be green within 5 min of setup.
 - Manual test: scale Alertmanager to 0 replicas — Watchdog notification fires
   via Pushover/ntfy within 5 min.
 - Manual test: scale Notifiarr to 0 replicas — `notifiarr-health` notification

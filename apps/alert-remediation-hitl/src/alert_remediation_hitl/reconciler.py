@@ -76,7 +76,7 @@ class Reconciler:
         am_state = await self._am.get_alert_state(row.fingerprint)
         if am_state is None:
             # Alert resolved during downtime → cancel the silence (R15 cancel-on-resolve).
-            silences = await self._am.list_silences_by_fingerprint(row.fingerprint)
+            silences = await self._am.list_silences_for_labels(row.alert_labels)
             for silence in silences:
                 await self._am.expire_silence(silence["id"])
             self._store.transition(

@@ -253,10 +253,15 @@ async def _handle_snooze(
             "type": RESPONSE_CHANNEL_MESSAGE,
             "data": {"content": f"Cannot snooze from {row.state.value}.", "flags": 64},
         }
+    if not row.alert_labels:
+        return {
+            "type": RESPONSE_CHANNEL_MESSAGE,
+            "data": {"content": "Cannot snooze: no label set recorded for this alert.", "flags": 64},
+        }
     silence_id = await app_state.am.create_silence(
-        fingerprint=row.fingerprint,
+        labels=row.alert_labels,
         creator=f"hitl-bot:{actor}",
-        comment=f"Snoozed by Discord user {actor}",
+        comment=f"Snoozed by Discord user {actor} (fingerprint={row.fingerprint})",
         duration_seconds=SNOOZE_DURATION_SECONDS,
     )
     transitioned = app_state.store.transition(
@@ -460,6 +465,7 @@ def create_app(*, settings: Settings | None = None) -> FastAPI:
                 alertname=labels.get("alertname"),
                 playbook=playbook_name,
                 correlation_id=None,
+                alert_labels=dict(labels),
             )
             try:
                 content = (

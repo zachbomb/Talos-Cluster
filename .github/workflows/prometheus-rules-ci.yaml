@@ -57,9 +57,14 @@ jobs:
         run: |
           set -euo pipefail
           KCFM_VERSION=0.6.7
+          YQ_VERSION=4.44.3
           curl -sSL "https://github.com/yannh/kubeconform/releases/download/v${KCFM_VERSION}/kubeconform-linux-amd64.tar.gz" \
             | tar xz -C /usr/local/bin kubeconform
-          sudo apt-get update -qq && sudo apt-get install -y -qq yq
+          # Mike Farah's yq (Go), NOT the apt `yq` Python wrapper which doesn't
+          # support `yq eval` syntax used elsewhere in this workflow.
+          sudo curl -sSL -o /usr/local/bin/yq \
+            "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_amd64"
+          sudo chmod +x /usr/local/bin/yq
           kubeconform -v
           yq --version
 
@@ -67,12 +72,22 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/rules
+          PROMTOOL_TESTS_DIR="clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests"
           for f in clusters/main/kubernetes/system/kube-prometheus-stack/app/prometheusrule-*.yaml; do
             [ -f "$f" ] || continue
             name=$(basename "$f" .yaml)
             yq eval '.spec' "$f" > "/tmp/rules/${name}.yaml"
+            # Promtool test fixtures resolve rule_files relative to the fixture's
+            # directory. Stage extracted rules under names the fixtures reference.
+            cp "/tmp/rules/${name}.yaml" "${PROMTOOL_TESTS_DIR}/${name}-extracted.yaml"
           done
+          # Compatibility alias: flap-test.yaml expects bgp-rules-extracted.yaml.
+          if [ -f "${PROMTOOL_TESTS_DIR}/prometheusrule-bgp-extracted.yaml" ]; then
+            cp "${PROMTOOL_TESTS_DIR}/prometheusrule-bgp-extracted.yaml" \
+               "${PROMTOOL_TESTS_DIR}/bgp-rules-extracted.yaml"
+          fi
           ls -la /tmp/rules
+          ls -la "${PROMTOOL_TESTS_DIR}"
 
       - name: promtool check rules (positive control — must pass)
         run: |

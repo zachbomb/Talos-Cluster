@@ -13,5 +13,6 @@ resources:
   - service.yaml
   - deployment.yaml
   - middleware-discord-callback-chain.yaml
+  - certificate.yaml
   - ingressroute.yaml
   - servicemonitor.yaml
