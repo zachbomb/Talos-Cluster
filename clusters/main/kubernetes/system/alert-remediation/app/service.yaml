@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+  labels:
+    app.kubernetes.io/name: alert-remediation-hitl
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: alert-remediation-hitl
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP

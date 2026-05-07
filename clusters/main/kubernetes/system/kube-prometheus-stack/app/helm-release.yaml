@@ -36,7 +36,51 @@ spec:
         forceConflicts: true
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
-      enabled: false
+      enabled: true
+      # U4: internal-only ingress at alert.sf.${BASE_DOMAIN} via Traefik internal-secure-chain.
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-internal-secure-chain@kubernetescrd
+          cert-manager.io/cluster-issuer: wethecommon-prod-cert
+        hosts:
+          - alert.sf.${BASE_DOMAIN}
+        paths:
+          - /
+        pathType: Prefix
+        tls:
+          - secretName: alertmanager-tls
+            hosts:
+              - alert.sf.${BASE_DOMAIN}
+      alertmanagerSpec:
+        # Cluster-wide AlertmanagerConfig discovery — matcher strategy `None`
+        # disables the operator's default per-namespace matcher injection so the
+        # CRD-rooted route applies as authored. See plan U1 + U3.
+        alertmanagerConfigSelector: {}
+        alertmanagerConfigMatcherStrategy:
+          type: None
+        retention: 120h
+        replicas: 1
+        externalLabels:
+          cluster: cluster_main
+          env: prod
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 1Gi
     kubeEtcd:
       service:
         selector:

@@ -1,0 +1,24 @@
+---
+# 1Gi Longhorn RWO PVC for the receiver's SQLite state store.
+#
+# NOT VolSync-backed for v1 — the state is reconcile-able from K8s API +
+# AlertmanagerConfig + Discord, and audit logs ship to Loki separately.
+# Revisit if the volume of audit data justifies backup ceremony.
+#
+# PVC reclaim policy is governed by the StorageClass (`longhorn`), not by
+# this PVC. The cluster's Longhorn StorageClass uses Delete by default for
+# dynamically-provisioned PVs. On decommission, deleting this PVC will
+# also delete the underlying Longhorn volume — confirm by reading
+# `kubectl get sc longhorn -o yaml` before relying on it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alert-remediation-state
+  namespace: alert-remediation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

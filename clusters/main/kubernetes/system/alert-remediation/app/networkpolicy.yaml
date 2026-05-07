@@ -1,0 +1,47 @@
+---
+# NetworkPolicy on alert-remediation namespace — closes the rev-2 finding
+# that any cluster pod could otherwise bypass Traefik/CrowdSec/WAF and
+# POST directly to the receiver Service. Only Traefik (Discord callbacks)
+# and kube-prometheus-stack (AM webhookConfigs) may reach port 8080.
+#
+# Egress is unrestricted — receiver must reach AM, K8s API, Discord, ghcr.io.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: alert-remediation-hitl-ingress
+  namespace: alert-remediation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: alert-remediation-hitl
+  policyTypes:
+    - Ingress
+  ingress:
+    # Traefik → /interactions (Discord callbacks)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - port: 8080
+          protocol: TCP
+    # Alertmanager → /webhook/<receiver> + Prometheus scrape of /metrics
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack
+      ports:
+        - port: 8080
+          protocol: TCP
+    # Kubelet livenessProbe + readinessProbe come from the node's host
+    # network namespace — NOT from a pod — so namespaceSelector won't match
+    # them. Without this rule the kubelet's probe traffic gets dropped and
+    # the pod is NotReady forever. Restrict by the LAN CIDR (Talos node lives
+    # on 192.168.10.0/24) rather than using `from: []` (any) so we don't
+    # silently re-open the broader bypass that this NetworkPolicy is closing.
+    - from:
+        - ipBlock:
+            cidr: 192.168.10.0/24
+      ports:
+        - port: 8080
+          protocol: TCP

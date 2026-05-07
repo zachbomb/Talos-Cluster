@@ -1,0 +1,162 @@
+---
+# HITL receiver Deployment — single replica, Recreate strategy, hardened pod.
+#
+# Strategy: Recreate (NOT RollingUpdate) — RWO PVC mount cannot be held by
+# two pods during rollout. Per plan U15 + rev-2 finding.
+#
+# Probes:
+#   livenessProbe initialDelaySeconds=60 to absorb Longhorn cold-start
+#   mount + reconciler runtime. /health endpoint includes a SQLite SELECT 1
+#   (locked/corrupted DB → kubelet restart, not a silent wedge).
+#
+#   readinessProbe at /ready — returns 503 until lifespan/reconciler
+#   completes; failureThreshold=60 allows up to 5 minutes for reconciler.
+#   Decoupled from /health so liveness can flag DB issues immediately.
+#
+# Image: referenced by digest, NOT :latest. Renovate annotation tracks
+# digest from ghcr.io. Until U12 builds the first image, this digest
+# placeholder must be updated post-build with the actual digest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+  labels:
+    app.kubernetes.io/name: alert-remediation-hitl
+    app.kubernetes.io/part-of: alerting
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alert-remediation-hitl
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alert-remediation-hitl
+    spec:
+      serviceAccountName: alert-remediation-hitl
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: hitl
+          # renovate: datasource=docker depName=ghcr.io/${GITHUB_OWNER}/alert-remediation-hitl
+          image: ghcr.io/${GITHUB_OWNER}/alert-remediation-hitl:latest@sha256:REPLACE_ME_DIGEST_AFTER_FIRST_BUILD
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # Public material (ConfigMap)
+            - name: DISCORD_APP_PUBLIC_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: alert-remediation-config
+                  key: discord-app-public-key
+            # Sensitive material (Secret) — receiver-only
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: discord-bot-token
+            - name: DISCORD_CHANNEL_ID
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: discord-channel-id
+            - name: OPERATOR_ALLOWLIST
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: operator-allowlist
+            - name: HITL_REPLAY_SECRET_CURRENT
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: hitl-replay-secret-current
+            - name: CURRENT_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: current-key-id
+            - name: HITL_REPLAY_SECRET_PRIOR
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: hitl-replay-secret-prior
+            - name: PRIOR_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: alert-remediation-secrets
+                  key: prior-key-id
+            # Static config
+            - name: ALERTMANAGER_URL
+              value: http://kube-prometheus-stack-alertmanager.kube-prometheus-stack.svc.cluster.local:9093
+            - name: KUBE_NAMESPACE
+              value: alert-remediation
+            - name: PLAYBOOK_REGISTRY_PATH
+              value: /etc/hitl/playbook-registry.yaml
+            - name: KNOWN_HOSTS_PATH
+              value: /etc/hitl/udm-known-hosts
+            - name: STATE_DB_PATH
+              value: /var/lib/hitl/state.db
+            - name: LOG_LEVEL
+              value: INFO
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/hitl
+            - name: tmp
+              mountPath: /tmp
+            - name: hitl-config
+              mountPath: /etc/hitl
+              readOnly: true
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: alert-remediation-state
+        - name: tmp
+          emptyDir: {}
+        - name: hitl-config
+          configMap:
+            name: alert-remediation-config
+            items:
+              - key: playbook-registry.yaml
+                path: playbook-registry.yaml
+              - key: udm-known-hosts
+                path: udm-known-hosts
