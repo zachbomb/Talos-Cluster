@@ -53,4 +53,16 @@ end
 write memory
 EOF
 
-logger -t cluster-bgp "BGP applied via on_boot.d (Cilium L2 handles ARP cluster-side)"
+# 4. Install cron healthcheck so this script self-heals if FRR crashes mid-day
+#    or if /etc/frr/* gets wiped by a UniFi reprovisioning event between reboots.
+#    Idempotent: the script does nothing when BGP is healthy, restores when it isn't.
+#    /etc/cron.d/ may not persist across reboots, but on_boot.d re-creates it.
+cat > /etc/cron.d/cluster-bgp-healthcheck <<'CRON'
+# Auto-installed by /data/on_boot.d/15-cluster-bgp.sh
+# Re-runs the BGP setup every 5 min. Idempotent — vtysh skips no-op
+# reconfigs and systemctl skips already-running services.
+*/5 * * * * root /data/on_boot.d/15-cluster-bgp.sh >/dev/null 2>&1
+CRON
+chmod 644 /etc/cron.d/cluster-bgp-healthcheck
+
+logger -t cluster-bgp "BGP applied via on_boot.d (Cilium L2 handles ARP cluster-side); cron healthcheck installed"
