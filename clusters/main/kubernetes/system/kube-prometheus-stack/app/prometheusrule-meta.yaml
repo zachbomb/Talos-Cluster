@@ -12,11 +12,11 @@
 # docs/runbooks/alerting-uptime-kuma-push-setup.md.
 #
 # What this file owns:
-#   - Watchdog: continuous heartbeat at rule eval cadence (1m). AM route
-#     (alertmanagerconfig.yaml) overrides groupInterval to 30s on the
-#     `watchdog: "true"` matcher to deliver heartbeats every minute, not
-#     every 5 minutes (the global default). uptime-kuma push monitor
-#     receives the heartbeats and alerts via Pushover/ntfy on miss.
+#   - Watchdog: continuous heartbeat at rule eval cadence (group interval
+#     30s, repeat interval 1m — see alertmanagerconfig.yaml for the
+#     per-route override that beats the global 5m default). The uptime-kuma
+#     push monitor receives heartbeats roughly once per minute and alerts
+#     via Pushover/ntfy on miss.
 #
 #   - ScrapeTargetDown: catches scrape-target-down failure modes that
 #     R18c (uptime-kuma → Prometheus /-/healthy) doesn't catch — e.g., a

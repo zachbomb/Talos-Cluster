@@ -33,7 +33,7 @@ pytest
 
 ## Container build
 
-The CI workflow at `.github/workflows/alert-remediation-image.yaml` (U12) builds
+The GitHub Actions workflow at `.github/workflows/alert-remediation-image.yaml` (U12) builds
 and pushes to `ghcr.io/<owner>/alert-remediation-hitl@sha256:<digest>` on push
 to `main`. The deployment manifest references the digest, never `:latest`.
 

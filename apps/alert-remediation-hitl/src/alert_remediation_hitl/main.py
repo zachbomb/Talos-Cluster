@@ -43,6 +43,16 @@ SNOOZE_DURATION_SECONDS = 3600  # 1 hour, fixed (origin R15)
 
 
 # ----------------------------------------------------------------- counters
+def _escape_label(value: str) -> str:
+    """Escape a Prometheus exposition-format label value.
+
+    Per the spec: backslash, double-quote, and newline must be escaped.
+    Without this, a label value containing any of those would emit
+    malformed metrics that scrapers reject.
+    """
+    return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
 class Counters:
     """Plain dict-backed Prometheus counter shim — keeps deps minimal."""
 
@@ -55,20 +65,21 @@ class Counters:
         self.signature_rejected_total: dict[str, int] = {}
 
     def render(self) -> str:
+        e = _escape_label
         lines: list[str] = []
         lines.append("# HELP hitl_interactions_total Discord interactions handled by result.")
         lines.append("# TYPE hitl_interactions_total counter")
         for k, v in sorted(self.interactions_total.items()):
-            lines.append(f'hitl_interactions_total{{result="{k}"}} {v}')
+            lines.append(f'hitl_interactions_total{{result="{e(k)}"}} {v}')
         lines.append("# HELP hitl_state_transitions_total HITL state machine transitions.")
         lines.append("# TYPE hitl_state_transitions_total counter")
         for (src, dst), v in sorted(self.state_transitions_total.items()):
-            lines.append(f'hitl_state_transitions_total{{from="{src}",to="{dst}"}} {v}')
+            lines.append(f'hitl_state_transitions_total{{from="{e(src)}",to="{e(dst)}"}} {v}')
         lines.append("# HELP hitl_playbook_runs_total Playbook executions by outcome.")
         lines.append("# TYPE hitl_playbook_runs_total counter")
         for (pb, outcome), v in sorted(self.playbook_runs_total.items()):
             lines.append(
-                f'hitl_playbook_runs_total{{playbook="{pb}",outcome="{outcome}"}} {v}'
+                f'hitl_playbook_runs_total{{playbook="{e(pb)}",outcome="{e(outcome)}"}} {v}'
             )
         lines.append("# HELP hitl_replay_rejected_total Replay attempts rejected.")
         lines.append("# TYPE hitl_replay_rejected_total counter")
@@ -79,7 +90,7 @@ class Counters:
         lines.append("# HELP hitl_signature_rejected_total Discord signature verifications rejected.")
         lines.append("# TYPE hitl_signature_rejected_total counter")
         for k, v in sorted(self.signature_rejected_total.items()):
-            lines.append(f'hitl_signature_rejected_total{{reason="{k}"}} {v}')
+            lines.append(f'hitl_signature_rejected_total{{reason="{e(k)}"}} {v}')
         return "\n".join(lines) + "\n"
 
 
@@ -204,15 +215,18 @@ async def _handle_approve(
             "type": RESPONSE_CHANNEL_MESSAGE,
             "data": {"content": f"Unknown playbook {row.playbook}.", "flags": 64},
         }
-    # Generate a fresh nonce + dispatch the Job.
-    current_key = app_state.nonce_keys[0]
-    n = nonce.generate(row.fingerprint, current_key)
     if app_state.jobs is None:
         return {
             "type": RESPONSE_CHANNEL_MESSAGE,
             "data": {"content": "Job dispatcher unavailable.", "flags": 64},
         }
-    job_name = app_state.jobs.create_job(playbook=pb, fingerprint=row.fingerprint)
+    # Order matters: claim the state transition FIRST (atomic in SQLite),
+    # then create the Job. If we created the Job first and the transition
+    # raced/lost, we'd orphan a Kubernetes Job. Reverse order — if Job
+    # creation fails after the transition wins, transition Approved → Failed
+    # in the rollback path.
+    current_key = app_state.nonce_keys[0]
+    n = nonce.generate(row.fingerprint, current_key)
     transitioned = app_state.store.transition(
         row.fingerprint,
         from_states=[state.State.PENDING],
@@ -220,15 +234,46 @@ async def _handle_approve(
         nonce=n.value,
         key_id=n.key_id,
         nonce_created_at_ms=n.created_at_ms,
-        job_name=job_name,
     )
     if not transitioned:
-        # Race — somebody beat us. Reply stale.
+        # Race — somebody beat us. No Job was created.
         _bump(app_state.counters.interactions_total, "approve_race")
         return {
             "type": RESPONSE_CHANNEL_MESSAGE,
             "data": {"content": "State changed mid-click; refresh.", "flags": 64},
         }
+    try:
+        job_name = app_state.jobs.create_job(playbook=pb, fingerprint=row.fingerprint)
+    except Exception as exc:  # noqa: BLE001
+        # Job-create failed AFTER state transitioned. Roll forward to a
+        # terminal failure state so the row doesn't sit in Approved with no
+        # Job to watch. Emit remediation_failed so the operator sees it.
+        app_state.store.transition(
+            row.fingerprint,
+            from_states=[state.State.APPROVED],
+            to_state=state.State.FAILED,
+            audit_extra={"job_create_error": str(exc)},
+        )
+        _record_transition(app_state, state.State.APPROVED, state.State.FAILED)
+        audit.emit(
+            "remediation_failed",
+            fingerprint=row.fingerprint,
+            alertname=row.alertname,
+            playbook=row.playbook,
+            outcome="job_create_failed",
+            error=str(exc),
+        )
+        return {
+            "type": RESPONSE_CHANNEL_MESSAGE,
+            "data": {"content": f"Failed to dispatch playbook: {exc}", "flags": 64},
+        }
+    # Stamp the Job name onto the row now that we have it.
+    app_state.store.transition(
+        row.fingerprint,
+        from_states=[state.State.APPROVED],
+        to_state=state.State.APPROVED,
+        job_name=job_name,
+    )
     _record_transition(app_state, state.State.PENDING, state.State.APPROVED)
     _bump(app_state.counters.interactions_total, "approved")
     audit.emit(
@@ -258,23 +303,51 @@ async def _handle_snooze(
             "type": RESPONSE_CHANNEL_MESSAGE,
             "data": {"content": "Cannot snooze: no label set recorded for this alert.", "flags": 64},
         }
-    silence_id = await app_state.am.create_silence(
-        labels=row.alert_labels,
-        creator=f"hitl-bot:{actor}",
-        comment=f"Snoozed by Discord user {actor} (fingerprint={row.fingerprint})",
-        duration_seconds=SNOOZE_DURATION_SECONDS,
-    )
+    # Same ordering discipline as Approve: transition FIRST so a lost race
+    # doesn't orphan an AM silence. If the silence-create call fails after
+    # the transition wins, roll forward to Failed.
     transitioned = app_state.store.transition(
         row.fingerprint,
         from_states=[state.State.PENDING],
         to_state=state.State.SNOOZED,
-        snooze_until=silence_id,
     )
     if not transitioned:
         return {
             "type": RESPONSE_CHANNEL_MESSAGE,
             "data": {"content": "State changed mid-click; refresh.", "flags": 64},
         }
+    try:
+        silence_id = await app_state.am.create_silence(
+            labels=row.alert_labels,
+            creator=f"hitl-bot:{actor}",
+            comment=f"Snoozed by Discord user {actor} (fingerprint={row.fingerprint})",
+            duration_seconds=SNOOZE_DURATION_SECONDS,
+        )
+    except Exception as exc:  # noqa: BLE001
+        app_state.store.transition(
+            row.fingerprint,
+            from_states=[state.State.SNOOZED],
+            to_state=state.State.FAILED,
+            audit_extra={"silence_create_error": str(exc)},
+        )
+        _record_transition(app_state, state.State.SNOOZED, state.State.FAILED)
+        audit.emit(
+            "snooze_failed",
+            fingerprint=row.fingerprint,
+            alertname=row.alertname,
+            error=str(exc),
+        )
+        return {
+            "type": RESPONSE_CHANNEL_MESSAGE,
+            "data": {"content": f"Failed to create silence: {exc}", "flags": 64},
+        }
+    # Stamp the silence id onto the row.
+    app_state.store.transition(
+        row.fingerprint,
+        from_states=[state.State.SNOOZED],
+        to_state=state.State.SNOOZED,
+        snooze_until=silence_id,
+    )
     _record_transition(app_state, state.State.PENDING, state.State.SNOOZED)
     _bump(app_state.counters.interactions_total, "snoozed")
     audit.emit(

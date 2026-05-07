@@ -5,9 +5,11 @@
 # AlertmanagerConfig + Discord, and audit logs ship to Loki separately.
 # Revisit if the volume of audit data justifies backup ceremony.
 #
-# Default reclaim policy is Retain (Longhorn convention) — on decommission,
-# operator must manually delete the underlying PV per
-# docs/runbooks/alerting-secret-rotation.md.
+# PVC reclaim policy is governed by the StorageClass (`longhorn`), not by
+# this PVC. The cluster's Longhorn StorageClass uses Delete by default for
+# dynamically-provisioned PVs. On decommission, deleting this PVC will
+# also delete the underlying Longhorn volume — confirm by reading
+# `kubectl get sc longhorn -o yaml` before relying on it.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

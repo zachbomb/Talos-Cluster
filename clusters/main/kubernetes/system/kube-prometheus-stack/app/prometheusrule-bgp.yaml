@@ -27,25 +27,33 @@ spec:
     - name: cilium-bgp-flap
       interval: 1m
       rules:
+        # No `labels:` block — see suppression note below. The recording rule
+        # emits a single label-less indicator (1 when flapping, otherwise the
+        # series is absent because of the `>= 4` threshold).
         - record: bgp_flap_active
           expr: |
             (sum_over_time(
               changes(ALERTS{alertname="BGPSessionDown",alertstate="firing"}[1m])[30m:1m]
             ) >= 4) * 1
-          labels:
-            alertname: BGPSessionDown
 
     - name: cilium-bgp
       interval: 30s
       rules:
-        # POC critical alert per origin R5. Suppressed via `unless` when the
-        # flap recording rule is active, so BGPSessionFlapping (warning) takes
-        # over instead. Pattern: same condition, two alert rules, mutually
-        # exclusive via `unless`.
+        # POC critical alert per origin R5. Suppressed via `unless on()` when
+        # the flap recording rule is active, so BGPSessionFlapping (warning)
+        # takes over instead. Pattern: same condition, two alert rules,
+        # mutually exclusive via PromQL set-cardinality `unless`.
+        #
+        # Note on `unless on()`: empty matching set means "suppress LHS if ANY
+        # row exists on RHS". The naive `unless on(alertname)` form is broken
+        # because the LHS metric (cilium_bgp_control_plane_session_state) has
+        # no `alertname` label — the join would never match and demotion
+        # would silently fail. The label-less recording rule (above) plus
+        # `unless on()` is the correct shape for a single-alert demotion.
         - alert: BGPSessionDown
           expr: |
             (cilium_bgp_control_plane_session_state{neighbor="192.168.10.1:179"} != 1)
-            unless on(alertname) (bgp_flap_active{alertname="BGPSessionDown"} == 1)
+            unless on() (bgp_flap_active == 1)
           for: 60s
           labels:
             severity: critical
@@ -65,10 +73,11 @@ spec:
         # severity from critical to warning. Routes through Notifiarr instead
         # of Discord-direct, preventing alert fatigue during rapid flap.
         - alert: BGPSessionFlapping
-          expr: bgp_flap_active{alertname="BGPSessionDown"} == 1
+          expr: bgp_flap_active == 1
           for: 0s
           labels:
             severity: warning
+            alertname_source: BGPSessionDown
           annotations:
             summary: Cilium BGP session to UDM-SE is flapping
             description: |

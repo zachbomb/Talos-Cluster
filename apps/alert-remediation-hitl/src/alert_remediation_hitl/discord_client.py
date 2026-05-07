@@ -133,8 +133,19 @@ class DiscordClient:
                 await asyncio.sleep(2**attempt * 0.1)
                 continue
             if resp.status_code == 429:
-                retry_after = float(resp.headers.get("Retry-After", "1"))
-                _LOGGER.warning("Discord 429 — backing off %s s (attempt %d)", retry_after, attempt)
+                retry_after_raw = resp.headers.get("Retry-After", "1")
+                try:
+                    retry_after = float(retry_after_raw)
+                except (TypeError, ValueError):
+                    _LOGGER.warning(
+                        "Discord 429 with malformed Retry-After header %r — defaulting to 1s",
+                        retry_after_raw,
+                    )
+                    retry_after = 1.0
+                # Cap to a sane maximum so a hostile/malformed value can't pin
+                # the worker indefinitely.
+                retry_after = max(0.1, min(retry_after, 30.0))
+                _LOGGER.warning("Discord 429 — backing off %.1fs (attempt %d)", retry_after, attempt)
                 await asyncio.sleep(retry_after)
                 continue
             return resp

@@ -25,10 +25,10 @@ tests:
       - series: 'ALERTS{alertname="BGPSessionDown",alertstate="firing"}'
         values: '_x2 1x1 _x1 1x1 _x1 1x1 _x1 1x1 _x10'
     promql_expr_test:
-      - expr: bgp_flap_active{alertname="BGPSessionDown"}
+      - expr: bgp_flap_active
         eval_time: 15m
         exp_samples:
-          - labels: 'bgp_flap_active{alertname="BGPSessionDown"}'
+          - labels: 'bgp_flap_active'
             value: 1
 
   - interval: 1m
@@ -37,10 +37,10 @@ tests:
       - series: 'ALERTS{alertname="BGPSessionDown",alertstate="firing"}'
         values: '_x2 1x1 _x1 1x1 _x1 1x1 _x12'
     promql_expr_test:
-      - expr: bgp_flap_active{alertname="BGPSessionDown"}
+      - expr: bgp_flap_active
         eval_time: 15m
         exp_samples:
-          - labels: 'bgp_flap_active{alertname="BGPSessionDown"}'
+          - labels: 'bgp_flap_active'
             value: 0
 
   - interval: 1m
@@ -52,8 +52,8 @@ tests:
       - series: 'ALERTS{alertname="BGPSessionDown",alertstate="firing"}'
         values: '_x1 1x1 _x9 1x1 _x9 1x1 _x9 1x1 _x10'
     promql_expr_test:
-      - expr: bgp_flap_active{alertname="BGPSessionDown"}
+      - expr: bgp_flap_active
         eval_time: 31m
         exp_samples:
-          - labels: 'bgp_flap_active{alertname="BGPSessionDown"}'
+          - labels: 'bgp_flap_active'
             value: 0

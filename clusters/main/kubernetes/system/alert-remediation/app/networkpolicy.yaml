@@ -17,7 +17,7 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # Traefik → /interactions (Discord callbacks) + /health probes
+    # Traefik → /interactions (Discord callbacks)
     - from:
         - namespaceSelector:
             matchLabels:
@@ -25,7 +25,7 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
-    # Alertmanager → /webhook/<receiver> (HITL register)
+    # Alertmanager → /webhook/<receiver> + Prometheus scrape of /metrics
     - from:
         - namespaceSelector:
             matchLabels:
@@ -33,6 +33,15 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
-    # Prometheus scrape of /metrics (also from kube-prometheus-stack ns)
-    # — collapsed into the second rule above since the source namespace is
-    # the same. ServiceMonitor selectors handle the pod targeting.
+    # Kubelet livenessProbe + readinessProbe come from the node's host
+    # network namespace — NOT from a pod — so namespaceSelector won't match
+    # them. Without this rule the kubelet's probe traffic gets dropped and
+    # the pod is NotReady forever. Restrict by the LAN CIDR (Talos node lives
+    # on 192.168.10.0/24) rather than using `from: []` (any) so we don't
+    # silently re-open the broader bypass that this NetworkPolicy is closing.
+    - from:
+        - ipBlock:
+            cidr: 192.168.10.0/24
+      ports:
+        - port: 8080
+          protocol: TCP

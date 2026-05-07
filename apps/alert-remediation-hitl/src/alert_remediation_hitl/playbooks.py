@@ -76,9 +76,18 @@ class JobDispatcher:
 
     @staticmethod
     def _job_name(fingerprint: str, playbook: str) -> str:
-        # K8s names are max 63 chars; fingerprint is 16 hex chars + playbook + prefix.
-        short_fp = fingerprint[:16]
-        return f"hitl-{playbook}-{short_fp}".lower()
+        """Build a DNS-1123-compliant Job name.
+
+        K8s names: max 63 chars, lowercase alphanumerics + `-`, must start/end
+        with alphanumeric. Sanitize the playbook name (which can come from
+        user-authored YAML and may contain underscores or capitals) so we
+        don't fail Job creation with an invalid-name error.
+        """
+        import re
+
+        short_fp = re.sub(r"[^a-z0-9]", "", fingerprint.lower())[:16]
+        sanitized_pb = re.sub(r"[^a-z0-9-]", "-", playbook.lower()).strip("-")
+        return f"hitl-{sanitized_pb}-{short_fp}"[:63]
 
     def find_existing_jobs(self, fingerprint: str) -> list[k8s_client.V1Job]:
         """Used by reconciler to adopt running Jobs after pod restart."""

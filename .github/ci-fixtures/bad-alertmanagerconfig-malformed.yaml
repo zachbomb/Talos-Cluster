@@ -5,7 +5,7 @@
 #
 # Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U8)
 
-apiVersion: monitoring.coreos.com/v1beta1
+apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: bad-malformed

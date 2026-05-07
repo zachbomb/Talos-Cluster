@@ -83,9 +83,12 @@ def test_tampered_body_rejected(keypair):
 def test_tampered_timestamp_rejected(keypair):
     sk, pk = keypair
     body = b'{"type":1}'
-    real_ts = str(int(time.time()))
+    real_ts_int = int(time.time())
+    real_ts = str(real_ts_int)
     sig = _sign(sk, real_ts, body)
-    forged_ts = str(int(time.time()) - 1)  # off-by-one — signature won't verify
+    # Derive the forged timestamp deterministically from real_ts so the test
+    # can never accidentally produce real_ts == forged_ts on a slow CI runner.
+    forged_ts = str(real_ts_int - 1)
     result = verify_signature(
         raw_body=body, signature_hex=sig, timestamp=forged_ts, public_key_hex=pk
     )

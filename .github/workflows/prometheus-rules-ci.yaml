@@ -100,14 +100,19 @@ jobs:
       - name: promtool test rules (unit tests)
         run: |
           set -euo pipefail
-          if ls clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests/*.yaml >/dev/null 2>&1; then
-            for t in clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests/*.yaml; do
-              echo "Running $t..."
-              promtool test rules "$t"
-            done
-          else
-            echo "No promtool tests found — skipping."
-          fi
+          # Filter to actual test fixtures: skip *-extracted.yaml (rule files
+          # we staged for fixtures' rule_files: refs) and skip the README.
+          shopt -s nullglob
+          for t in clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests/*.yaml; do
+            base="$(basename "$t")"
+            case "$base" in
+              *-extracted.yaml|bgp-rules-extracted.yaml)
+                continue
+                ;;
+            esac
+            echo "Running $t..."
+            promtool test rules "$t"
+          done
 
       - name: kubeconform — AlertmanagerConfig + PrometheusRule CRD shape
         run: |
