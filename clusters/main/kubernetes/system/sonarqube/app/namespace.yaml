@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sonarqube
+  labels:
+    app.kubernetes.io/name: sonarqube
+    app.kubernetes.io/part-of: sast
