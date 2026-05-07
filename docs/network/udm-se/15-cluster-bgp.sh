@@ -5,8 +5,16 @@
 # UniFi reprovisioning events. UniFi can wipe /etc/frr/{frr.conf,daemons}
 # during firmware updates or settings applies, so this re-applies them.
 #
+# IMPORTANT: This script does NOT enable proxy_arp / proxy_arp_pvlan on br0.
+# An earlier version did, but that was too broad — Linux's proxy ARP
+# responds for ANY IP UDM has a route to (including the cluster node .89
+# and VIP .167), which intercepted control-plane traffic and caused an
+# outage during a Proxmox reboot. Cilium L2 Announcements (configured in
+# the cluster) is now the correct mechanism: the cluster node answers
+# ARP for LB IPs directly via eBPF, scoped per-IP.
+#
 # Companion to: docs/network/udm-se-bgp.md
-# Plan: docs/plans/2026-05-05-001-feat-cluster-network-roadmap-plan.md
+# Plan: docs/plans/2026-05-05-002-feat-cilium-l2-announcements-plan.md
 
 set -euo pipefail
 
@@ -19,13 +27,7 @@ if ! systemctl is-active --quiet frr; then
   sleep 3
 fi
 
-# 3. Same-subnet proxy ARP for BGP-learned /32 routes.
-#    proxy_arp + proxy_arp_pvlan together let UDM respond to ARP for any
-#    IP it has a route to via br0 (BGP-learned routes included).
-sysctl -w net.ipv4.conf.br0.proxy_arp=1 >/dev/null
-sysctl -w net.ipv4.conf.br0.proxy_arp_pvlan=1 >/dev/null
-
-# 4. Re-apply BGP config (idempotent — vtysh ignores no-op reconfigs)
+# 3. Re-apply BGP config (idempotent — vtysh ignores no-op reconfigs)
 vtysh <<'EOF'
 configure terminal
 ip prefix-list CLUSTER-LB seq 10 permit 192.168.10.192/26 ge 32 le 32
@@ -51,4 +53,4 @@ end
 write memory
 EOF
 
-logger -t cluster-bgp "BGP + proxy_arp_pvlan applied via on_boot.d"
+logger -t cluster-bgp "BGP applied via on_boot.d (Cilium L2 handles ARP cluster-side)"
