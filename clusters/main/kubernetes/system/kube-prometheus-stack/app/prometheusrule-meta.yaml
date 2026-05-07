@@ -1,0 +1,69 @@
+---
+# Meta-monitoring PrometheusRules.
+#
+# Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U6)
+# Origin: docs/brainstorms/2026-05-07-cluster-alerting-hitl-requirements.md (R18 a/b/c)
+#
+# Implementation-time decision: NotifiarrDown (R18b) is delegated to uptime-kuma
+# rather than blackbox-exporter inside the cluster. This is the simpler path —
+# uptime-kuma already does HTTP probes via the same sink-independent
+# Pushover/ntfy channel as R18a's Watchdog and R18c's PrometheusDown probes.
+# Avoids deploying blackbox-exporter for a single probe. Documented in
+# docs/runbooks/alerting-uptime-kuma-push-setup.md.
+#
+# What this file owns:
+#   - Watchdog: continuous heartbeat at rule eval cadence (1m). AM route
+#     (alertmanagerconfig.yaml) overrides groupInterval to 30s on the
+#     `watchdog: "true"` matcher to deliver heartbeats every minute, not
+#     every 5 minutes (the global default). uptime-kuma push monitor
+#     receives the heartbeats and alerts via Pushover/ntfy on miss.
+#
+#   - ScrapeTargetDown: catches scrape-target-down failure modes that
+#     R18c (uptime-kuma → Prometheus /-/healthy) doesn't catch — e.g., a
+#     specific exporter is down while Prometheus itself is healthy. Routes
+#     through the warning channel (Notifiarr) so it's visible without
+#     paging.
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: meta-monitoring
+  namespace: kube-prometheus-stack
+spec:
+  groups:
+    - name: meta-monitoring
+      interval: 30s
+      rules:
+        # Watchdog — fires continuously while Prometheus + Alertmanager are healthy.
+        # AM forwards each evaluation to uptime-kuma push endpoint.
+        # If heartbeats stop reaching uptime-kuma for ≈3 cycles (~3min), uptime-kuma
+        # alerts via the sink-independent Pushover/ntfy channel.
+        - alert: Watchdog
+          expr: vector(1)
+          for: 0s
+          labels:
+            severity: info
+            watchdog: "true"
+          annotations:
+            summary: Cluster alerting pipeline is healthy
+            description: |
+              Synthetic always-firing alert. uptime-kuma should be receiving these
+              heartbeats every ~1 minute. If heartbeats stop, uptime-kuma fires the
+              sink-independent Pushover/ntfy alert. See R18a in the brainstorm.
+
+        # ScrapeTargetDown — covers per-job scrape failures (cilium-agent,
+        # alertmanager, prometheus, kube-state-metrics, node-exporter). Catches
+        # the failure mode "Prometheus is up but a specific scrape target is
+        # crashlooping" that uptime-kuma probing /-/healthy doesn't catch.
+        - alert: ScrapeTargetDown
+          expr: |
+            up{job=~"cilium-agent|alertmanager|kube-prometheus-stack-prometheus|kube-state-metrics|node-exporter"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Prometheus scrape target {{ $labels.job }} is down on {{ $labels.instance }}"
+            description: |
+              Job {{ $labels.job }} on instance {{ $labels.instance }} has been
+              unreachable for 5+ minutes. Other rules depending on this job's
+              metrics may be silent.
