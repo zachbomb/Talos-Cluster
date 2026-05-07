@@ -51,9 +51,22 @@ spec:
         repeatInterval: 1m
         continue: false
 
-      # Critical, no remediation label — direct Discord webhook (no HITL).
-      # The `hitl-only` route for `remediation=~".+"` is added in U16; until then,
-      # remediation-labelled criticals also land here.
+      # Critical WITH a remediation label → HITL receiver only (single-message
+      # UX). The HITL bot post IS the user-facing notification; no separate
+      # discordConfigs visual is sent. R18 meta-monitoring catches receiver-down.
+      # MUST be ordered BEFORE the bare `severity=critical` route below.
+      - receiver: hitl-only
+        matchers:
+          - name: severity
+            value: critical
+            matchType: =
+          - name: remediation
+            value: .+
+            matchType: =~
+        repeatInterval: 4h
+        continue: false
+
+      # Critical without remediation label — plain Discord direct webhook.
       - receiver: discord-critical
         matchers:
           - name: severity
@@ -128,3 +141,11 @@ spec:
           urlSecret:
             name: alertmanager-secret
             key: watchdog-uptime-kuma-url
+
+    # HITL receiver — webhookConfigs only, NO discordConfigs (single-message UX
+    # per origin R3 + plan rev-2 dual-fanout decision). The receiver registers
+    # Pending state and posts the button-bearing message via the bot API.
+    - name: hitl-only
+      webhookConfigs:
+        - sendResolved: true
+          url: http://alert-remediation-hitl.alert-remediation.svc.cluster.local:8080/webhook/hitl

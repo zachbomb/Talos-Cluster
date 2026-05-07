@@ -1,0 +1,22 @@
+---
+# 1Gi Longhorn RWO PVC for the receiver's SQLite state store.
+#
+# NOT VolSync-backed for v1 — the state is reconcile-able from K8s API +
+# AlertmanagerConfig + Discord, and audit logs ship to Loki separately.
+# Revisit if the volume of audit data justifies backup ceremony.
+#
+# Default reclaim policy is Retain (Longhorn convention) — on decommission,
+# operator must manually delete the underlying PV per
+# docs/runbooks/alerting-secret-rotation.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alert-remediation-state
+  namespace: alert-remediation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

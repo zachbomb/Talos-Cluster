@@ -1,0 +1,53 @@
+---
+# Receiver ServiceAccount + Role + RoleBinding.
+#
+# Scope: receiver needs to (a) read alert-remediation-secrets (its own
+# config), (b) create + read Jobs in this namespace (playbook dispatch +
+# reconciler adoption), (c) read alert-remediation-config ConfigMap.
+#
+# Receiver does NOT get access to udm-ssh-secret (it never reads the SSH
+# key directly — only mounts it into Job pods via the playbook's volume
+# spec, which Kubernetes resolves at Job creation time without the
+# receiver SA needing read access to that Secret).
+#
+# Plan: U13 + rev-2 RBAC blast-radius split.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+rules:
+  # Receiver's own config — bot token, allowlist, replay secret.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["alert-remediation-secrets"]
+    verbs: ["get"]
+  # Playbook registry + known_hosts + app public key.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["alert-remediation-config"]
+    verbs: ["get"]
+  # Playbook dispatch (create) + reconciler adoption (list + get + watch).
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: alert-remediation-hitl
+  namespace: alert-remediation
+subjects:
+  - kind: ServiceAccount
+    name: alert-remediation-hitl
+    namespace: alert-remediation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: alert-remediation-hitl
