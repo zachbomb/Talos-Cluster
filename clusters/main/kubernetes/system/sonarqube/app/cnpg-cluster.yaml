@@ -16,7 +16,7 @@ metadata:
   namespace: sonarqube
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql@sha256:89e09df1966a124cd8e015d16f8e888809e5560a3df2900c91433f73176a0b2d
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.5-bookworm@sha256:89e09df1966a124cd8e015d16f8e888809e5560a3df2900c91433f73176a0b2d
   postgresql:
     parameters:
       shared_buffers: "256MB"
