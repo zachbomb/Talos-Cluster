@@ -42,6 +42,12 @@ spec:
                 - Pod
               namespaces:
                 - longhorn-system
+          - resources:
+              kinds:
+                - Pod
+              selector:
+                matchLabels:
+                  cnpg.io/podRole: instance
     preconditions:
       all:
       - key: "{{request.operation || 'BACKGROUND'}}"
