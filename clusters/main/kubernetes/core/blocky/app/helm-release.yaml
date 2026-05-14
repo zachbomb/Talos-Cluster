@@ -63,6 +63,8 @@ spec:
           dnsserver: 192.168.10.196
         - domain: goodmem.sf.wethecommon.com
           dnsserver: 192.168.10.196
+        - domain: sonarqube.sf.wethecommon.com
+          dnsserver: 192.168.10.196
         - domain: traefik.sf.wethecommon.com
           dnsserver: 192.168.10.196
         # Internal-only services (lockdown plan 2026-05-05) — LAN/VPN reaches Traefik directly
