@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: homepage
-      version: 12.3.0
+      version: 12.5.1
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -19,7 +19,7 @@ spec:
     image:
       repository: ghcr.io/gethomepage/homepage
       pullPolicy: IfNotPresent
-      tag: v1.12.3
+      tag: v1.13.1
     TZ: America/Los_Angeles
     credentials:
       s3:

@@ -17,6 +17,7 @@ resources:
   - pve-exporter/ks.yaml
   - smartctl-exporter/ks.yaml
   - snapshot-controller/ks.yaml
+  - sonarqube/ks.yaml
   #- spegel/ks.yaml  # Disabled - P2P image cache useless on single-node, re-enable if multi-node
   - system-upgrade-controller/ks.yaml
   - unpoller/ks.yaml

@@ -1,0 +1,11 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/helmrepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: sonarsource
+  namespace: flux-system
+spec:
+  type: default
+  interval: 6h
+  url: https://SonarSource.github.io/helm-chart-sonarqube

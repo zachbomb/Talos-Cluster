@@ -1,0 +1,86 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarqube
+  namespace: sonarqube
+spec:
+  interval: 15m
+  timeout: 15m
+  chart:
+    spec:
+      chart: sonarqube
+      # renovate: datasource=helm depName=sonarqube registryUrl=https://SonarSource.github.io/helm-chart-sonarqube
+      version: "2026.2.1"
+      sourceRef:
+        kind: HelmRepository
+        name: sonarsource
+        namespace: flux-system
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  values:
+    # Community Build (free, replaces the deprecated Community Edition).
+    community:
+      enabled: true
+    # Bypass embedded Postgres entirely — we use the CNPG cluster.
+    postgresql:
+      enabled: false
+    # Connect to the CNPG-managed sonarqube-db service (-rw points at the
+    # primary; CNPG manages failover if instances > 1).
+    jdbcOverwrite:
+      enabled: true
+      jdbcUrl: jdbc:postgresql://sonarqube-db-rw.sonarqube.svc.cluster.local:5432/sonarqube
+      # Username pulled from the CNPG-generated `sonarqube-db-app` Secret
+      # (CNPG creates this automatically based on the cluster's owner field).
+      jdbcUsername: sonarqube_user
+      jdbcSecretName: sonarqube-db-app
+      jdbcSecretPasswordKey: password
+    # Disable the chart's built-in ingress — we use a standalone Ingress
+    # resource (ingress.yaml in U12) for cleaner middleware composition.
+    ingress:
+      enabled: false
+    service:
+      type: ClusterIP
+    # Monitoring passcode pulled from the SOPS Secret (U11 file above).
+    monitoringPasscodeSecretName: sonarqube-bootstrap
+    monitoringPasscodeSecretKey: MONITORING_PASSCODE
+    # Resources — SonarQube needs ~3GB headroom on Java init.
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    # SonarQube requires sysctl elevations on the host (vm.max_map_count,
+    # fs.file-max). On Talos the chart's initContainer fails because
+    # privileged sysctl edits are blocked. Use the chart's option to skip
+    # them and apply via Talos node patches instead (deferred — current
+    # Talos config has vm.max_map_count=262144 already set).
+    elasticsearch:
+      bootstrapChecks: false
+    # Pre-set initSysctl: false; the chart's initContainer needs privileged
+    # caps that Talos restricts.
+    initSysctl:
+      enabled: false
+    initFs:
+      enabled: false
+    # Persistence: SonarQube writes search indices and logs to a PVC.
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 20Gi
+    # Pod-level security per Talos requirements.
+    securityContext:
+      fsGroup: 1000
+    containerSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      allowPrivilegeEscalation: false

@@ -1,0 +1,60 @@
+---
+# CNPG Postgres 17 cluster backing SonarQube.
+#
+# Plan: docs/plans/2026-05-05-001-feat-cluster-network-roadmap-plan.md (U10)
+#
+# SonarQube only stores metadata in Postgres (issues, projects, users); the
+# bulk of its analysis state lives in its own filesystem PVC. Storage 10Gi
+# is generous; tune later based on backup-audit history.
+#
+# Standard CNPG image (no pgvector / no vchord) — SonarQube doesn't need
+# vector extensions. uuid-ossp is the only extension required.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: sonarqube-db
+  namespace: sonarqube
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.5-bookworm
+  postgresql:
+    parameters:
+      shared_buffers: "256MB"
+      effective_cache_size: "768MB"
+      max_connections: "100"
+    pg_hba:
+      - host all all 10.0.0.0/8 md5
+      - host all all 172.16.0.0/16 md5
+  bootstrap:
+    initdb:
+      database: sonarqube
+      owner: sonarqube_user
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+  storage:
+    size: 10Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "100m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://cnpg-sonarqube/
+      endpointURL: ${S3URL}
+      s3Credentials:
+        accessKeyId:
+          name: sonarqube-db-s3-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: sonarqube-db-s3-creds
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: "30d"
+  monitoring:
+    enablePodMonitor: false
