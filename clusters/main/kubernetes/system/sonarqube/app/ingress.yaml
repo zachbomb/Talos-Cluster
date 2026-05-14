@@ -1,0 +1,45 @@
+---
+# Internal-only Ingress at sonarqube.sf.${BASE_DOMAIN}.
+# Plan: docs/plans/2026-05-05-001-feat-cluster-network-roadmap-plan.md (U12).
+#
+# Uses internal-secure-chain (bouncer + internal-allowlist) so only LAN/VPN
+# clients reach the SonarQube admin UI. Cloudflare Tunnel does NOT proxy
+# this hostname — split-horizon DNS routes LAN clients to Traefik (.196).
+#
+# After deploy: add A record sonarqube.sf.${BASE_DOMAIN} → 192.168.10.196 to:
+#   1. Pi-hole .3 (admin UI → Local DNS Records)
+#   2. Blocky .195 (clusters/main/kubernetes/core/blocky/app/helm-release.yaml)
+#   3. Cloudflare authoritative (unproxied — keeps split-horizon clean)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarqube
+  namespace: sonarqube
+  annotations:
+    cert-manager.io/cluster-issuer: wethecommon-prod-cert
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-internal-secure-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: System
+    gethomepage.dev/name: SonarQube
+    gethomepage.dev/icon: mdi-shield-bug
+    gethomepage.dev/href: https://sonarqube.sf.${BASE_DOMAIN}
+    gethomepage.dev/description: "Static analysis (SAST)"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - sonarqube.sf.${BASE_DOMAIN}
+      secretName: sonarqube-tls
+  rules:
+    - host: sonarqube.sf.${BASE_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sonarqube-sonarqube
+                port:
+                  name: http
