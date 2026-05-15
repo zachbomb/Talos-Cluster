@@ -6,3 +6,4 @@ resources:
   - cnpg-barman.yaml
   - helm-release.yaml
   - chrome-cdp.yaml
+  - longhorn-monitor-rbac.yaml

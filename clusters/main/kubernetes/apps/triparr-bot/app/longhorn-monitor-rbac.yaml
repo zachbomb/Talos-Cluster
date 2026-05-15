@@ -1,0 +1,32 @@
+# RBAC for LonghornVolumeMonitor in triparr-bot
+#
+# Grants the bot's default service account:
+#   - get/list Longhorn volume CRDs in longhorn-system (stuck remount detection)
+#   - get/list pods in triparr-bot (CrashLoopBackOff detection)
+#
+# Applied as part of the triparr-bot kustomization.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: triparr-bot-longhorn-reader
+rules:
+  - apiGroups: ["longhorn.io"]
+    resources: ["volumes"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triparr-bot-longhorn-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: triparr-bot-longhorn-reader
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: triparr-bot
