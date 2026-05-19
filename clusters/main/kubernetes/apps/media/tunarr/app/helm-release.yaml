@@ -26,6 +26,7 @@ spec:
       retries: 3
   values:
     image:
+      # renovate: datasource=github-releases depName=chrisbenincasa/tunarr extractVersion=^v(?<version>.+)$
       repository: ghcr.io/chrisbenincasa/tunarr
       tag: 1.3.0
       pullPolicy: IfNotPresent
@@ -33,6 +34,7 @@ spec:
       TZ: America/Los_Angeles
       TUNARR__TV_DIR: /tv
       TUNARR__MOVIES_DIR: /movies
+      TUNARR__MUSIC_DIR: /music
       TUNARR__PORT: "8000"
     workload:
       main:
@@ -254,6 +256,20 @@ spec:
         path: /mnt/Pibbs-Horde/media/data/media/tv
         server: 192.168.10.123
         mountPath: /tv
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      music:
+        enabled: true
+        type: nfs
+        path: /mnt/Pibbs-Horde/media/data/media/music
+        server: 192.168.10.123
+        mountPath: /music
         mountOptions:
           - nfsvers=4
           - tcp
