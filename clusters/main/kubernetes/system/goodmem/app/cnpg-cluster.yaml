@@ -20,7 +20,7 @@ spec:
     initdb:
       database: goodmem
       owner: goodmem_user
-      postInitSQL:
+      postInitApplicationSQL:
         - CREATE EXTENSION IF NOT EXISTS "vector"
         - CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
         - CREATE EXTENSION IF NOT EXISTS "pgcrypto"
