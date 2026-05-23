@@ -20,3 +20,17 @@ current-ip-assignments.txt
 .decrypted~*
 .mcp.json
 .remember/
+
+# macOS and editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Claude Code local config (rules/ is tracked; plans and settings are local)
+.claude/plans/
+.claude/settings.json
+.claude/settings.local.json
+
+# Point-in-time audit snapshots
+*-audit.csv
+offline-devices-audit.csv
