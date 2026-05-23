@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - cnpg-cluster.yaml
   - helm-release.yaml
+  - pibb-ops-rbac.yaml
