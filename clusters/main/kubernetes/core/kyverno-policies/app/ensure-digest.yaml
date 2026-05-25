@@ -40,6 +40,10 @@ spec:
           - resources:
               kinds:
                 - Pod
+              name: 'tandoor-recipes*'
+          - resources:
+              kinds:
+                - Pod
               namespaces:
                 - longhorn-system
           - resources:
