@@ -1,0 +1,113 @@
+---
+# Longhorn early-warning alerts.
+#
+# Pre-2026-05-25 we had no visibility into Longhorn errors. The cascade was
+# detected via app failures ~2 hours after CSI sidecar restart at 02:16Z.
+# These rules surface the failure pattern within minutes via the existing
+# Alertmanager → Discord HITL pipeline.
+# Documented in .rootcause/a3_longhorn_recurring_csi_lease_cascade.md (CM-4).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: longhorn-alerts
+  namespace: longhorn-system
+  labels:
+    # Allow kube-prometheus-stack to discover this rule across namespaces
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: longhorn-volume-health
+      interval: 30s
+      rules:
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness{robustness="faulted"} > 0
+          for: 2m
+          labels:
+            severity: critical
+            component: longhorn
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} is faulted"
+            description: |
+              Volume {{ $labels.volume }} (node {{ $labels.node }}) has
+              robustness=faulted for over 2 minutes. Likely engine startup
+              failure (iSCSI desync) or replica corruption.
+              Runbook: docs/runbooks/longhorn-recovery.md
+        - alert: LonghornVolumeStuckDetaching
+          expr: longhorn_volume_state{state="detaching"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: longhorn
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} stuck detaching > 5 min"
+            description: |
+              Volume {{ $labels.volume }} has been in 'detaching' state for
+              over 5 minutes. May indicate instance-manager iSCSI cleanup
+              failure. Runbook: docs/runbooks/longhorn-recovery.md
+        - alert: LonghornVolumeStuckAttaching
+          expr: longhorn_volume_state{state="attaching"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: longhorn
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} stuck attaching > 5 min"
+            description: |
+              Volume {{ $labels.volume }} has been in 'attaching' state for
+              over 5 minutes. Pod will be in ContainerCreating waiting for
+              this volume. Runbook: docs/runbooks/longhorn-recovery.md
+    - name: longhorn-control-plane-health
+      interval: 30s
+      rules:
+        - alert: LonghornCSIRestartStorm
+          expr: |
+            sum(rate(kube_pod_container_status_restarts_total{
+              namespace="longhorn-system",
+              container=~"csi-attacher|csi-provisioner|csi-resizer|csi-snapshotter"
+            }[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            component: longhorn
+          annotations:
+            summary: "Longhorn CSI sidecars are restarting in lockstep"
+            description: |
+              Multiple Longhorn CSI sidecars are restarting at >0.05/s sustained.
+              Likely upstream kube-apiserver/etcd disruption causing
+              leader-lease loss. Pre-cursor to volume detachment cascade.
+              Runbook: docs/runbooks/longhorn-recovery.md
+        - alert: LonghornInstanceManagerOld
+          expr: |
+            time() - kube_pod_start_time{
+              namespace="longhorn-system",
+              pod=~"instance-manager-.*"
+            } > 604800
+          for: 1h
+          labels:
+            severity: info
+            component: longhorn
+          annotations:
+            summary: "Longhorn instance-manager pod {{ $labels.pod }} older than 7 days"
+            description: |
+              The instance-manager has been up over 7 days. The weekly
+              rotation CronJob should have replaced it. Check
+              CronJob/instance-manager-rotation status:
+                kubectl get cronjob -n longhorn-system instance-manager-rotation
+              Runbook: docs/runbooks/longhorn-recovery.md
+        - alert: LonghornManagerErrorRate
+          expr: |
+            sum(rate(kube_pod_container_status_restarts_total{
+              namespace="longhorn-system",
+              container="longhorn-manager"
+            }[15m])) > 0.01
+          for: 10m
+          labels:
+            severity: warning
+            component: longhorn
+          annotations:
+            summary: "longhorn-manager restarting frequently"
+            description: |
+              longhorn-manager has restarted >0.01/s over 15 min. Indicates
+              control-plane instability. Check logs:
+                kubectl logs -n longhorn-system longhorn-manager-* --previous
+              Runbook: docs/runbooks/longhorn-recovery.md

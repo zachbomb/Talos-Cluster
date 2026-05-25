@@ -1,0 +1,99 @@
+---
+# Rotates the longhorn-system instance-manager pod weekly.
+#
+# Why: Longhorn's instance-manager accumulates stale iSCSI target IDs over time
+# (tgtadm cleanup failures are silent and not GC'd). After ~44h of uptime in the
+# 2026-05-25 incident, stale targets blocked engine startup with
+#   `tgtadm: can't find the logical unit: exit status 22`
+# requiring manual restart. Bounding pod uptime to 7 days prevents recurrence.
+# Documented in .rootcause/a3_longhorn_recurring_csi_lease_cascade.md (CM-2).
+#
+# Side-effect: each rotation causes ~5-30s data-plane pause for healthy volumes
+# while engines re-spawn. Scheduled at Sunday 04:00 UTC (low-activity window).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: instance-manager-rotation
+  namespace: longhorn-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: instance-manager-rotation
+  namespace: longhorn-system
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: instance-manager-rotation
+  namespace: longhorn-system
+subjects:
+  - kind: ServiceAccount
+    name: instance-manager-rotation
+    namespace: longhorn-system
+roleRef:
+  kind: Role
+  name: instance-manager-rotation
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: instance-manager-rotation
+  namespace: longhorn-system
+spec:
+  schedule: "0 4 * * 0"   # weekly Sunday 04:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          serviceAccountName: instance-manager-rotation
+          restartPolicy: OnFailure
+          containers:
+            - name: rotate
+              image: docker.io/bitnami/kubectl:1.36
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -euo pipefail
+                  POD=$(kubectl get pods -n longhorn-system \
+                    -l longhorn.io/component=instance-manager \
+                    -o jsonpath='{.items[0].metadata.name}')
+                  if [ -z "$POD" ]; then
+                    echo "ERROR: no instance-manager pod found"
+                    exit 1
+                  fi
+                  AGE_HRS=$(($(($(date +%s) - $(date -d "$(kubectl get pod -n longhorn-system $POD \
+                    -o jsonpath='{.status.startTime}')" +%s))) / 3600))
+                  echo "Rotating instance-manager: $POD (uptime ${AGE_HRS}h)"
+                  kubectl delete pod -n longhorn-system "$POD" --grace-period=60
+                  echo "Waiting for new instance-manager to be Ready..."
+                  for i in $(seq 1 60); do
+                    NEW=$(kubectl get pods -n longhorn-system \
+                      -l longhorn.io/component=instance-manager \
+                      -o jsonpath='{.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}')
+                    if [ -n "$NEW" ]; then
+                      echo "New instance-manager Ready: $NEW"
+                      exit 0
+                    fi
+                    sleep 5
+                  done
+                  echo "ERROR: new instance-manager did not become Ready within 5 min"
+                  exit 1
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
