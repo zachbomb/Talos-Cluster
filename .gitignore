@@ -34,3 +34,4 @@ current-ip-assignments.txt
 # Point-in-time audit snapshots
 *-audit.csv
 offline-devices-audit.csv
+.rootcause/
