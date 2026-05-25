@@ -204,4 +204,20 @@ kubectl get pods -A | grep -E "ContainerCreating|0/[0-9]+\s+Init"
 
 **Mitigations applied:** CSI 2 replicas, weekly instance-manager rotation CronJob, PrometheusRules with 5 alerts, this runbook, orphan engines cleaned (58 force-finalized).
 
-**Open follow-up:** Upstream etcd fsync at 90ms (3.6× healthy) is the trigger source. Patched Talos `cluster.etcd.extraArgs` with `heartbeat-interval: 500`, `election-timeout: 5000` to tolerate slow disk; will take effect on next etcd process restart. Real fix is in the Proxmox VM disk layer (cache mode / underlying pool migration) — pending separate investigation.
+**Open follow-up:** Upstream etcd fsync at 90ms (3.6× healthy) is the trigger source. Patched Talos `cluster.etcd.extraArgs` with `heartbeat-interval: 500`, `election-timeout: 5000` to tolerate slow disk; activated 2026-05-25 via `talosctl reboot` of k8s-control-1. Verified `--election-timeout=5000` and `--heartbeat-interval=500` live in the etcd process args post-reboot.
+
+**Still open — Proxmox disk-layer investigation:** etcd fsync remains slow at the disk layer; Talos-side tuning only buys tolerance, not a real fix. To investigate, SSH to `root@192.168.10.30` and run:
+
+```bash
+qm config 105 | grep -E "scsi|virtio|sata|cache|iothread|aio"   # Talos VM disk options
+pvesm status                                                     # which pool is backing it
+pveperf                                                          # FSYNCS/SECOND (healthy >300, problem <100)
+```
+
+Decision matrix once you have the data:
+
+| Observation | Action |
+|---|---|
+| `cache=none` + ZFS HDD pool | switch Talos VM disk to `cache=writeback`. Trade-off: ~30s of crash-window risk for ~10× fsync speed |
+| `cache=writeback` already + slow pool | migrate Talos VM disk to NVMe-backed storage, or split a small etcd-only VirtIO disk to NVMe |
+| `pveperf` FSYNCS/SECOND > 300 | not the disk layer — re-investigate etcd-specific issues (snapshot frequency, DB compaction) |
