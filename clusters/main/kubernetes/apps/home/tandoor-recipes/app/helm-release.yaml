@@ -53,6 +53,9 @@ spec:
             enabled: true
             entrypoints:
               - websecure
+            middlewares:
+              - name: secure-chain
+                namespace: traefik
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
@@ -84,6 +87,25 @@ spec:
         podSpec:
           containers:
             main:
+              # Probes default to HTTP GET /, but Tandoor's first request after
+              # boot triggers django-vite production asset compilation which
+              # blocks the response past the 1s default timeout. kube-probe
+              # closes the socket (status 499 in nginx logs) and after enough
+              # failures the container is killed. Use TCP probes — gunicorn
+              # binding to the socket is sufficient liveness/readiness signal.
+              probes:
+                liveness:
+                  enabled: true
+                  type: tcp
+                  port: 10029
+                readiness:
+                  enabled: true
+                  type: tcp
+                  port: 10029
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 10029
               env:
                 DB_ENGINE: django.db.backends.sqlite3
                 POSTGRES_HOST: ""
