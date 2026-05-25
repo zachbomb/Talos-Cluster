@@ -32,8 +32,21 @@ spec:
               robustness=faulted for over 2 minutes. Likely engine startup
               failure (iSCSI desync) or replica corruption.
               Runbook: docs/runbooks/longhorn-recovery.md
+        # METRIC SHAPE NOTE (verified Longhorn 1.11.2, 2026-05-25):
+        # `longhorn_volume_state` is a multi-series gauge — one series PER POSSIBLE
+        # STATE per volume. Each volume emits 6+ series:
+        #   {state="attached", volume=X}    value=1 if current, else 0
+        #   {state="attaching", volume=X}   value=1 if current, else 0
+        #   {state="detached", volume=X}    value=1 if current, else 0
+        #   {state="detaching", volume=X}   value=1 if current, else 0
+        #   {state="creating", volume=X}    value=1 if current, else 0
+        #   {state="deleting", volume=X}    value=1 if current, else 0
+        # Sample query verified 894 series across 149 volumes: filter by string
+        # label `state="X"` works (NOT numeric enum despite some Longhorn docs).
+        # If a future Longhorn release changes this shape, fall back to
+        # `longhorn_volume_robustness != "healthy"` (used in LonghornVolumeFaulted).
         - alert: LonghornVolumeStuckDetaching
-          expr: longhorn_volume_state{state="detaching"} > 0
+          expr: longhorn_volume_state{state="detaching"} == 1
           for: 5m
           labels:
             severity: warning
@@ -45,7 +58,7 @@ spec:
               over 5 minutes. May indicate instance-manager iSCSI cleanup
               failure. Runbook: docs/runbooks/longhorn-recovery.md
         - alert: LonghornVolumeStuckAttaching
-          expr: longhorn_volume_state{state="attaching"} > 0
+          expr: longhorn_volume_state{state="attaching"} == 1
           for: 5m
           labels:
             severity: warning

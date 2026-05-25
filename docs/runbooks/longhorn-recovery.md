@@ -64,8 +64,8 @@ echo "Will restart: $POD"
 # 2. Check pod age — if < 24h something else is wrong; investigate before restarting
 kubectl get pod -n longhorn-system $POD -o jsonpath='{.status.startTime}'; echo
 
-# 3. Delete the pod (graceful 30s)
-kubectl delete pod -n longhorn-system $POD --grace-period=30
+# 3. Delete the pod (graceful 60s — matches CronJob/rotation, drains iSCSI cleanly)
+kubectl delete pod -n longhorn-system $POD --grace-period=60
 
 # 4. Wait for new instance-manager to be Ready (typically 30-60s)
 until kubectl get pods -n longhorn-system -l longhorn.io/component=instance-manager 2>/dev/null | grep -q "1/1.*Running"; do sleep 5; done
@@ -185,4 +185,23 @@ kubectl get pods -A | grep -E "ContainerCreating|0/[0-9]+\s+Init"
 | Date | Trigger | Resolution time | Doc |
 |---|---|---|---|
 | 2026-03-16 → 22 | Renovate auto-bumped Longhorn 1.11.0→1.11.1; Kyverno digest mutation broke upgrade detection | 6 days | `~/.claude/projects/-Users-zachbaum-dev-Talos-Cluster/memory/project_longhorn_1_11_recovery.md` |
-| 2026-05-25 | etcd/apiserver disruption caused CSI lease-loss + iSCSI desync | ~2.5 hours (incident) + analysis | `.rootcause/a3_longhorn_recurring_csi_lease_cascade.md` |
+| 2026-05-25 | etcd/apiserver disruption caused CSI lease-loss + iSCSI desync | ~2.5 hours (incident) + analysis | `.rootcause/a3_longhorn_recurring_csi_lease_cascade.md` (gitignored, summary below) |
+
+## A3 key findings — 2026-05-25 (inline summary)
+
+> _Summary last synced from source A3 on 2026-05-25. If you've changed the source A3, update this section too — there is no automated sync._
+
+(Self-contained reference for cold context; the full A3 lives at `.rootcause/a3_longhorn_recurring_csi_lease_cascade.md`)
+
+**What happened:** At 02:16Z all 4 CSI sidecars (attacher/provisioner/resizer/snapshotter) restarted within 4 seconds when kube-apiserver hit etcd timeouts. Their leader leases dropped simultaneously. The 44h-old instance-manager had accumulated stale iSCSI target IDs; on re-attach the engine startup failed with `tgtadm: can't find the logical unit: exit status 22`. 11 volumes ended up stuck in `detaching/faulted`. Apps (sonarr, radarr, plex, sabnzbd, lidarr, readarr, recyclarr, tunarr, tautulli, pihole, grafana, prometheus, chrome-cdp) were in ContainerCreating for ~2.5 hours until manual instance-manager restart.
+
+**5 root causes identified:**
+1. CSI sidecars single-replica — no peer to absorb apiserver hiccups
+2. Instance-manager accumulates stale iSCSI target IDs over uptime
+3. Orphan EngineImage CRD (`ei-ff1cedad`, v1.11.0) referenced by 58 stuck-deleting engines since March 2026 incident — generated continuous log spam
+4. No Longhorn monitoring/alerting — cascade detected ~2 hours late via app failures
+5. Recovery procedure was tribal knowledge
+
+**Mitigations applied:** CSI 2 replicas, weekly instance-manager rotation CronJob, PrometheusRules with 5 alerts, this runbook, orphan engines cleaned (58 force-finalized).
+
+**Open follow-up:** Upstream etcd fsync at 90ms (3.6× healthy) is the trigger source. Patched Talos `cluster.etcd.extraArgs` with `heartbeat-interval: 500`, `election-timeout: 5000` to tolerate slow disk; will take effect on next etcd process restart. Real fix is in the Proxmox VM disk layer (cache mode / underlying pool migration) — pending separate investigation.

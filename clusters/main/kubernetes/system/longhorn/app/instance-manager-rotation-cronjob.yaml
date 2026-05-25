@@ -57,15 +57,46 @@ spec:
         spec:
           serviceAccountName: instance-manager-rotation
           restartPolicy: OnFailure
+          # Run as a non-root user inside the bitnami/kubectl image (the bitnami
+          # image ships with a non-root user already). This minimizes the
+          # capabilities of a pod that only needs kubectl-list/delete.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          # /tmp is writable via emptyDir so kubectl can write its discovery/http
+          # cache under $HOME/.kube/cache when readOnlyRootFilesystem is set.
+          # We override HOME -> /tmp so the cache path resolves to /tmp/.kube/cache
+          # regardless of what the bitnami image's default HOME is.
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 16Mi
           containers:
             - name: rotate
               image: docker.io/bitnami/kubectl:1.36
               imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: HOME
+                  value: /tmp
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
               command:
                 - /bin/sh
                 - -c
                 - |
                   set -euo pipefail
+                  # NOTE: single-node cluster assumption. On multi-node we would
+                  # iterate over all instance-manager pods and rotate one per node
+                  # with a delay between to avoid simultaneous detachment of all
+                  # volumes. For pibb-ops (single Talos node) there is only one IM.
                   POD=$(kubectl get pods -n longhorn-system \
                     -l longhorn.io/component=instance-manager \
                     -o jsonpath='{.items[0].metadata.name}')
@@ -73,15 +104,30 @@ spec:
                     echo "ERROR: no instance-manager pod found"
                     exit 1
                   fi
-                  AGE_HRS=$(($(($(date +%s) - $(date -d "$(kubectl get pod -n longhorn-system $POD \
-                    -o jsonpath='{.status.startTime}')" +%s))) / 3600))
+                  # Skip rotation if the pod is younger than 24 hours.
+                  # Prevents double-rotation if a manual restart happened recently
+                  # (e.g., during incident recovery) close to the cron firing.
+                  # Bound check uses bash arithmetic; pod-startTime is RFC3339.
+                  START_EPOCH=$(date -d "$(kubectl get pod -n longhorn-system $POD \
+                    -o jsonpath='{.status.startTime}')" +%s)
+                  AGE_HRS=$(( ($(date +%s) - START_EPOCH) / 3600 ))
+                  if [ "$AGE_HRS" -lt 24 ]; then
+                    echo "Skipping rotation: $POD is only ${AGE_HRS}h old (< 24h)."
+                    exit 0
+                  fi
                   echo "Rotating instance-manager: $POD (uptime ${AGE_HRS}h)"
+                  # Grace period matches runbook Recovery A. 60s allows in-flight
+                  # iSCSI sessions to drain cleanly without aborting volumes mid-IO.
                   kubectl delete pod -n longhorn-system "$POD" --grace-period=60
                   echo "Waiting for new instance-manager to be Ready..."
+                  # Tolerate transient apiserver hiccups in the wait loop —
+                  # we may BE the cause of an apiserver hiccup (deleting a pod
+                  # triggers controller events). One failed `kubectl get` should
+                  # not kill the whole script; just retry on the next iteration.
                   for i in $(seq 1 60); do
                     NEW=$(kubectl get pods -n longhorn-system \
                       -l longhorn.io/component=instance-manager \
-                      -o jsonpath='{.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}')
+                      -o jsonpath='{.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}' 2>/dev/null || true)
                     if [ -n "$NEW" ]; then
                       echo "New instance-manager Ready: $NEW"
                       exit 0
