@@ -65,6 +65,14 @@ spec:
             runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
+          # /tmp is writable via emptyDir so kubectl can write its discovery/http
+          # cache under $HOME/.kube/cache when readOnlyRootFilesystem is set.
+          # We override HOME -> /tmp so the cache path resolves to /tmp/.kube/cache
+          # regardless of what the bitnami image's default HOME is.
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 16Mi
           containers:
             - name: rotate
               image: docker.io/bitnami/kubectl:1.36
@@ -74,6 +82,12 @@ spec:
                 readOnlyRootFilesystem: true
                 capabilities:
                   drop: ["ALL"]
+              env:
+                - name: HOME
+                  value: /tmp
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
               command:
                 - /bin/sh
                 - -c
@@ -106,10 +120,14 @@ spec:
                   # iSCSI sessions to drain cleanly without aborting volumes mid-IO.
                   kubectl delete pod -n longhorn-system "$POD" --grace-period=60
                   echo "Waiting for new instance-manager to be Ready..."
+                  # Tolerate transient apiserver hiccups in the wait loop —
+                  # we may BE the cause of an apiserver hiccup (deleting a pod
+                  # triggers controller events). One failed `kubectl get` should
+                  # not kill the whole script; just retry on the next iteration.
                   for i in $(seq 1 60); do
                     NEW=$(kubectl get pods -n longhorn-system \
                       -l longhorn.io/component=instance-manager \
-                      -o jsonpath='{.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}')
+                      -o jsonpath='{.items[?(@.status.containerStatuses[0].ready==true)].metadata.name}' 2>/dev/null || true)
                     if [ -n "$NEW" ]; then
                       echo "New instance-manager Ready: $NEW"
                       exit 0

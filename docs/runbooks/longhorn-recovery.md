@@ -189,6 +189,8 @@ kubectl get pods -A | grep -E "ContainerCreating|0/[0-9]+\s+Init"
 
 ## A3 key findings — 2026-05-25 (inline summary)
 
+> _Summary last synced from source A3 on 2026-05-25. If you've changed the source A3, update this section too — there is no automated sync._
+
 (Self-contained reference for cold context; the full A3 lives at `.rootcause/a3_longhorn_recurring_csi_lease_cascade.md`)
 
 **What happened:** At 02:16Z all 4 CSI sidecars (attacher/provisioner/resizer/snapshotter) restarted within 4 seconds when kube-apiserver hit etcd timeouts. Their leader leases dropped simultaneously. The 44h-old instance-manager had accumulated stale iSCSI target IDs; on re-attach the engine startup failed with `tgtadm: can't find the logical unit: exit status 22`. 11 volumes ended up stuck in `detaching/faulted`. Apps (sonarr, radarr, plex, sabnzbd, lidarr, readarr, recyclarr, tunarr, tautulli, pihole, grafana, prometheus, chrome-cdp) were in ContainerCreating for ~2.5 hours until manual instance-manager restart.
