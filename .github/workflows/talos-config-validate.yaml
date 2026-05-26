@@ -109,17 +109,31 @@ jobs:
           printf '%s\n' "$AGE_KEY" > ~/.config/sops/age/keys.txt
           chmod 600 ~/.config/sops/age/keys.txt
 
-          # talhelper auto-discovers talenv.yaml in the same dir as talconfig.yaml.
-          # Decrypt clusterenv.yaml directly into that location so talhelper finds it
-          # without needing --env-file (which expects sops-encrypted YAML, not plaintext).
-          TALENV="$(pwd)/clusters/main/talos/talenv.yaml"
-          sops --decrypt clusters/main/clusterenv.yaml > "$TALENV"
+          # Decrypt clusterenv.yaml and export each scalar as an env var, then run
+          # talhelper genconfig — talhelper reads ${VAR} substitutions from the
+          # process environment when no talenv.yaml is auto-discovered.
+          # (Tried talenv.yaml auto-discovery and --env-file; both have format mismatches.)
+          sops --decrypt clusters/main/clusterenv.yaml > /tmp/clusterenv.yaml
+          python3 - <<'PY' > /tmp/clusterenv.export.sh
+          import yaml, shlex
+          for k, v in yaml.safe_load(open('/tmp/clusterenv.yaml')).items():
+              if isinstance(v, (str, int, float, bool)):
+                  print(f'export {k}={shlex.quote(str(v))}')
+          PY
+          # Source the exports into the current shell.
+          # shellcheck disable=SC1091
+          source /tmp/clusterenv.export.sh
+
+          # Sanity check — fail fast if substitution still won't work.
+          : "${CLUSTERNAME:?CLUSTERNAME not exported from clusterenv.yaml}"
+          : "${VIP:?VIP not exported from clusterenv.yaml}"
 
           cd clusters/main/talos
           talhelper genconfig --out-dir /tmp/generated
 
           # Scrub plaintext copies (runner is ephemeral anyway, but belt-and-suspenders).
-          shred -uz "$TALENV" 2>/dev/null || rm -f "$TALENV"
+          shred -uz /tmp/clusterenv.yaml /tmp/clusterenv.export.sh 2>/dev/null \
+            || rm -f /tmp/clusterenv.yaml /tmp/clusterenv.export.sh
           rm -f ~/.config/sops/age/keys.txt
 
       - name: Validate generated machine config against Talos schema
