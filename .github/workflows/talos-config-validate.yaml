@@ -103,6 +103,9 @@ jobs:
         if: steps.check_secret.outputs.available == 'true'
         env:
           AGE_KEY: ${{ secrets.AGE_KEY }}
+          # CLUSTERNAME isn't in clusterenv.yaml — locally it comes from
+          # clustertool/forgetool's --cluster flag (default "main"). Set it here.
+          CLUSTERNAME: main
         run: |
           set -euo pipefail
           mkdir -p ~/.config/sops/age
@@ -117,7 +120,8 @@ jobs:
           python3 - <<'PY' > /tmp/clusterenv.export.sh
           import yaml, shlex
           for k, v in yaml.safe_load(open('/tmp/clusterenv.yaml')).items():
-              if isinstance(v, (str, int, float, bool)):
+              # Skip empty strings — they would clobber env vars we set in the job's `env:` block.
+              if isinstance(v, (str, int, float, bool)) and str(v) != '':
                   print(f'export {k}={shlex.quote(str(v))}')
           PY
           # Source the exports into the current shell.
@@ -125,7 +129,7 @@ jobs:
           source /tmp/clusterenv.export.sh
 
           # Sanity check — fail fast if substitution still won't work.
-          : "${CLUSTERNAME:?CLUSTERNAME not exported from clusterenv.yaml}"
+          : "${CLUSTERNAME:?CLUSTERNAME not set (workflow env or clusterenv.yaml)}"
           : "${VIP:?VIP not exported from clusterenv.yaml}"
 
           cd clusters/main/talos
