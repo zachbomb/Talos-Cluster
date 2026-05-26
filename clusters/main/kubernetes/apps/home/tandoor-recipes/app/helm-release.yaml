@@ -56,6 +56,10 @@ spec:
             middlewares:
               - name: secure-chain
                 namespace: traefik
+                # Disable TrueCharts release-name prefix mangling on the
+                # middleware name (without this, chart renders the reference
+                # as `traefik-tandoor-recipes-secure-chain` which doesn't exist).
+                expandObjectName: false
           certManager:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
