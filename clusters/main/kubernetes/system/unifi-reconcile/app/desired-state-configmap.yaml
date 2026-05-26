@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unifi-desired-state
+  namespace: unifi-reconcile
+data:
+  desired-state.yaml: |
+    # Desired state for UDM firewall config that has historically drifted across reboots.
+    # The reconcile CronJob compares each entry against the live UniFi API state and
+    # re-applies if drift is detected, then posts a Discord alert.
+    #
+    # Add new entries here when you discover a config that needs to survive reboots.
+    # IDs are stable across UDM reboots; names are for readability.
+
+    firewall_policies:
+      # 2026-05-26: VPN→LAN was blocked after UDM reboot resurrected this rule
+      # even though it was disabled in the March 2026 audit. Today's stall.
+      - id: "679a67c77083f51daf59dde9"
+        name: "Block WG to Networks (ddc5→ddc2)"
+        expected_enabled: false
+
+    network_configs:
+      # 2026-05-26: Travel Portal had mss_clamp disabled which broke large TCP
+      # packets through the VPN tunnel ("upload works, download doesn't" symptom).
+      - id: "69ae4acee07a7085d96d7ca6"
+        name: "Travel Portal"
+        expected_fields:
+          mss_clamp: "custom"
+          mss_clamp_mss: 1360
+
+    port_forwards:
+      # 2026-05-26: ARD ports were exposed externally on standard 5900/3283 ports,
+      # which got hammered by botnets and caused screensharingd CLOSE_WAIT pile-up.
+      # Moved to non-standard high ports to drop scanner noise ~99%.
+      - id: "6834eae0957bc56fcf7c4acb"
+        name: "ARD Screen Sharing"
+        expected_fields:
+          dst_port: "15900"
+          fwd_port: "5900"
+          enabled: true
+      - id: "6834eacb957bc56fcf7c4ac8"
+        name: "ARD Remote Management"
+        expected_fields:
+          dst_port: "13283"
+          fwd_port: "3283"
+          enabled: true
+
+  reconcile.py: |
+    """
+    UniFi firewall state reconciliation.
+
+    Reads desired-state.yaml, GETs each entry from the UDM via API, and PUTs back
+    the corrected object if any expected field has drifted. Posts a Discord
+    summary on every run (idempotent runs are fine; drift events are highlighted).
+    """
+    import json
+    import os
+    import ssl
+    import sys
+    import urllib.error
+    import urllib.request
+    from datetime import datetime
+
+    import yaml
+
+    CONTROLLER = os.environ["UNIFI_CONTROLLER"].rstrip("/")
+    API_KEY = os.environ["UNIFI_API_KEY"]
+    DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
+
+    SSL_CTX = ssl.create_default_context()
+    SSL_CTX.check_hostname = False
+    SSL_CTX.verify_mode = ssl.CERT_NONE
+
+    drift_events = []
+    errors = []
+
+
+    def api(path, method="GET", body=None):
+        url = f"{CONTROLLER}/proxy/network/{path}"
+        data = json.dumps(body).encode() if body is not None else None
+        req = urllib.request.Request(url, data=data, method=method)
+        req.add_header("X-API-Key", API_KEY)
+        if body is not None:
+            req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as r:
+            return json.loads(r.read().decode())
+
+
+    def unwrap(resp):
+        """UniFi v1 API wraps results in {meta, data: [...]}, v2 returns the object directly."""
+        if isinstance(resp, dict) and "data" in resp and "meta" in resp:
+            arr = resp["data"]
+            return arr[0] if isinstance(arr, list) and arr else arr
+        return resp
+
+
+    def reconcile_firewall_policy(entry):
+        obj_id = entry["id"]
+        name = entry["name"]
+        expected_enabled = entry["expected_enabled"]
+        try:
+            current = unwrap(api(f"v2/api/site/default/firewall-policies/{obj_id}"))
+            if current.get("enabled") != expected_enabled:
+                drift_events.append(
+                    f"firewall_policy `{name}`: enabled "
+                    f"{current.get('enabled')} → {expected_enabled}"
+                )
+                current["enabled"] = expected_enabled
+                api(
+                    f"v2/api/site/default/firewall-policies/{obj_id}",
+                    method="PUT",
+                    body=current,
+                )
+        except Exception as e:
+            errors.append(f"firewall_policy `{name}`: {e}")
+
+
+    def reconcile_network_config(entry):
+        obj_id = entry["id"]
+        name = entry["name"]
+        expected = entry["expected_fields"]
+        try:
+            current = unwrap(api(f"api/s/default/rest/networkconf/{obj_id}"))
+            drifted = {k: v for k, v in expected.items() if current.get(k) != v}
+            if drifted:
+                drift_events.append(
+                    f"network_config `{name}`: " + ", ".join(
+                        f"{k} {current.get(k)!r} → {v!r}" for k, v in drifted.items()
+                    )
+                )
+                for k, v in expected.items():
+                    current[k] = v
+                api(
+                    f"api/s/default/rest/networkconf/{obj_id}",
+                    method="PUT",
+                    body=current,
+                )
+        except Exception as e:
+            errors.append(f"network_config `{name}`: {e}")
+
+
+    def reconcile_port_forward(entry):
+        obj_id = entry["id"]
+        name = entry["name"]
+        expected = entry["expected_fields"]
+        try:
+            current = unwrap(api(f"api/s/default/rest/portforward/{obj_id}"))
+            drifted = {k: v for k, v in expected.items() if current.get(k) != v}
+            if drifted:
+                drift_events.append(
+                    f"port_forward `{name}`: " + ", ".join(
+                        f"{k} {current.get(k)!r} → {v!r}" for k, v in drifted.items()
+                    )
+                )
+                for k, v in expected.items():
+                    current[k] = v
+                api(
+                    f"api/s/default/rest/portforward/{obj_id}",
+                    method="PUT",
+                    body=current,
+                )
+        except Exception as e:
+            errors.append(f"port_forward `{name}`: {e}")
+
+
+    def post_discord(content):
+        if not DISCORD_WEBHOOK:
+            print("DISCORD_WEBHOOK_URL not set, skipping notification")
+            return
+        try:
+            req = urllib.request.Request(
+                DISCORD_WEBHOOK,
+                data=json.dumps({"content": content}).encode(),
+                method="POST",
+            )
+            req.add_header("Content-Type", "application/json")
+            with urllib.request.urlopen(req, timeout=15) as r:
+                r.read()
+        except Exception as e:
+            print(f"discord post failed: {e}", file=sys.stderr)
+
+
+    def main():
+        with open("/etc/unifi-reconcile/desired-state.yaml") as f:
+            desired = yaml.safe_load(f)
+
+        for entry in desired.get("firewall_policies", []):
+            reconcile_firewall_policy(entry)
+        for entry in desired.get("network_configs", []):
+            reconcile_network_config(entry)
+        for entry in desired.get("port_forwards", []):
+            reconcile_port_forward(entry)
+
+        ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        if drift_events or errors:
+            msg_lines = [f"**UniFi reconcile {ts}**"]
+            if drift_events:
+                msg_lines.append(f"⚠️ {len(drift_events)} drift event(s) corrected:")
+                for ev in drift_events:
+                    msg_lines.append(f"  • {ev}")
+            if errors:
+                msg_lines.append(f"❌ {len(errors)} error(s):")
+                for er in errors:
+                    msg_lines.append(f"  • {er}")
+            post_discord("\n".join(msg_lines))
+            print("\n".join(msg_lines))
+            sys.exit(0 if not errors else 1)
+        else:
+            print(f"{ts} all entries match desired state, no drift")
+
+
+    if __name__ == "__main__":
+        main()
