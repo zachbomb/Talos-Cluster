@@ -115,14 +115,34 @@ jobs:
           # Decrypt clusterenv.yaml and export each scalar as an env var, then run
           # talhelper genconfig — talhelper reads ${VAR} substitutions from the
           # process environment when no talenv.yaml is auto-discovered.
-          # (Tried talenv.yaml auto-discovery and --env-file; both have format mismatches.)
+          # We also derive *_IP, *_NETMASK, *_CIDR for any IP-shaped value, matching
+          # clustertool's PostProcessTalEnv behavior (pkg/initfiles/clusterenv.go).
           sops --decrypt clusters/main/clusterenv.yaml > /tmp/clusterenv.yaml
           python3 - <<'PY' > /tmp/clusterenv.export.sh
-          import yaml, shlex
-          for k, v in yaml.safe_load(open('/tmp/clusterenv.yaml')).items():
-              # Skip empty strings — they would clobber env vars we set in the job's `env:` block.
-              if isinstance(v, (str, int, float, bool)) and str(v) != '':
-                  print(f'export {k}={shlex.quote(str(v))}')
+          import yaml, shlex, ipaddress
+          d = yaml.safe_load(open('/tmp/clusterenv.yaml'))
+          out = {}
+          for k, v in d.items():
+              if not isinstance(v, (str, int, float, bool)) or str(v) == '':
+                  continue
+              s = str(v)
+              out[k] = s
+              # Mirror clustertool's splitIPandNetmask: derive _IP/_NETMASK/_CIDR
+              # from anything that looks like a valid IP (with or without /MASK).
+              try:
+                  if '/' in s:
+                      net = ipaddress.ip_interface(s)
+                      ip = str(net.ip); mask = str(net.network.prefixlen)
+                  else:
+                      ipaddress.ip_address(s)
+                      ip = s; mask = '24'  # default per clustertool
+                  out[k + '_IP'] = ip
+                  out[k + '_NETMASK'] = mask
+                  out[k + '_CIDR'] = f'{ip}/{mask}'
+              except (ValueError, ipaddress.AddressValueError):
+                  pass
+          for k, v in out.items():
+              print(f'export {k}={shlex.quote(v)}')
           PY
           # Source the exports into the current shell.
           # shellcheck disable=SC1091
