@@ -1,14 +1,11 @@
 talconfig.json
 clusterconfig
-patches/all.yaml
-patches/controlplane.yaml
-patches/worker.yaml
-*patches/all.yaml
-*patches/controlplane.yaml
-*patches/worker.yaml
-all.yaml
-controlplane.yaml
-worker.yaml
+# patches/all.yaml, patches/controlplane.yaml, patches/worker.yaml were ignored
+# because all.yaml used to contain a plaintext Docker Hub password.
+# 2026-05-26: switched all.yaml to ${DOCKERHUB_USER}/${DOCKERHUB_PASSWORD}
+# substitution (vars sourced from SOPS-encrypted clusterenv.yaml), so the
+# patches now contain no secrets and can be tracked — enabling Renovate +
+# CI validation on them. See talos-config-validate.yaml workflow.
 *sopssecret.secret.yaml
 sopssecret.secret.yaml
 cluster/main/kubernetes/**/bootstrap-values.yaml.ct

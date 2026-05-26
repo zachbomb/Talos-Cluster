@@ -151,6 +151,15 @@ jobs:
           # Sanity check — fail fast if substitution still won't work.
           : "${CLUSTERNAME:?CLUSTERNAME not set (workflow env or clusterenv.yaml)}"
           : "${VIP:?VIP not exported from clusterenv.yaml}"
+          : "${DOCKERHUB_USER:?DOCKERHUB_USER not exported from clusterenv.yaml}"
+          : "${DOCKERHUB_PASSWORD:?DOCKERHUB_PASSWORD not exported from clusterenv.yaml}"
+
+          # Defensive: pre-substitute env vars in patch files. talhelper substitutes
+          # talconfig.yaml, but its behavior on referenced patch files is unclear in
+          # docs. envsubst guarantees the substitution before talhelper reads them.
+          for p in clusters/main/talos/patches/*.yaml; do
+            envsubst < "$p" > "$p.tmp" && mv "$p.tmp" "$p"
+          done
 
           cd clusters/main/talos
           talhelper genconfig --out-dir /tmp/generated
