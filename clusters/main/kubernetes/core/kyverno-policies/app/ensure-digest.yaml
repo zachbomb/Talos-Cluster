@@ -19,6 +19,14 @@ metadata:
       This policy resolves the image digest of each image in a container and replaces
       the image with the fully resolved reference which includes the digest rather than tag.
 spec:
+  # failurePolicy: Ignore so this policy doesn't block pod creation
+  # cluster-wide when Kyverno itself is starting up (cold-start deadlock).
+  # When Kyverno is healthy, the policy applies normally to all new pods.
+  # When Kyverno is unreachable (e.g. during cluster reboot), pods can still
+  # be created — they just won't have image digests resolved until the next
+  # rollout. Acceptable trade-off for cold-start resilience on a single-node
+  # cluster. See 2026-05-26 incident.
+  failurePolicy: Ignore
   background: false
   rules:
   - name: resolve-to-digest

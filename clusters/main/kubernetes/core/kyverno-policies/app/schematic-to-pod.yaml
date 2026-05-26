@@ -12,6 +12,10 @@ metadata:
     policies.kyverno.io/minversion: 1.10.0
     kyverno.io/kubernetes-version: "1.30"
 spec:
+  # failurePolicy: Ignore — see ensure-digest.yaml for rationale. Same
+  # cold-start deadlock applies: this policy fires on Pod/binding admission,
+  # which means the scheduler can't place pods if Kyverno is unreachable.
+  failurePolicy: Ignore
   background: false
   rules:
     - name: project-foo

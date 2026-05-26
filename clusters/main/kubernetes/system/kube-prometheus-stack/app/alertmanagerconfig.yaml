@@ -1,5 +1,8 @@
 ---
-# AlertmanagerConfig (v1beta1) — cluster-wide alert routing.
+# AlertmanagerConfig (v1alpha1) — cluster-wide alert routing.
+# 2026-05-26: dropped from v1beta1 to v1alpha1 — the kube-prometheus-stack
+# CRD only serves v1alpha1 now (v1beta1 was removed in a recent chart
+# release). Schema for matchers is identical between the two.
 #
 # Plan: docs/plans/2026-05-07-001-feat-alerting-hitl-framework-plan.md (U3, U10, U16)
 # Origin: docs/brainstorms/2026-05-07-cluster-alerting-hitl-requirements.md (R2, R3, R4, R18a)
@@ -14,7 +17,7 @@
 #   receiver is deployed). Until then, alerts carrying a `remediation` label fall
 #   through to the severity-based routes below.
 
-apiVersion: monitoring.coreos.com/v1beta1
+apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
   name: cluster-routing
@@ -35,7 +38,7 @@ spec:
         matchers:
           - name: alertname
             value: InfoInhibitor
-            matchType: =
+            matchType: "="
         continue: false
 
       # Watchdog: per-route groupInterval override delivers heartbeat at 1-min eval
@@ -45,7 +48,7 @@ spec:
         matchers:
           - name: watchdog
             value: "true"
-            matchType: =
+            matchType: "="
         groupInterval: 30s
         groupWait: 0s
         repeatInterval: 1m
@@ -59,10 +62,10 @@ spec:
         matchers:
           - name: severity
             value: critical
-            matchType: =
+            matchType: "="
           - name: remediation
             value: .+
-            matchType: =~
+            matchType: "=~"
         repeatInterval: 4h
         continue: false
 
@@ -71,7 +74,7 @@ spec:
         matchers:
           - name: severity
             value: critical
-            matchType: =
+            matchType: "="
         repeatInterval: 4h
         continue: false
 
@@ -80,7 +83,7 @@ spec:
         matchers:
           - name: severity
             value: warning
-            matchType: =
+            matchType: "="
         repeatInterval: 12h
         continue: false
 
@@ -89,7 +92,7 @@ spec:
         matchers:
           - name: severity
             value: info
-            matchType: =
+            matchType: "="
         continue: false
 
   # Inhibit a warning when the same alertname is firing critical.
@@ -97,11 +100,11 @@ spec:
     - sourceMatch:
         - name: severity
           value: critical
-          matchType: =
+          matchType: "="
       targetMatch:
         - name: severity
           value: warning
-          matchType: =
+          matchType: "="
       equal:
         - alertname
         - namespace
