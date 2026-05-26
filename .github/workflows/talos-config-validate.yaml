@@ -56,8 +56,13 @@ jobs:
           # Substitute placeholder values so talhelper can parse the schema.
           # Real values come from the SOPS-encrypted clusterenv.yaml at apply time;
           # this step only validates that the TALCONFIG schema is correct.
-          envsubst < clusters/main/talos/talconfig.yaml > /tmp/talconfig-resolved.yaml
-          talhelper validate talconfig --config-file /tmp/talconfig-resolved.yaml
+          # talhelper validate talconfig reads talconfig.yaml from cwd — copy resolved
+          # file into a scratch dir and run there.
+          mkdir -p /tmp/talconfig-validate
+          envsubst < clusters/main/talos/talconfig.yaml > /tmp/talconfig-validate/talconfig.yaml
+          # Also copy patches/ since talconfig references them.
+          cp -r clusters/main/talos/patches /tmp/talconfig-validate/
+          cd /tmp/talconfig-validate && talhelper validate talconfig
 
   genconfig:
     name: Full genconfig (requires AGE_KEY secret)
@@ -98,17 +103,70 @@ jobs:
         if: steps.check_secret.outputs.available == 'true'
         env:
           AGE_KEY: ${{ secrets.AGE_KEY }}
+          # CLUSTERNAME isn't in clusterenv.yaml — locally it comes from
+          # clustertool/forgetool's --cluster flag (default "main"). Set it here.
+          CLUSTERNAME: main
         run: |
+          set -euo pipefail
           mkdir -p ~/.config/sops/age
           printf '%s\n' "$AGE_KEY" > ~/.config/sops/age/keys.txt
           chmod 600 ~/.config/sops/age/keys.txt
 
-          sops --decrypt clusters/main/clusterenv.yaml > /tmp/clusterenv-decrypted.yaml
+          # Decrypt clusterenv.yaml and export each scalar as an env var, then run
+          # talhelper genconfig — talhelper reads ${VAR} substitutions from the
+          # process environment when no talenv.yaml is auto-discovered.
+          # We also derive *_IP, *_NETMASK, *_CIDR for any IP-shaped value, matching
+          # clustertool's PostProcessTalEnv behavior (pkg/initfiles/clusterenv.go).
+          sops --decrypt clusters/main/clusterenv.yaml > /tmp/clusterenv.yaml
+          python3 - <<'PY' > /tmp/clusterenv.export.sh
+          import yaml, shlex, ipaddress
+          d = yaml.safe_load(open('/tmp/clusterenv.yaml'))
+          out = {}
+          for k, v in d.items():
+              if not isinstance(v, (str, int, float, bool)) or str(v) == '':
+                  continue
+              s = str(v)
+              out[k] = s
+              # Mirror clustertool's splitIPandNetmask: derive _IP/_NETMASK/_CIDR
+              # from anything that looks like a valid IP (with or without /MASK).
+              try:
+                  if '/' in s:
+                      net = ipaddress.ip_interface(s)
+                      ip = str(net.ip); mask = str(net.network.prefixlen)
+                  else:
+                      ipaddress.ip_address(s)
+                      ip = s; mask = '24'  # default per clustertool
+                  out[k + '_IP'] = ip
+                  out[k + '_NETMASK'] = mask
+                  out[k + '_CIDR'] = f'{ip}/{mask}'
+              except (ValueError, ipaddress.AddressValueError):
+                  pass
+          for k, v in out.items():
+              print(f'export {k}={shlex.quote(v)}')
+          PY
+          # Source the exports into the current shell.
+          # shellcheck disable=SC1091
+          source /tmp/clusterenv.export.sh
+
+          # Sanity check — fail fast if substitution still won't work.
+          : "${CLUSTERNAME:?CLUSTERNAME not set (workflow env or clusterenv.yaml)}"
+          : "${VIP:?VIP not exported from clusterenv.yaml}"
+          : "${DOCKERHUB_USER:?DOCKERHUB_USER not exported from clusterenv.yaml}"
+          : "${DOCKERHUB_PASSWORD:?DOCKERHUB_PASSWORD not exported from clusterenv.yaml}"
+
+          # Defensive: pre-substitute env vars in patch files. talhelper substitutes
+          # talconfig.yaml, but its behavior on referenced patch files is unclear in
+          # docs. envsubst guarantees the substitution before talhelper reads them.
+          for p in clusters/main/talos/patches/*.yaml; do
+            envsubst < "$p" > "$p.tmp" && mv "$p.tmp" "$p"
+          done
 
           cd clusters/main/talos
-          talhelper genconfig --env-file /tmp/clusterenv-decrypted.yaml --out-dir /tmp/generated
+          talhelper genconfig --out-dir /tmp/generated
 
-          shred -uz /tmp/clusterenv-decrypted.yaml 2>/dev/null || rm -f /tmp/clusterenv-decrypted.yaml
+          # Scrub plaintext copies (runner is ephemeral anyway, but belt-and-suspenders).
+          shred -uz /tmp/clusterenv.yaml /tmp/clusterenv.export.sh 2>/dev/null \
+            || rm -f /tmp/clusterenv.yaml /tmp/clusterenv.export.sh
           rm -f ~/.config/sops/age/keys.txt
 
       - name: Validate generated machine config against Talos schema

@@ -1,0 +1,66 @@
+machine:
+  features:
+    kubernetesTalosAPIAccess:
+      enabled: true
+      allowedRoles:
+        - os:admin
+      allowedKubernetesNamespaces:
+        - system-upgrade
+cluster:
+  controllerManager:
+    extraArgs:
+      bind-address: 0.0.0.0
+  etcd:
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+      # Tune for slow fsync latency on the underlying Proxmox VM disk layer.
+      # Observed (2026-05-25): etcd WAL fsync p99 = 90ms vs healthy <25ms.
+      # Underlying physical disk shows 2ms writes — gap is in Proxmox VM disk
+      # layer (cache mode + storage pool). Until the disk path is fixed,
+      # tune etcd to tolerate the slower fsyncs so leader election doesn't
+      # thrash and cascade into CSI sidecar lease loss.
+      # Defaults: heartbeat=100ms, election=1000ms.
+      # New: heartbeat=500ms, election=5000ms (5x the heartbeat per etcd docs).
+      heartbeat-interval: "500"
+      election-timeout: "5000"
+  proxy:
+    extraArgs:
+      metrics-bind-address: 0.0.0.0:10249
+  apiServer:
+    extraArgs:
+      enable-aggregator-routing: "true"
+    admissionControl:
+      - name: PodSecurity
+        configuration:
+          exemptions:
+            namespaces:
+              - metallb
+              - metallb-config
+              - topolvm-system
+              - longhorn-system
+              - kyverno
+              - system-upgrade
+              - openebs
+              - snapshot-controller
+              - volsync
+              - flux-system
+  scheduler:
+    extraArgs:
+      bind-address: 0.0.0.0
+    config:
+      apiVersion: kubescheduler.config.k8s.io/v1
+      kind: KubeSchedulerConfiguration
+      profiles:
+        - pluginConfig:
+            - args:
+                defaultConstraints:
+                  - maxSkew: 1
+                    topologyKey: kubernetes.io/hostname
+                    whenUnsatisfiable: ScheduleAnyway
+                defaultingType: List
+              name: PodTopologySpread
+          plugins:
+            score:
+              disabled:
+                - name: ImageLocality
+          schedulerName: default-scheduler
