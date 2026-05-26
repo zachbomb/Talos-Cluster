@@ -69,8 +69,13 @@ spec:
         repeatInterval: 4h
         continue: false
 
-      # Critical without remediation label — plain Discord direct webhook.
-      - receiver: discord-critical
+      # Critical without remediation label — route to Notifiarr (which the user's
+      # Notifiarr Local client can fan out to Discord/Telegram/etc per its config).
+      # 2026-05-26: switched from a direct discord-critical receiver to notifiarr-default
+      # because v85 of kube-prometheus-stack adds strict apiURL validation and the
+      # discord webhook was a placeholder. Re-add a discord-critical receiver here
+      # if a real Discord webhook is configured later.
+      - receiver: notifiarr-default
         matchers:
           - name: severity
             value: critical
@@ -112,24 +117,17 @@ spec:
   receivers:
     - name: "null"
 
-    - name: discord-critical
-      discordConfigs:
-        - sendResolved: true
-          apiURL:
-            name: alertmanager-secret
-            key: discord-critical-url
-          title: |-
-            [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
-          message: |-
-            {{- range .Alerts }}
-              {{- if ne .Annotations.description "" }}
-                {{ .Annotations.description }}
-              {{- else if ne .Annotations.summary "" }}
-                {{ .Annotations.summary }}
-              {{- else }}
-                Alert: {{ .Labels.alertname }}
-              {{- end }}
-            {{- end }}
+    # discord-critical receiver removed 2026-05-26 — placeholder apiURL fails
+    # v85 validation. Routing collapsed onto notifiarr-default for now. To re-enable
+    # native Discord delivery, restore this receiver and fill in discord-critical-url
+    # in alertmanager-secret.secret.yaml:
+    #
+    # - name: discord-critical
+    #   discordConfigs:
+    #     - sendResolved: true
+    #       apiURL: { name: alertmanager-secret, key: discord-critical-url }
+    #       title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}'
+    #       message: ...
 
     - name: notifiarr-default
       webhookConfigs:
