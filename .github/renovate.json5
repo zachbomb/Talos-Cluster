@@ -9,6 +9,17 @@
       "matchPackageNames": ["longhorn"],
       "enabled": false,
       "description": "Longhorn 1.11.x has upgrade loop bug on single-node clusters"
+    },
+    {
+      "matchPackageNames": [
+        "ghcr.io/siderolabs/kubelet",
+        "ghcr.io/siderolabs/installer",
+        "ghcr.io/siderolabs/talos",
+        "siderolabs/talos"
+      ],
+      "automerge": false,
+      "addLabels": ["do-not-merge"],
+      "description": "Talos/kubelet infra PRs require human review before merge. May 2026 cluster wedge from a Talos config-drift bug that landed via auto-merge with no validation."
     }
   ]
 }

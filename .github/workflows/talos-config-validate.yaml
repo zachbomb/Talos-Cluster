@@ -1,0 +1,129 @@
+name: "Talos Config Validate"
+
+on:
+  pull_request:
+    paths:
+      - "clusters/main/talos/**"
+      - "clusters/main/clusterenv.yaml"
+      - ".sops.yaml"
+
+concurrency:
+  group: talos-validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  syntax:
+    name: YAML syntax + talconfig schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install --user yamllint
+
+      - name: YAML lint talos directory
+        run: |
+          yamllint -d '{extends: relaxed, rules: {line-length: disable, document-start: disable, truthy: disable}}' \
+            clusters/main/talos/talconfig.yaml \
+            clusters/main/talos/patches/
+
+      - name: Install talhelper
+        run: |
+          TALHELPER_VERSION="$(curl -sL https://api.github.com/repos/budimanjojo/talhelper/releases/latest | jq -r .tag_name)"
+          curl -sL "https://github.com/budimanjojo/talhelper/releases/download/${TALHELPER_VERSION}/talhelper_linux_amd64.tar.gz" \
+            | tar -xz -C /tmp talhelper
+          sudo install -m 0755 /tmp/talhelper /usr/local/bin/talhelper
+          talhelper --version
+
+      - name: Validate talconfig schema (no secrets needed)
+        env:
+          CLUSTERNAME: main
+          VIP: 192.168.0.1
+          MASTER1IP_IP: 192.168.0.2
+          MASTER1IP_CIDR: 192.168.0.2/24
+          GATEWAY: 192.168.0.254
+          PODNET: 10.42.0.0/16
+          SVCNET: 10.43.0.0/16
+          DOMAIN_0: example.com
+          METALLB_RANGE: 192.168.0.100-192.168.0.200
+          HEADLAMP_IP: 192.168.0.50
+        run: |
+          # Substitute placeholder values so talhelper can parse the schema.
+          # Real values come from the SOPS-encrypted clusterenv.yaml at apply time;
+          # this step only validates that the TALCONFIG schema is correct.
+          envsubst < clusters/main/talos/talconfig.yaml > /tmp/talconfig-resolved.yaml
+          talhelper validate talconfig --config-file /tmp/talconfig-resolved.yaml
+
+  genconfig:
+    name: Full genconfig (requires AGE_KEY secret)
+    runs-on: ubuntu-latest
+    # Only run on this repo (not forks) — the AGE_KEY secret isn't available to forks anyway.
+    if: ${{ github.repository_owner == 'zachbomb' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for AGE_KEY secret
+        id: check_secret
+        env:
+          AGE_KEY: ${{ secrets.AGE_KEY }}
+        run: |
+          if [ -z "${AGE_KEY}" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AGE_KEY secret is not set. Skipping full genconfig validation."
+            echo "::notice::To enable, add the contents of age.agekey as a repo secret named AGE_KEY."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up tools
+        if: steps.check_secret.outputs.available == 'true'
+        run: |
+          TALHELPER_VERSION="$(curl -sL https://api.github.com/repos/budimanjojo/talhelper/releases/latest | jq -r .tag_name)"
+          curl -sL "https://github.com/budimanjojo/talhelper/releases/download/${TALHELPER_VERSION}/talhelper_linux_amd64.tar.gz" \
+            | tar -xz -C /tmp talhelper
+          sudo install -m 0755 /tmp/talhelper /usr/local/bin/talhelper
+
+          SOPS_VERSION="$(curl -sL https://api.github.com/repos/getsops/sops/releases/latest | jq -r .tag_name)"
+          curl -sL "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64" \
+            -o /tmp/sops
+          sudo install -m 0755 /tmp/sops /usr/local/bin/sops
+
+      - name: Decrypt clusterenv and generate machine config
+        if: steps.check_secret.outputs.available == 'true'
+        env:
+          AGE_KEY: ${{ secrets.AGE_KEY }}
+        run: |
+          mkdir -p ~/.config/sops/age
+          printf '%s\n' "$AGE_KEY" > ~/.config/sops/age/keys.txt
+          chmod 600 ~/.config/sops/age/keys.txt
+
+          sops --decrypt clusters/main/clusterenv.yaml > /tmp/clusterenv-decrypted.yaml
+
+          cd clusters/main/talos
+          talhelper genconfig --env-file /tmp/clusterenv-decrypted.yaml --out-dir /tmp/generated
+
+          shred -uz /tmp/clusterenv-decrypted.yaml 2>/dev/null || rm -f /tmp/clusterenv-decrypted.yaml
+          rm -f ~/.config/sops/age/keys.txt
+
+      - name: Validate generated machine config against Talos schema
+        if: steps.check_secret.outputs.available == 'true'
+        run: |
+          TALOS_VERSION="$(grep -oE 'talosVersion: v[0-9.]+' clusters/main/talos/talconfig.yaml | awk '{print $2}')"
+          curl -sL "https://github.com/siderolabs/talos/releases/download/${TALOS_VERSION}/talosctl-linux-amd64" \
+            -o /tmp/talosctl
+          sudo install -m 0755 /tmp/talosctl /usr/local/bin/talosctl
+
+          for f in /tmp/generated/*.yaml; do
+            [ -f "$f" ] || continue
+            case "$(basename "$f")" in
+              talosconfig|*.tmpl) continue ;;
+            esac
+            echo "Validating: $f"
+            talosctl validate --config "$f" --mode metal
+          done
