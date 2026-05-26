@@ -1,4 +1,5 @@
 clusterName: ${CLUSTERNAME}
+# Variables defined in clusters/main/clusterenv.yaml (SOPS encrypted).
 # renovate: datasource=docker depName=ghcr.io/siderolabs/installer
 talosVersion: v1.13.3
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
