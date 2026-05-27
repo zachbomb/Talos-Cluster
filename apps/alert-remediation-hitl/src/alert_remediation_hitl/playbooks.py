@@ -72,6 +72,20 @@ class JobDispatcher:
                 k8s_config.load_kube_config()
             except Exception:  # pragma: no cover - tests stub this client
                 _LOGGER.debug("No kube config available; JobDispatcher will fail at runtime if used.")
+        # kubernetes-python v36 regression: load_incluster_config() stores the
+        # token under api_key['authorization'] but the new generated code only
+        # consults api_key['BearerToken'] when building auth_settings(). The
+        # result is that every request goes out *without* an Authorization
+        # header and the API server returns 401. Mirror the token under both
+        # keys so we work across versions without pinning.
+        cfg = k8s_client.Configuration.get_default_copy()
+        if cfg.api_key:
+            raw = next(iter(cfg.api_key.values()), "")
+            token = raw[7:] if raw.lower().startswith("bearer ") else raw
+            if token:
+                bearer = f"Bearer {token}"
+                cfg.api_key = {"BearerToken": bearer, "authorization": bearer}
+                k8s_client.Configuration.set_default(cfg)
         self._batch = k8s_client.BatchV1Api()
 
     @staticmethod
