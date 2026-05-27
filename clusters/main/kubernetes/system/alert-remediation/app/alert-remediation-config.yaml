@@ -21,7 +21,7 @@ data:
   # and paste the resulting line here. StrictHostKeyChecking=yes in the
   # playbook Job will refuse to connect if this doesn't match.
   udm-known-hosts: |
-    # 192.168.10.1:22 SSH-2.0-OpenSSH_8.4p1 Debian-5+deb11u7
+    192.168.10.1 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDu7a1YsfLs/JWTrZ2cUTxV+b2mEMObM1vPSvXwkeG3C
   # Registry of playbooks the receiver knows about. The receiver matches
   # alerts' `remediation: <name>` label against entries here. New playbooks
   # add a YAML manifest under this directory + a registry entry.
