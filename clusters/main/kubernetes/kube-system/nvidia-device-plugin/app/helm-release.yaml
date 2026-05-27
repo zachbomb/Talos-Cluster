@@ -10,7 +10,7 @@ spec:
     spec:
       # renovate: datasource=helm depName=nvidia-device-plugin registryUrl=oci://ghcr.io/home-operations/charts-mirror
       chart: nvidia-device-plugin
-      version: 0.19.1
+      version: 0.19.2
       sourceRef:
         kind: HelmRepository
         name: home-ops-mirror
