@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notifiarr-bridge-script
+  namespace: notifiarr-bridge
+data:
+  bridge.py: |
+    """
+    Alertmanager → Notifiarr Passthrough bridge.
+
+    Alertmanager's webhook_configs sends a fixed JSON body that Notifiarr's
+    /api/v1/notification/passthrough/<key> doesn't accept (returns 400
+    "notification.name is required"). This bridge transforms the AM webhook
+    into Notifiarr's expected shape and forwards.
+
+    Listen: 0.0.0.0:8080/webhook  (POST, JSON body)
+    Health: GET /health → "ok"
+    """
+    import http.server, json, os, sys, urllib.request, urllib.error
+    from datetime import datetime, timezone
+
+    API_KEY = os.environ.get("NOTIFIARR_API_KEY", "")
+    if not API_KEY:
+        print("ERROR: NOTIFIARR_API_KEY env var not set", flush=True)
+        sys.exit(1)
+
+    NOTIFIARR_URL = f"https://notifiarr.com/api/v1/notification/passthrough/{API_KEY}"
+
+    SEVERITY_COLOR = {
+        "critical": "ee0000",
+        "warning":  "ffaa00",
+        "info":     "3399ff",
+        "none":     "888888",
+    }
+
+    def now_iso() -> str:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def transform(am: dict) -> dict:
+        """Convert Alertmanager webhook v4 payload → Notifiarr passthrough JSON."""
+        alerts = am.get("alerts", [])
+        status = am.get("status", "unknown")
+        common = am.get("commonLabels", {})
+        first = alerts[0] if alerts else {}
+        first_labels = first.get("labels", {}) or {}
+
+        # Title: status + alertname (+ count if multiple)
+        alertname = common.get("alertname") or first_labels.get("alertname") or "Alert"
+        firing_n = sum(1 for a in alerts if a.get("status") == "firing")
+        resolved_n = sum(1 for a in alerts if a.get("status") == "resolved")
+        title_parts = [f"[{status.upper()}]"]
+        if firing_n: title_parts.append(f"{firing_n} firing")
+        if resolved_n: title_parts.append(f"{resolved_n} resolved")
+        title_parts.append(alertname)
+        title = " ".join(title_parts)[:200]
+
+        # Severity / color (use highest severity in batch)
+        severities = [a.get("labels", {}).get("severity") for a in alerts]
+        sev = (
+            "critical" if "critical" in severities else
+            "warning"  if "warning"  in severities else
+            "info"     if "info"     in severities else "none"
+        )
+        color = SEVERITY_COLOR.get(sev, "888888")
+
+        # Body — per-alert lines (cap at 1900 chars discord-safe)
+        lines = []
+        for a in alerts[:10]:  # cap at 10 per batch
+            l = a.get("labels", {}) or {}
+            an = a.get("annotations", {}) or {}
+            summary = an.get("summary") or an.get("description") or l.get("alertname", "")
+            ns = l.get("namespace", "")
+            sev_a = l.get("severity", "")
+            head = l.get("alertname", "alert")
+            if sev_a: head += f" ({sev_a})"
+            if ns:    head += f" [{ns}]"
+            lines.append(f"**{head}**")
+            if summary: lines.append(summary[:280])
+            lines.append("")
+        if len(alerts) > 10:
+            lines.append(f"_… and {len(alerts) - 10} more_")
+        content = "\n".join(lines).strip()[:1900]
+
+        # Notifiarr passthrough shape (per notifiarr.wiki/Pages/notification-passthrough)
+        return {
+            "notification": {
+                "update": False,
+                "name": f"Alertmanager-{alertname}",
+                "event": now_iso(),
+            },
+            "discord": {
+                "color": color,
+                "text": {
+                    "title": title,
+                    "content": content or alertname,
+                    "description": (alerts[0].get("annotations", {}) or {}).get("description", "")[:1500],
+                },
+            },
+        }
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, fmt, *args):
+            # Use plain stdout so kubectl logs shows it
+            print(f"{self.address_string()} - {fmt % args}", flush=True)
+
+        def do_GET(self):
+            if self.path in ("/health", "/healthz", "/"):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                self.wfile.write(b"ok")
+                return
+            self.send_response(404)
+            self.end_headers()
+
+        def do_POST(self):
+            if not self.path.startswith("/webhook"):
+                self.send_response(404)
+                self.end_headers()
+                return
+            length = int(self.headers.get("Content-Length", "0") or 0)
+            if length <= 0 or length > 1_000_000:
+                self.send_response(400)
+                self.end_headers()
+                return
+            raw = self.rfile.read(length)
+            try:
+                am = json.loads(raw)
+            except Exception as e:
+                print(f"  bad json: {e}", flush=True)
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b"invalid json")
+                return
+
+            payload = transform(am)
+            req = urllib.request.Request(
+                NOTIFIARR_URL,
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                resp = urllib.request.urlopen(req, timeout=10)
+                code = resp.status
+                body = resp.read()[:200].decode(errors="replace")
+            except urllib.error.HTTPError as e:
+                code = e.code
+                body = (e.read()[:300] if e.fp else b"").decode(errors="replace")
+            except Exception as e:
+                code = 502
+                body = f"upstream: {e}"
+
+            # Mirror upstream status to AM so it can retry/skip appropriately
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"upstream_status": code, "upstream_body": body}).encode())
+            print(f"  POST /webhook → notifiarr {code}", flush=True)
+
+    if __name__ == "__main__":
+        print(f"Notifiarr bridge listening on :8080 → {NOTIFIARR_URL[:60]}...", flush=True)
+        http.server.HTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
