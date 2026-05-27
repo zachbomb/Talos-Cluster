@@ -41,17 +41,17 @@ spec:
             matchType: "="
         continue: false
 
-      # Watchdog: per-route groupInterval override delivers heartbeat at 1-min eval
-      # cadence (R18a SLO requires ≤5min detection floor). Routes ONLY to the
-      # uptime-kuma push endpoint — NEVER to Discord/Notifiarr.
-      - receiver: watchdog-uptime-kuma
+      # Watchdog: silently dropped at AM. Uptime-Kuma now POLLS Alertmanager
+      # for this alert via HTTP-keyword monitor (Monitor #59) rather than
+      # receiving a push from AM. AM's push endpoint POST was incompatible
+      # with Kuma's GET-only /api/push, which caused 98% webhook delivery
+      # failures (AlertmanagerFailedToSendAlerts firing constantly).
+      # Routing to "null" so AM doesn't try to deliver this anywhere.
+      - receiver: "null"
         matchers:
-          - name: watchdog
-            value: "true"
+          - name: alertname
+            value: Watchdog
             matchType: "="
-        groupInterval: 30s
-        groupWait: 0s
-        repeatInterval: 1m
         continue: false
 
       # Critical WITH a remediation label → HITL receiver only (single-message
@@ -136,12 +136,11 @@ spec:
             name: alertmanager-secret
             key: notifiarr-default-url
 
-    - name: watchdog-uptime-kuma
-      webhookConfigs:
-        - sendResolved: false
-          urlSecret:
-            name: alertmanager-secret
-            key: watchdog-uptime-kuma-url
+    # watchdog-uptime-kuma receiver removed 2026-05-27 — Kuma now POLLS AM
+    # for the Watchdog alert via HTTP-keyword monitor rather than receiving
+    # an AM push. The push direction never worked: Kuma's /api/push is GET-only
+    # and rejected all AM POSTs with 404, surfacing as
+    # AlertmanagerFailedToSendAlerts firing at 98% webhook failure rate.
 
     # HITL receiver — webhookConfigs only, NO discordConfigs (single-message UX
     # per origin R3 + plan rev-2 dual-fanout decision). The receiver registers

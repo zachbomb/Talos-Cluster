@@ -128,6 +128,13 @@ spec:
             src:
               enabled: true
               cacheCapacity: 2Gi
+      # Expanded 2026-05-27 from chart-default 100Gi → 250Gi after
+      # KubePersistentVolumeFillingUp critical fired (96G/98G, 1.95% free).
+      # Thumbs grow with the photo library; revisit when library expansion
+      # crosses ~200GiB used.
+      thumbs:
+        size: 250Gi
+        mountPath: /usr/src/app/upload/thumbs
       media:
         enabled: true
         type: nfs
