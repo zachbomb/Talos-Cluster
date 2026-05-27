@@ -40,7 +40,8 @@ spec:
                 cpu: 10m
                 memory: 64Mi
               limits:
-                cpu: 100m
+                # Scrape bursts were throttling at 100m (~30%). 250m absorbs them.
+                cpu: 250m
                 memory: 128Mi
 
     service:

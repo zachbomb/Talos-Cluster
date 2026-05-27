@@ -34,5 +34,6 @@ spec:
         cpu: 10m
         memory: 32Mi
       limits:
-        cpu: 100m
+        # SMART scans across many disks burst past 100m (~58% throttling).
+        cpu: 250m
         memory: 128Mi

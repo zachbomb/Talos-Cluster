@@ -164,4 +164,5 @@ spec:
         cpu: 25m
       limits:
         memory: 2Gi
-        cpu: 500m
+        # 500m was throttling ~32% during imports/scans.
+        cpu: "1"

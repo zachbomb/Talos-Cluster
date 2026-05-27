@@ -164,4 +164,5 @@ spec:
         cpu: 25m
       limits:
         memory: 2Gi
-        cpu: 500m
+        # 500m was throttling 50%+ and currently pinned at the limit (479m/500m).
+        cpu: "1500m"
