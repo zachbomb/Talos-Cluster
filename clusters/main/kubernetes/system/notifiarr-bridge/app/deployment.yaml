@@ -16,7 +16,7 @@ spec:
         app.kubernetes.io/name: notifiarr-bridge
       annotations:
         # Roll on script change
-        checksum/script: "v1"
+        checksum/script: "v2"
     spec:
       securityContext:
         seccompProfile:

@@ -82,6 +82,14 @@ data:
         content = "\n".join(lines).strip()[:1900]
 
         # Notifiarr passthrough shape (per notifiarr.wiki/Pages/notification-passthrough)
+        # description OR fields is required upstream; provide a non-empty description fallback.
+        first_an = (alerts[0].get("annotations", {}) if alerts else {}) or {}
+        description = (
+            first_an.get("description")
+            or first_an.get("summary")
+            or content
+            or alertname
+        )[:1500] or alertname
         return {
             "notification": {
                 "update": False,
@@ -93,7 +101,7 @@ data:
                 "text": {
                     "title": title,
                     "content": content or alertname,
-                    "description": (alerts[0].get("annotations", {}) or {}).get("description", "")[:1500],
+                    "description": description,
                 },
             },
         }
@@ -137,7 +145,13 @@ data:
             req = urllib.request.Request(
                 NOTIFIARR_URL,
                 data=json.dumps(payload).encode(),
-                headers={"Content-Type": "application/json"},
+                # Cloudflare in front of notifiarr.com blocks default Python-urllib UA
+                # with code 1010 from some egress IPs — supply a normal UA.
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "notifiarr-bridge/1.0 (+https://github.com/zachbomb/Talos-Cluster)",
+                    "Accept": "application/json",
+                },
                 method="POST",
             )
             try:
