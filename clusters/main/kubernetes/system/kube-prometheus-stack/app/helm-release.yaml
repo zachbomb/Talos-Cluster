@@ -37,6 +37,39 @@ spec:
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       enabled: true
+      # Override default inhibit_rules to exempt the Watchdog heartbeat from
+      # info-severity suppression. Chart's default rules suppress ALL alerts
+      # with severity=info (including the always-firing Watchdog heartbeat
+      # that's supposed to reach Uptime Kuma every minute). Adding
+      # 'watchdog!="true"' to target_matchers preserves the noise suppression
+      # for other info alerts but lets the heartbeat through. 2026-05-27.
+      config:
+        inhibit_rules:
+          - source_matchers:
+              - 'severity = critical'
+            target_matchers:
+              - 'severity =~ warning|info'
+              - 'watchdog!="true"'
+            equal:
+              - namespace
+              - alertname
+          - source_matchers:
+              - 'severity = warning'
+            target_matchers:
+              - 'severity = info'
+              - 'watchdog!="true"'
+            equal:
+              - namespace
+              - alertname
+          - source_matchers:
+              - 'alertname = InfoInhibitor'
+            target_matchers:
+              - 'severity = info'
+              - 'watchdog!="true"'
+            equal:
+              - namespace
+          - target_matchers:
+              - 'alertname = InfoInhibitor'
       # U4: internal-only ingress at alert.sf.${BASE_DOMAIN} via Traefik internal-secure-chain.
       ingress:
         enabled: true
