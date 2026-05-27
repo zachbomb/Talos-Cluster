@@ -54,8 +54,8 @@ data:
                           -o StrictHostKeyChecking=yes \
                           -o UserKnownHostsFile=/etc/ssh/known_hosts \
                           -i /etc/ssh/key/udm \
-                          hitl@192.168.10.1 \
-                          "sh /data/on_boot.d/15-cluster-bgp.sh"
+                          root@192.168.10.1 \
+                          "bash /data/on_boot.d/15-cluster-bgp.sh"
                   volumeMounts:
                     - name: ssh-key
                       mountPath: /etc/ssh/key
