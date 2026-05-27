@@ -30,30 +30,40 @@ All three are independent of the Discord/Notifiarr/Alertmanager sink, satisfying
 This channel is the cluster's last-resort alert path. **Do NOT use the Discord webhook**
 here — it would defeat the sink-independence.
 
-## Step 2 — Create a push monitor for Watchdog
+## Step 2 — Create an HTTP-keyword monitor for Watchdog
+
+**Design note (2026-05-27 pivot):** the original design pushed Watchdog from AM
+→ Kuma's `/api/push/<token>`. That endpoint is GET-only and rejected every AM
+POST with 404, causing `AlertmanagerFailedToSendAlerts` / `…ClusterFailedToSendAlerts`
+to flap at 98% webhook failure. Pivoted to Kuma polling AM directly — same
+sink-independence (Kuma is the only thing watching AM), no transport mismatch.
 
 1. uptime-kuma UI → Add New Monitor.
-2. Type: **Push**.
-3. Friendly name: `cluster-watchdog` (matches the brainstorm's R18a label).
-4. Heartbeat Interval: **60s** (matches the rule's evaluation cadence).
-5. Maximum Retries: **3** (≈3 missed heartbeats before alert — ≈3-4min detection floor).
-6. Resend notification: **1** (re-page once if still down).
-7. Save.
-8. Copy the **push URL** from the monitor's detail page — it looks like:
-   `http://uptime-kuma.monitoring.svc.cluster.local:3001/api/push/<TOKEN>?status=up&msg=OK&ping=`.
+2. Type: **HTTP(s) - Keyword**.
+3. Friendly name: `cluster-watchdog` (matches R18a label).
+4. URL: `http://kube-prometheus-stack-alertmanager.kube-prometheus-stack.svc.cluster.local:9093/api/v2/alerts?filter=alertname%3DWatchdog`
+5. Method: **GET**.
+6. Keyword: `Watchdog` (must appear in the AM JSON response while the alert is firing).
+7. Heartbeat Interval: **60s** (matches the rule's evaluation cadence).
+8. Retry Interval: **60s**.
+9. Maximum Retries: **3** (≈3 consecutive misses → alert — ≈3-4min detection floor).
+10. Resend notification: **1** (re-page once if still down).
+11. Save.
 
-## Step 3 — Wire the push URL into Alertmanager
+When Alertmanager is healthy, the Watchdog rule is always firing → the keyword is
+always present in the response → Kuma sees "up". When AM is unreachable or has
+silenced/stopped routing alerts, the keyword goes missing → Kuma fires Pushover.
 
-The push URL must reach the Watchdog AM route. Decrypt the secret and paste:
+## Step 3 — (Nothing to wire on AM side)
 
-```bash
-sops clusters/main/kubernetes/system/kube-prometheus-stack/app/alertmanager-secret.secret.yaml
-# Replace REPLACE_ME_UPTIME_KUMA_PUSH_URL with the push URL from Step 2.
-# Save (sops re-encrypts on save).
-```
+In the old push design AM had a `watchdog-uptime-kuma` receiver pointing at the
+Kuma push URL. Under the polling design AM is the *target*, not the source:
+the Watchdog alert routes to `"null"` in AlertmanagerConfig and Kuma observes
+it via the `/api/v2/alerts` endpoint.
 
-Commit + push. Flux reconciles, AM picks up the new URL, and within ~1 minute
-heartbeats start arriving in uptime-kuma.
+If migrating from an existing push-based setup, remove the
+`watchdog-uptime-kuma` receiver and the `watchdog-uptime-kuma-url` key from
+`alertmanager-secret.secret.yaml` — both are dead code under the polling design.
 
 ## Step 4 — Create a Prometheus health probe (R18c)
 

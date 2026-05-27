@@ -9,7 +9,7 @@
 # uptime-kuma already does HTTP probes via the same sink-independent
 # Pushover/ntfy channel as R18a's Watchdog and R18c's PrometheusDown probes.
 # Avoids deploying blackbox-exporter for a single probe. Documented in
-# docs/runbooks/alerting-uptime-kuma-push-setup.md.
+# docs/runbooks/alerting-uptime-kuma-setup.md.
 #
 # What this file owns:
 #   - Watchdog: continuous heartbeat at rule eval cadence (group interval
