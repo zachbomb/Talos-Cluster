@@ -16,7 +16,7 @@ spec:
         app.kubernetes.io/name: notifiarr-bridge
       annotations:
         # Roll on script change
-        checksum/script: "v3"
+        checksum/script: "v4"
     spec:
       securityContext:
         seccompProfile:
@@ -33,6 +33,12 @@ spec:
           envFrom:
             - secretRef:
                 name: notifiarr-bridge
+          env:
+            # Discord channel ID for the Notifiarr passthrough notification.
+            # Set inline (not via Flux ${VAR} substitution) because 19-digit
+            # integers get rounded by YAML int parsing after substitution.
+            - name: NOTIFIARR_CHANNEL_ID
+              value: "1380325745439543306"
           volumeMounts:
             - name: script
               mountPath: /app
