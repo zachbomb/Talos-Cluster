@@ -24,6 +24,15 @@ data:
         print("ERROR: NOTIFIARR_API_KEY env var not set", flush=True)
         sys.exit(1)
 
+    # Notifiarr passthrough requires discord.ids.channel as an int.
+    try:
+        CHANNEL_ID = int(os.environ.get("NOTIFIARR_CHANNEL_ID", "0"))
+    except ValueError:
+        CHANNEL_ID = 0
+    if not CHANNEL_ID:
+        print("ERROR: NOTIFIARR_CHANNEL_ID env var not set or not an int", flush=True)
+        sys.exit(1)
+
     NOTIFIARR_URL = f"https://notifiarr.com/api/v1/notification/passthrough/{API_KEY}"
 
     SEVERITY_COLOR = {
@@ -98,6 +107,9 @@ data:
             },
             "discord": {
                 "color": color,
+                "ids": {
+                    "channel": CHANNEL_ID,
+                },
                 "text": {
                     "title": title,
                     "content": content or alertname,
