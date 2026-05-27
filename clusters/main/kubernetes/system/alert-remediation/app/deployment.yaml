@@ -48,7 +48,7 @@ spec:
       containers:
         - name: hitl
           # renovate: datasource=docker depName=ghcr.io/zachbomb/alert-remediation-hitl
-          image: ghcr.io/zachbomb/alert-remediation-hitl:latest@sha256:20fb3c2f857e81a7105c7c7a125fc89372047b3fd37df01bcbe4749a6d71e11f
+          image: ghcr.io/zachbomb/alert-remediation-hitl:latest@sha256:0c6578d23d9611b42472af8c321bdf13084cf42718ef46c2b5224b2daf6eb7ec
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
