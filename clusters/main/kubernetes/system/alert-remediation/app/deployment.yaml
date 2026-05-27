@@ -47,8 +47,8 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: hitl
-          # renovate: datasource=docker depName=ghcr.io/${GITHUB_OWNER}/alert-remediation-hitl
-          image: ghcr.io/${GITHUB_OWNER}/alert-remediation-hitl:latest@sha256:REPLACE_ME_DIGEST_AFTER_FIRST_BUILD
+          # renovate: datasource=docker depName=ghcr.io/zachbomb/alert-remediation-hitl
+          image: ghcr.io/zachbomb/alert-remediation-hitl:latest@sha256:20fb3c2f857e81a7105c7c7a125fc89372047b3fd37df01bcbe4749a6d71e11f
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
