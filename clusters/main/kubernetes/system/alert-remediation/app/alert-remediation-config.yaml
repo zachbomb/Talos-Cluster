@@ -15,13 +15,13 @@ metadata:
 data:
   # Populated externally per docs/runbooks/alerting-discord-bot-setup.md.
   # Hex-encoded Discord application public key from the developer portal.
-  discord-app-public-key: REPLACE_ME_HEX_64_CHARS_DISCORD_APP_PUBLIC_KEY
+  discord-app-public-key: 91a5dfc4744ef5ef63771a0ec5be338f46eb9231da3fd585af0614c520bb6acd
   # SSH host-key pin for UDM-SE (192.168.10.1). Generate via:
   #   ssh-keyscan -t ed25519 192.168.10.1
   # and paste the resulting line here. StrictHostKeyChecking=yes in the
   # playbook Job will refuse to connect if this doesn't match.
   udm-known-hosts: |
-    REPLACE_ME_PASTE_OUTPUT_OF_ssh-keyscan_-t_ed25519_192.168.10.1_HERE
+    # 192.168.10.1:22 SSH-2.0-OpenSSH_8.4p1 Debian-5+deb11u7
   # Registry of playbooks the receiver knows about. The receiver matches
   # alerts' `remediation: <name>` label against entries here. New playbooks
   # add a YAML manifest under this directory + a registry entry.
