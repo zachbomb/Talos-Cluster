@@ -33,6 +33,12 @@ spec:
                 - name: desired-state
                   mountPath: /etc/unifi-reconcile
                   readOnly: true
+                # pip needs a writable /tmp (readOnlyRootFilesystem: true).
+                # Before this volume pip exited with: FileNotFoundError
+                # [Errno 2] No usable temporary directory found in
+                # ['/tmp', '/var/tmp', '/usr/tmp', '/']
+                - name: tmp
+                  mountPath: /tmp
               resources:
                 requests:
                   cpu: 10m
@@ -64,3 +70,6 @@ spec:
                   - key: reconcile.py
                     path: reconcile.py
                     mode: 0755
+            - name: tmp
+              emptyDir:
+                sizeLimit: 64Mi
