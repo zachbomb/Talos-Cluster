@@ -135,6 +135,13 @@ spec:
       thumbs:
         size: 250Gi
         mountPath: /usr/src/app/upload/thumbs
+      # Pre-emptively expanded 2026-05-28 from chart-default 100Gi → 200Gi
+      # (was at 40Gi/98Gi = 41% — same growth trajectory as thumbs).
+      # Encoded-video stores Immich's transcoded HLS streams; grows with
+      # video uploads, especially HEIC → H.264 transcodes.
+      video:
+        size: 200Gi
+        mountPath: /usr/src/app/upload/encoded-video
       media:
         enabled: true
         type: nfs
