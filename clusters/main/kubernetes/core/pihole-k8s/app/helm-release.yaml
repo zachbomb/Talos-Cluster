@@ -109,7 +109,10 @@ spec:
     persistence:
       config:
         enabled: true
-        size: 1Gi
+        # Expanded 2026-05-28 from 1Gi → 2Gi. gravity.db (blocklist database)
+        # had grown to 496MiB + listsCache 251MiB = 750MiB on a 1Gi PVC (77%),
+        # +720MiB delta over 7d after a new adlist subscription was added.
+        size: 2Gi
         mountPath: /etc/pihole
         volsync:
           - name: config

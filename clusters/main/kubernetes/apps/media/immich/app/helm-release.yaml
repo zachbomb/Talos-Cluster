@@ -105,7 +105,9 @@ spec:
 
     persistence:
       backups:
-        size: 2Gi
+        # Expanded 2026-05-28 2Gi → 4Gi preemptively. Immich postgres db dumps
+        # grew to 1.5Gi (74% of 2Gi) — stable but tight headroom.
+        size: 4Gi
         mountPath: /usr/src/app/upload/backups
         volsync:
           - name: backups
