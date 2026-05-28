@@ -126,8 +126,11 @@ spec:
         cluster:
           storage:
             size: 5Gi
+          # Expanded 2Gi → 8Gi on 2026-05-28 — WAL filled (100%) overnight
+          # and caused paperless-ngx to crashloop for 18h waiting on
+          # paperless-ngx-cnpg-main-rw:5432 with "Not enough disk space".
           walStorage:
-            size: 2Gi
+            size: 8Gi
 
     resources:
       requests:
