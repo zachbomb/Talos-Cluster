@@ -98,7 +98,8 @@ spec:
                 ENABLE_ROUTE_ANALYTICS: "true"
                 ENABLE_PROFILE_QUERY: "true"
                 ENABLE_BUDGET_AWARENESS: "true"
-                FEATURE_BOOKING_CLASS_MONITORING: "false"
+                FEATURE_BOOKING_CLASS_MONITORING: "true"
+                BOOKING_CLASS_SOURCE: "both"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
