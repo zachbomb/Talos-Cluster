@@ -100,6 +100,9 @@ spec:
                 ENABLE_BUDGET_AWARENESS: "true"
                 FEATURE_BOOKING_CLASS_MONITORING: "true"
                 BOOKING_CLASS_SOURCE: "both"
+                # Unifies route-alert + home-route + release monitoring under one
+                # scheduler; legacy monitors defer init (no double-scheduling).
+                ENABLE_AVAILABILITY_COORDINATOR: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
