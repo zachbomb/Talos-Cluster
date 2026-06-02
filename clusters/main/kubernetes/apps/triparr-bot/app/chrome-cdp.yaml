@@ -26,7 +26,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: chrome
-          image: ghcr.io/zachbomb/triparr-bot-chrome@sha256:eb15d2be9b6a566e4f5efaae17ef5287cadf17a84684a4c7700559b1259b7da9
+          image: ghcr.io/zachbomb/triparr-bot-chrome@sha256:60fe0a0b57a199031ec27bd82b756405fd311e244777c5c2f5d993cf464b89cd
           imagePullPolicy: IfNotPresent
           ports:
             - name: cdp
@@ -48,8 +48,12 @@ spec:
             - name: dshm
               mountPath: /dev/shm
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /json/version
               port: 9222
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 20
             periodSeconds: 30
           readinessProbe:
