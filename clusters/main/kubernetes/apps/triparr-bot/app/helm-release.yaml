@@ -103,13 +103,14 @@ spec:
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
                 ENABLE_AVAILABILITY_COORDINATOR: "true"
-                # Codeshare schedule-validation layer — SHADOW mode (re-enabled after PR #327):
-                # resolve operating flights (DB cache + curated table, network-free hot path) and
-                # populate the flight_carrier_mapping resolution cache via the hourly worker. The
-                # resolver now tolerates prod's mig-232 carrier_codeshare_agreements schema
-                # (curated step skips gracefully; worker resolves via FlightAware). Migrations
-                # 483-486 applied. Snapshot merge/collapse stays OFF until shadow validates.
-                ENABLE_CODESHARE_RESOLUTION: "true"
+                # Codeshare schedule-validation layer — SHADOW currently OFF.
+                # Shadow revealed a data-source mismatch: buildTripObservation resolves the
+                # primary-SEGMENT flight number against the TRIP-level O&D, so connecting award
+                # itineraries queue garbage (e.g. AA2414 — really SFO-PHX mainline — stamped
+                # SFO-NRT). Root-caused in .rootcause/a3_codeshare_resolution_segment_trip_mismatch.md.
+                # Re-enable only after the isDirect gate + worker route-match check ship; merge
+                # stays OFF regardless. Migrations 483-487 applied.
+                # ENABLE_CODESHARE_RESOLUTION: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
