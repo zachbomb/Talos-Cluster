@@ -103,6 +103,11 @@ spec:
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
                 ENABLE_AVAILABILITY_COORDINATOR: "true"
+                # Codeshare schedule-validation layer — SHADOW mode: resolve operating
+                # flights (DB cache + curated table, network-free hot path) and populate
+                # the flight_carrier_mapping resolution cache via the hourly worker.
+                # Snapshot merge/collapse stays OFF (no ENABLE_CODESHARE_MERGE) until shadow validates.
+                ENABLE_CODESHARE_RESOLUTION: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
