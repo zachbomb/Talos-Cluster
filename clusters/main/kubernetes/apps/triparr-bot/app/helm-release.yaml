@@ -103,14 +103,13 @@ spec:
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
                 ENABLE_AVAILABILITY_COORDINATOR: "true"
-                # Codeshare schedule-validation layer — SHADOW currently OFF.
-                # Shadow revealed a data-source mismatch: buildTripObservation resolves the
-                # primary-SEGMENT flight number against the TRIP-level O&D, so connecting award
-                # itineraries queue garbage (e.g. AA2414 — really SFO-PHX mainline — stamped
-                # SFO-NRT). Root-caused in .rootcause/a3_codeshare_resolution_segment_trip_mismatch.md.
-                # Re-enable only after the isDirect gate + worker route-match check ship; merge
-                # stays OFF regardless. Migrations 483-487 applied.
-                # ENABLE_CODESHARE_RESOLUTION: "true"
+                # Codeshare schedule-validation layer — SHADOW (re-enabled after #329).
+                # The award path now resolves NONSTOP trips only (isDirect gate), and the
+                # worker rejects route-mismatched resolutions — so connecting-itinerary garbage
+                # (AA2414-as-SFO-NRT) is no longer queued. Validating whether nonstop award
+                # produces any true codeshares. Merge stays OFF. Migrations 483-487 applied.
+                # See .rootcause/a3_codeshare_resolution_segment_trip_mismatch.md.
+                ENABLE_CODESHARE_RESOLUTION: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
