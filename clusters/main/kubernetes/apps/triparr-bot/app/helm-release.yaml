@@ -103,13 +103,13 @@ spec:
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
                 ENABLE_AVAILABILITY_COORDINATOR: "true"
-                # Codeshare schedule-validation layer — SHADOW mode. Temporarily OFF:
-                # resolve() step-2 queries carrier_codeshare_agreements for columns that
-                # don't exist in prod (table is on the mig-232 schema: carrier_code/
-                # partner_carrier_code/carrier_is_operating, not the mig-119 operating_carrier/
-                # marketing_carrier/is_active/routes the resolver assumes). Re-enable once the
-                # resolver tolerates/maps the 232 schema. Migrations 483-486 already applied.
-                # ENABLE_CODESHARE_RESOLUTION: "true"
+                # Codeshare schedule-validation layer — SHADOW mode (re-enabled after PR #327):
+                # resolve operating flights (DB cache + curated table, network-free hot path) and
+                # populate the flight_carrier_mapping resolution cache via the hourly worker. The
+                # resolver now tolerates prod's mig-232 carrier_codeshare_agreements schema
+                # (curated step skips gracefully; worker resolves via FlightAware). Migrations
+                # 483-486 applied. Snapshot merge/collapse stays OFF until shadow validates.
+                ENABLE_CODESHARE_RESOLUTION: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
