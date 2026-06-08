@@ -103,13 +103,18 @@ spec:
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
                 ENABLE_AVAILABILITY_COORDINATOR: "true"
-                # Codeshare schedule-validation layer — SHADOW (re-enabled after #329).
-                # The award path now resolves NONSTOP trips only (isDirect gate), and the
-                # worker rejects route-mismatched resolutions — so connecting-itinerary garbage
-                # (AA2414-as-SFO-NRT) is no longer queued. Validating whether nonstop award
-                # produces any true codeshares. Merge stays OFF. Migrations 483-487 applied.
+                # Codeshare schedule-validation layer. Award path is NONSTOP-only (isDirect
+                # gate, #329); worker rejects route-mismatched resolutions. Migrations 483-487.
+                # Phase 1 (RESOLUTION) shadow VALIDATED 2026-06-07: flight_carrier_mapping holds
+                # 119 true codeshares + 383 confirmed own-metal (all FlightAware-sourced),
+                # spot-checked accurate (AA7387->QF12, VS3980->DL290, BA1604->AA134, PG4802->TG402,
+                # NH811->NQ811 ANA/Air Japan, LA8195->JJ8195).
+                # Phase 2 (MERGE) collapses codeshare duplicates to cheapest — cash dedup (CM5)
+                # + nonstop award merge. Presentation-only, fully reversible: set MERGE back to
+                # "false" (or remove) and `flux reconcile` — no data migration.
                 # See .rootcause/a3_codeshare_resolution_segment_trip_mismatch.md.
                 ENABLE_CODESHARE_RESOLUTION: "true"
+                ENABLE_CODESHARE_MERGE: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
