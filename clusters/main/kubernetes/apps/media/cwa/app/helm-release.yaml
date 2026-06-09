@@ -68,9 +68,12 @@ spec:
             group: Content Management
             icon: ""
             widget:
-              # CWA uses the same widget type as calibre-web (compatible API).
-              # Reuses CALIBRE_WEB_API as the password; if you set up different
-              # credentials for CWA, swap to a new ${CWA_API} var.
+              # CWA uses the calibre-web-compatible API. TrueCharts app-template
+              # chart defaults the widget type to the chart name ("apptemplate"),
+              # which Homepage doesn't recognize — explicitly set `type: calibreweb`.
+              # Reuses CALIBRE_WEB_API as the password; if CWA has different
+              # creds, swap in a new ${CWA_API} var.
+              type: calibreweb
               custom:
                 url: http://${CWA_IP}:8083
                 username: zach
