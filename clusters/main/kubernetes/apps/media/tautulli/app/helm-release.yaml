@@ -64,9 +64,11 @@ spec:
             name: Tautulli
             widget:
               custom:
-                url: http://${TAUTULLI_IP}:8181/
+                # Trailing slash removed and non-schema 'user: "true"' dropped.
+                # Homepage's Tautulli widget doesn't accept a 'user' field;
+                # extra fields cause the widget to misrender.
+                url: http://${TAUTULLI_IP}:8181
                 key: ${TAUTULLI_API}
-                user: "true"
               enabled: true
         hosts:
           - host: tautulli.${BASE_DOMAIN}
