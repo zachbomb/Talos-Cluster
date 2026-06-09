@@ -23,7 +23,6 @@ resources:
   - readarr/ks.yaml
   - mylar/ks.yaml
   - calibre/ks.yaml
-  - calibre-web/ks.yaml
   - cwa/ks.yaml
   - shelfmark/ks.yaml
   - bazarr/ks.yaml

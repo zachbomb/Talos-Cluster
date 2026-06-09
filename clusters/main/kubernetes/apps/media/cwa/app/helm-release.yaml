@@ -65,10 +65,17 @@ spec:
             enabled: true
             name: CWA
             description: Calibre Web Automated
-            group: Media
+            group: Content Management
             icon: ""
             widget:
-              enabled: false
+              # CWA uses the same widget type as calibre-web (compatible API).
+              # Reuses CALIBRE_WEB_API as the password; if you set up different
+              # credentials for CWA, swap to a new ${CWA_API} var.
+              custom:
+                url: http://${CWA_IP}:8083
+                username: zach
+                password: ${CALIBRE_WEB_API}
+              enabled: true
     service:
       main:
         enabled: true
