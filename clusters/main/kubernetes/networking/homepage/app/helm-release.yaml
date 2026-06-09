@@ -163,7 +163,10 @@ spec:
     resources:
       requests:
         cpu: 10m
-        memory: 128Mi
+        memory: 256Mi
       limits:
         cpu: 500m
-        memory: 512Mi
+        # Bumped 512Mi → 1Gi: Lidarr/FLAC/Liz widgets each fetch >4MB JSON
+        # for the artist endpoint; 3 concurrent requests + Next.js overhead
+        # was OOM-killing the container with exitCode 137.
+        memory: 1Gi
