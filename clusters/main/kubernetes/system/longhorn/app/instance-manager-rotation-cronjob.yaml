@@ -57,25 +57,29 @@ spec:
         spec:
           serviceAccountName: instance-manager-rotation
           restartPolicy: OnFailure
-          # Run as a non-root user inside the bitnami/kubectl image (the bitnami
-          # image ships with a non-root user already). This minimizes the
-          # capabilities of a pod that only needs kubectl-list/delete.
+          # rancher/kubectl is an Alpine-based kubectl image that tracks
+          # Kubernetes versions 1:1 with tags like v1.36.1. We use it instead
+          # of the Bitnami image because:
+          #   - bitnami/kubectl (DockerHub) was deprecated Aug 2025 and now
+          #     serves an HTML page instead of a manifest
+          #   - bitnamilegacy/kubectl is frozen at 1.33.4 — no 1.36 tag
+          # Alpine ships a `nobody` user (UID 65534) we can run as.
           securityContext:
             runAsNonRoot: true
-            runAsUser: 1001
+            runAsUser: 65534
             seccompProfile:
               type: RuntimeDefault
           # /tmp is writable via emptyDir so kubectl can write its discovery/http
           # cache under $HOME/.kube/cache when readOnlyRootFilesystem is set.
           # We override HOME -> /tmp so the cache path resolves to /tmp/.kube/cache
-          # regardless of what the bitnami image's default HOME is.
+          # regardless of the image's default HOME.
           volumes:
             - name: tmp
               emptyDir:
                 sizeLimit: 16Mi
           containers:
             - name: rotate
-              image: docker.io/bitnami/kubectl:1.36
+              image: docker.io/rancher/kubectl:v1.36.1
               imagePullPolicy: IfNotPresent
               securityContext:
                 allowPrivilegeEscalation: false
