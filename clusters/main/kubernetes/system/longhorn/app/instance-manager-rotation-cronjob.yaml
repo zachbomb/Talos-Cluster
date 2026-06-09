@@ -57,16 +57,19 @@ spec:
         spec:
           serviceAccountName: instance-manager-rotation
           restartPolicy: OnFailure
-          # rancher/kubectl is an Alpine-based kubectl image that tracks
-          # Kubernetes versions 1:1 with tags like v1.36.1. We use it instead
-          # of the Bitnami image because:
-          #   - bitnami/kubectl (DockerHub) was deprecated Aug 2025 and now
-          #     serves an HTML page instead of a manifest
-          #   - bitnamilegacy/kubectl is frozen at 1.33.4 — no 1.36 tag
-          # Alpine ships a `nobody` user (UID 65534) we can run as.
+          # bitnamilegacy/kubectl is the frozen archive of the original
+          # bitnami/kubectl images (Aug 2025 deprecation). It's Debian-based
+          # with a UID 1001 non-root user and a real /bin/sh — same shape as
+          # the previous bitnami/kubectl image the script was written for.
+          # Tag 1.33.4 is the newest available (the archive is frozen); this
+          # is 3 minor versions below the cluster's 1.36.1 but well within
+          # kubectl's supported client/server version skew window. The script
+          # uses only stable commands (get pod, delete pod, jsonpath).
+          # rancher/kubectl was tried first but it's distroless (entrypoint =
+          # kubectl, no shell) which breaks the inline sh script.
           securityContext:
             runAsNonRoot: true
-            runAsUser: 65534
+            runAsUser: 1001
             seccompProfile:
               type: RuntimeDefault
           # /tmp is writable via emptyDir so kubectl can write its discovery/http
@@ -79,7 +82,7 @@ spec:
                 sizeLimit: 16Mi
           containers:
             - name: rotate
-              image: docker.io/rancher/kubectl:v1.36.1
+              image: docker.io/bitnamilegacy/kubectl:1.33.4
               imagePullPolicy: IfNotPresent
               securityContext:
                 allowPrivilegeEscalation: false
