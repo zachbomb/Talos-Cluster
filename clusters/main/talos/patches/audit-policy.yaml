@@ -1,0 +1,46 @@
+# Talos patch: enable kube-apiserver audit logging at Metadata level
+# for Secret access. Logs WHO accessed WHICH secret WHEN — NOT the
+# cleartext body. This is the default safe level; escalating to
+# RequestResponse would write cleartext credentials into the log and
+# require Loki access hardening per the PR 5 plan (Task 5.6 Step 3).
+#
+# Audit log file is mounted into Alloy DaemonSet via hostPath; see
+# clusters/main/kubernetes/system/alloy/app/helm-release.yaml.
+
+cluster:
+  apiServer:
+    extraArgs:
+      audit-policy-file: /etc/kubernetes/audit-policy.yaml
+      audit-log-path: /var/log/audit/audit.log
+      audit-log-maxsize: "100"
+      audit-log-maxbackup: "5"
+    extraVolumes:
+      - hostPath: /etc/kubernetes/audit-policy.yaml
+        mountPath: /etc/kubernetes/audit-policy.yaml
+        readonly: true
+      - hostPath: /var/log/audit
+        mountPath: /var/log/audit
+        readonly: false
+
+machine:
+  files:
+    - path: /etc/kubernetes/audit-policy.yaml
+      permissions: 0o600
+      op: create
+      content: |
+        apiVersion: audit.k8s.io/v1
+        kind: Policy
+        omitStages:
+          - RequestReceived
+        rules:
+          # Log every interaction with the secrets API at METADATA level
+          # (who, when, which resource — NOT the cleartext body).
+          # To temporarily switch to RequestResponse for a specific incident,
+          # edit this file, then revert when done. RequestResponse requires
+          # Loki access hardening per the PR 5 plan (Task 5.6 Step 3).
+          - level: Metadata
+            resources:
+              - group: ""
+                resources: ["secrets"]
+          # Default: don't audit anything else (limits log volume).
+          - level: None

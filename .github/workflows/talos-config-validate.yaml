@@ -28,9 +28,14 @@ jobs:
 
       - name: YAML lint talos directory
         run: |
+          # SOPS-encrypted patches (*.secret.yaml) are binary-ish and not
+          # meaningful to lint — skip them and lint only cleartext patches.
+          PATCHES=$(find clusters/main/talos/patches -type f \
+            \( -name "*.yaml" -o -name "*.yml" \) \
+            ! -name "*.secret.yaml" ! -name "*.secret.yml")
           yamllint -d '{extends: relaxed, rules: {line-length: disable, document-start: disable, truthy: disable}}' \
             clusters/main/talos/talconfig.yaml \
-            clusters/main/talos/patches/
+            $PATCHES
 
       - name: Install talhelper
         run: |
