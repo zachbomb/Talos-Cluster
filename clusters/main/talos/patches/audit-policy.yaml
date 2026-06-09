@@ -18,11 +18,9 @@ cluster:
       - hostPath: /etc/kubernetes/audit-policy.yaml
         mountPath: /etc/kubernetes/audit-policy.yaml
         readonly: true
-        pathType: File
       - hostPath: /var/log/audit
         mountPath: /var/log/audit
         readonly: false
-        pathType: DirectoryOrCreate
 
 machine:
   files:
