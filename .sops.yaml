@@ -10,4 +10,10 @@ creation_rules:
     age: age1xuryc2afg7fh6tg2d85mydr05rh93xf8dhrcq4xata7ec33t8uvs6kl3yw
   - path_regex: talsecret.yaml
     age: age1xuryc2afg7fh6tg2d85mydr05rh93xf8dhrcq4xata7ec33t8uvs6kl3yw
+  - path_regex: ^clusters/main/talos/patches/.*\.secret\.ya?ml$
+    age: age1xuryc2afg7fh6tg2d85mydr05rh93xf8dhrcq4xata7ec33t8uvs6kl3yw
+    # Full-file encryption (like talsecret.yaml). No encrypted_regex,
+    # so the entire patch — including any AES-GCM/signing keys — is
+    # encrypted at rest. Used by PR 5 of the secrets migration to ship
+    # the kube-apiserver EncryptionConfiguration patch.
 ## DO NOT REMOVE: Personal setting go under this line

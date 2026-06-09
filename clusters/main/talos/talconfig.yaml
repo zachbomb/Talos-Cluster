@@ -45,6 +45,8 @@ controlPlane:
     patches:
         - '@./patches/controlplane.yaml'
         - '@./patches/nvidia.yaml'
+        - '@./patches/encryption-config.secret.yaml'
+        - '@./patches/audit-policy.yaml'
     kernelModules:
      - name: nvme_tcp
      - name: vfio_pci

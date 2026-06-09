@@ -81,6 +81,40 @@ spec:
             forward_to = [loki.write.default.receiver]
           }
 
+          // Scrape kube-apiserver audit log mounted from the host.
+          // Audit policy logs Metadata level for secrets — who/when/which-secret,
+          // NOT cleartext credentials. Source: Talos patch audit-policy.yaml.
+          loki.source.file "audit" {
+            targets = [{
+              __path__ = "/var/log/audit/audit.log",
+              job      = "kube-audit",
+            }]
+            forward_to = [loki.process.audit.receiver]
+          }
+
+          // Extract verb/user/resource/namespace/name fields from each
+          // audit event JSON line. Promotes them to Loki labels so we can
+          // query e.g. {audit_resource="secrets", audit_verb="get"}.
+          loki.process "audit" {
+            stage.json {
+              expressions = {
+                verb      = "verb",
+                user      = "user.username",
+                resource  = "objectRef.resource",
+                namespace = "objectRef.namespace",
+                name      = "objectRef.name",
+              }
+            }
+            stage.labels {
+              values = {
+                audit_verb     = "",
+                audit_user     = "",
+                audit_resource = "",
+              }
+            }
+            forward_to = [loki.write.default.receiver]
+          }
+
           // Ship logs to Loki
           loki.write "default" {
             endpoint {
@@ -88,9 +122,24 @@ spec:
             }
           }
 
+      # Mount the host audit log path read-only into every Alloy DaemonSet pod.
+      # Requires the loki namespace to carry pod-security.kubernetes.io/enforce=privileged
+      # because hostPath is forbidden under the baseline PodSecurity profile.
+      mounts:
+        extra:
+          - name: kube-audit
+            mountPath: /var/log/audit
+            readOnly: true
+
     # Run as DaemonSet to collect logs from all nodes
     controller:
       type: daemonset
+      volumes:
+        extra:
+          - name: kube-audit
+            hostPath:
+              path: /var/log/audit
+              type: DirectoryOrCreate
 
     serviceMonitor:
       enabled: true
