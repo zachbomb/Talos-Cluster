@@ -74,7 +74,12 @@ spec:
             description: AI Language Model
             group: Lifestyle & Home
             widget:
-              enabled: false
+              # Homepage's ollama widget hits the native Ollama API (port 11434),
+              # not the OpenWebUI frontend (port 10686). Same OLLAMA_IP serves both
+              # via the ollama-api LB service.
+              custom:
+                url: "http://${OLLAMA_IP}:11434"
+              enabled: true
     service:
       main:
         enabled: true
