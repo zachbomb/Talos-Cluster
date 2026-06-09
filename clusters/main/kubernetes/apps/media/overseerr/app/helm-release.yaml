@@ -18,9 +18,13 @@ spec:
         namespace: flux-system
   values:
     image:
-      repository: ghcr.io/sct/overseerr
+      # Migrated from Overseerr to Seerr per https://docs.seerr.dev/migration-guide/
+      # Schema migrates automatically on first boot from existing Overseerr DB on the
+      # same PVC; mountPath bumped to /app/config to match Seerr's Dockerfile (WORKDIR /app).
+      # renovate: datasource=docker depName=ghcr.io/seerr-team/seerr
+      repository: ghcr.io/seerr-team/seerr
       pullPolicy: IfNotPresent
-      tag: 1.35.0
+      tag: v3.0.1
     credentials:
       s3:
         type: s3
@@ -76,7 +80,9 @@ spec:
         size: 2Gi
         main:
           enabled: true
-          mountPath: /config
+          # Seerr's Dockerfile sets WORKDIR /app and writes to ./config/DOCKER —
+          # so the in-container config dir is /app/config, not /config.
+          mountPath: /app/config
         volsync:
           - name: config
             type: restic
@@ -149,6 +155,7 @@ spec:
         readOnlyRootFilesystem: false
         runAsGroup: 1000
         runAsUser: 1000
+        runAsNonRoot: true
       pod:
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
