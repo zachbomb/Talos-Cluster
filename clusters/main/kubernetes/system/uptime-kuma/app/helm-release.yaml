@@ -80,6 +80,10 @@ spec:
               enabled: true
               custom:
                 url: "http://${UPTIME_KUMA_IP}:3001"
+                # UptimeKuma's homepage widget queries the /metrics endpoint with
+                # HTTP Basic auth (user 'metrics', password = API key). Homepage
+                # converts widget.key to the right auth header automatically.
+                key: ${UPTIME_KUMA_API}
 
     persistence:
       config:

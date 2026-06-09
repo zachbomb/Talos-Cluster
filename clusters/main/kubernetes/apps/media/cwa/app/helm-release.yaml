@@ -75,8 +75,10 @@ spec:
               # creds, swap in a new ${CWA_API} var.
               type: calibreweb
               custom:
+                # CWA's admin user is 'admin' (zachbomb@gmail.com). The
+                # calibre-web-compatible API uses Basic Auth.
                 url: http://${CWA_IP}:8083
-                username: zach
+                username: admin
                 password: ${CALIBRE_WEB_API}
               enabled: true
     service:

@@ -68,6 +68,7 @@ spec:
               enabled: true
               custom:
                 url: "http://${DELUGE_IP}:8112"
+                password: ${DELUGE_PASSWORD}
     service:
       main:
         enabled: true
