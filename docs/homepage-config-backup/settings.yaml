@@ -1,0 +1,16 @@
+---
+# Polish enhancements applied 2026-06-09 per homepage docs review.
+# Existing weather providers preserved.
+
+statusStyle: dot          # small status dot instead of "12ms / 200" — cleaner glanceability
+useEqualHeights: true     # row cards consistent height
+maxGroupColumns: 5        # was default 4 — denser on widescreen displays
+hideVersion: true         # security hygiene; don't expose homepage version
+disableIndexing: true     # block search-engine crawling of internal dashboard
+
+providers:
+  openweathermap: openweathermapapikey
+  weatherapi: weatherapiapikey
+  # TODO (follow-up): once cluster-secrets migration lands, replace plaintext
+  # secrets in services.yaml with {{HOMEPAGE_VAR_<NAME>}} placeholders
+  # mapped here.
