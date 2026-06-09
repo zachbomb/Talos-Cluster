@@ -20,6 +20,8 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-config
+      - kind: Secret
+        name: cluster-secrets
   patches:
     - patch: |-
         apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -37,6 +39,8 @@ spec:
                 name: cluster-config
               - kind: ConfigMap
                 name: upgrade-settings
+              - kind: Secret
+                name: cluster-secrets
       target:
         group: kustomize.toolkit.fluxcd.io
         kind: Kustomization
