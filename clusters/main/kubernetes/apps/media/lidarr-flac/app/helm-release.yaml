@@ -86,7 +86,9 @@ spec:
             icon: ""
             name: Lidarr FLAC
             widget:
-              enabled: false
+              custom:
+                key: ${LIDARR_FLAC_API}
+              enabled: true
         hosts:
           - host: lidarr-flac.${BASE_DOMAIN}
             paths:

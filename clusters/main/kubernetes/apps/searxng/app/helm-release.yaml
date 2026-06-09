@@ -82,7 +82,10 @@ spec:
             description: Privacy Search Engine
             group: Tools
             widget:
-              enabled: false
+              # SearXNG is ClusterIP-only; Homepage reaches it via in-cluster DNS.
+              custom:
+                url: "http://searxng.tools.svc:10105"
+              enabled: true
 
     persistence:
       config:
