@@ -67,7 +67,10 @@ spec:
             widget:
               enabled: true
               custom:
-                url: http://192.168.10.235:8083
+                # Use the templated CALIBRE_WEB_IP from clusterenv (currently
+                # 192.168.10.220). The hardcoded .235 was stale from a prior
+                # MetalLB pool layout and broke the homepage widget.
+                url: http://${CALIBRE_WEB_IP}:8083
                 username: zach
                 password: ${CALIBRE_WEB_API}
     service:

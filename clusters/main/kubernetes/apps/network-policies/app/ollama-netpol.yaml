@@ -52,3 +52,8 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: goodmem
+    # Homepage widget fetch (model list via ollama-api on :11434)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
