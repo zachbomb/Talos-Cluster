@@ -27,5 +27,22 @@ spec:
       namespace: metallb
       serviceMonitor:
         enabled: true
+    # Phase 0 of the MetalLB→Cilium consolidation (2026-06-10).
+    # MetalLB is kept ONLY for IPAM (the controller allocates LoadBalancer
+    # IPs from the IPAddressPools in core/metallb-config). Both announcement
+    # backends are disabled because they are inert and redundant:
+    #   - speaker (L2/ARP): announces nothing — no L2Advertisement exists
+    #     (removed 2026-05-05). Cilium L2 (default-l2-policy) is the sole
+    #     announcer, with per-service cilium-l2announce-* leases.
+    #   - frrk8s (BGP): 0 BGPPeers/Advertisements, "BGP instance not found".
+    #     Cilium BGP (CiliumBGPClusterConfig udm-bgp) handles BGP, session
+    #     established to the UDM-SE advertising the LB /32s.
+    # frrk8s was the source of chronic restart churn (427 over 15d).
+    # Full removal (migrate IPAM to Cilium LB-IPAM) is the planned phases
+    # 1-3 in docs/runbooks/metallb-to-cilium-migration-assessment.md.
+    controller:
+      enabled: true
     speaker:
-      ignoreExcludeLB: true
+      enabled: false
+    frrk8s:
+      enabled: false
