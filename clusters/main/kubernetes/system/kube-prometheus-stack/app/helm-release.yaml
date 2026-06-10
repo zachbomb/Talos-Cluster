@@ -135,9 +135,13 @@ spec:
         walCompression: true
         enableFeatures:
           - memory-snapshot-on-shutdown
-        # Prometheus metrics retention time in PV
+        # Prometheus metrics retention time in PV.
+        # retentionSize is the WAL+blocks cap Prometheus enforces; keep it
+        # below the PVC size so head writes never run out of space. 2026-06-10:
+        # PVC 60Gi → 100Gi, retentionSize 50GB → 80GB after WAL filled and
+        # CrashLoopBacked off with "no space left on device" on /prometheus/wal.
         retention: 14d
-        retentionSize: 50GB
+        retentionSize: 80GB
         # External labels to add to any time series or
         # alerts when communicating with external systems
         externalLabels:
@@ -169,7 +173,11 @@ spec:
             spec:
               resources:
                 requests:
-                  storage: 60Gi
+                  # Bumped 60Gi → 100Gi 2026-06-10 after PVC filled.
+                  # Prometheus Operator handles online PVC expansion via the
+                  # Prometheus CR; underlying StorageClass (longhorn) supports
+                  # online expansion.
+                  storage: 100Gi
     prometheus-node-exporter:
       fullnameOverride: node-exporter
       prometheus:

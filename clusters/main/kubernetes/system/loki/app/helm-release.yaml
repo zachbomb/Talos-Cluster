@@ -38,7 +38,11 @@ spec:
           memory: 1Gi
       persistence:
         enabled: true
-        size: 30Gi
+        # Bumped 30Gi → 60Gi 2026-06-10 after Loki TSDB scratch dir hit
+        # "no space left on device" during head WAL build. Loki single-binary
+        # uses filesystem storage (MinIO disabled); the TSDB index +
+        # ingested log chunks both live on this PVC.
+        size: 60Gi
 
     # Disable components not needed in monolithic mode
     backend:
