@@ -26,17 +26,18 @@ spec:
     remediation:
       retries: 0
   values:
-    # Pin the TrueCharts redis subchart's valkey image to the exact digest
-    # currently cached on the node. The TrueCharts default points at
-    # docker.io/bitnamisecure/valkey:latest, which requires Bitnami Premium
-    # auth (HTTP 401) — image is cached and survives in-place, but next
-    # eviction or restart fails to pull. Pinning by digest gives us a
-    # known-good snapshot and removes the floating-tag risk.
-    # Tracked in tasks #181 (this pin) and #182 (migrate to valkey/valkey).
+    # TrueCharts redis subchart valkey image, moved off the paid
+    # bitnamisecure tier (HTTP 401, would break on the next Talos upgrade
+    # when images re-pull) to the FREE bitnamilegacy archive. Same Bitnami
+    # image shape — identical entrypoint, VALKEY_PASSWORD handling, and
+    # /health probe scripts — so it's a true drop-in (verified 2026-06-10).
+    # bitnamilegacy is a frozen archive (valkey 8.1.3, no further updates);
+    # acceptable for a cache/queue store. Digest-pinned for reproducibility.
+    # Resolves task #182.
     redis:
       image:
-        repository: docker.io/bitnamisecure/valkey
-        tag: latest@sha256:5ce04fc20634fa151c6050a3aea9fdf30b709509a27af5af1a379b73d18ad58f
+        repository: docker.io/bitnamilegacy/valkey
+        tag: 8.1.3@sha256:7fb981553408c77c8801a501fbd82043763cbcc87268988a442c5dac0b6ff1b5
         pullPolicy: IfNotPresent
 
     credentials:
