@@ -174,10 +174,10 @@ spec:
             credentials: s3
             src:
               enabled: true
-              cacheCapacity: 3Gi
+              cacheCapacity: 8Gi
             dest:
               enabled: false
-              cacheCapacity: 3Gi
+              cacheCapacity: 8Gi
       streams:
         enabled: true
         size: 2Gi
@@ -188,10 +188,10 @@ spec:
             credentials: s3
             src:
               enabled: true
-              cacheCapacity: 3Gi
+              cacheCapacity: 8Gi
             dest:
               enabled: false
-              cacheCapacity: 3Gi
+              cacheCapacity: 8Gi
       local:
         enabled: true
         size: 5Gi
@@ -202,10 +202,10 @@ spec:
             credentials: s3
             src:
               enabled: true
-              cacheCapacity: 3Gi
+              cacheCapacity: 8Gi
             dest:
               enabled: false
-              cacheCapacity: 3Gi
+              cacheCapacity: 8Gi
       cache:
         enabled: true
         size: 2Gi
