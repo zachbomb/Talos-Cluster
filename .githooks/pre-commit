@@ -1,0 +1,52 @@
+#!/bin/sh
+# Self-contained SOPS encryption pre-commit guard.
+#
+# Replaces the forgetool `precommit` binary, which exit-1'd on any commit that
+# staged no secret file ("no staged files to check"), forcing --no-verify on
+# every docs/manifest commit. clustertool's `checkcrypt` is not a drop-in: it
+# scans the whole working tree and would false-fail on the intentionally
+# cleartext, gitignored sops-age bootstrap secret
+# (clusters/main/kubernetes/flux-system/flux/sopssecret.secret.yaml).
+#
+# This hook checks ONLY staged files matching a .sops.yaml path rule, and passes
+# cleanly when none are staged. A file counts as encrypted iff it carries an
+# `ENC[AES256_GCM` marker (every sops-encrypted file has one, partial or full;
+# cleartext has none). Gitignored files are never staged, so the bootstrap key
+# is never seen.
+#
+# Tracked in-repo and activated via:  git config core.hooksPath .githooks
+# (run once per clone — see .githooks/README.md). If the old forgetool binary
+# hook was present, it is backed up at .git/hooks/pre-commit.forgetool.bak.
+
+set -eu
+
+# Path rules mirrored from .sops.yaml creation_rules (keep in sync if it changes).
+secret_path_re='^clusters.*kubernetes.*values\.ya?ml$|\.secret\.ya?ml$|(^|/)clusterenv\.yaml$|(^|/)talsecret\.yaml$|^clusters/main/talos/patches/.*\.secret\.ya?ml$'
+
+# Only added/copied/modified staged files (skip deletions).
+staged=$(git diff --cached --name-only --diff-filter=ACM || true)
+[ -z "$staged" ] && exit 0
+
+secret_files=$(printf '%s\n' "$staged" | grep -E "$secret_path_re" || true)
+[ -z "$secret_files" ] && exit 0
+
+unencrypted=""
+checked=0
+for f in $secret_files; do
+    checked=$((checked + 1))
+    # Inspect the staged blob (what's actually being committed), not the worktree copy.
+    if ! git show ":$f" 2>/dev/null | grep -q 'ENC\[AES256_GCM'; then
+        unencrypted="$unencrypted $f"
+    fi
+done
+
+if [ -n "$unencrypted" ]; then
+    echo "✖ pre-commit: staged secret file(s) are NOT SOPS-encrypted:"
+    for f in $unencrypted; do echo "    $f"; done
+    echo "  Encrypt with:  ./clustertool-new encrypt   (or: sops --encrypt --in-place <file>)"
+    echo "  Then re-stage and commit. To bypass intentionally: git commit --no-verify"
+    exit 1
+fi
+
+echo "✓ pre-commit: $checked staged secret file(s) verified SOPS-encrypted"
+exit 0
