@@ -36,3 +36,10 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
+    # CNPG operator → instance pod :8000/pg/status (used by operator to
+    # scrape PostgreSQL instance status). Without this, the operator
+    # reports "Instance Status Extraction Error: HTTP communication issue".
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cloudnative-pg
