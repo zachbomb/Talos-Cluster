@@ -107,10 +107,14 @@ spec:
             credentials: s3
             dest:
               enabled: true
-              cacheCapacity: 3Gi
+              # Bumped 3Gi → 10Gi 2026-06-10: restic mover hit
+              # "no space left on device" on /cache during index load
+              # (repo had grown large from S3 version bloat before
+              # versioning was suspended). Index needs to fit in cache.
+              cacheCapacity: 10Gi
             src:
               enabled: true
-              cacheCapacity: 3Gi
+              cacheCapacity: 10Gi
       media:
         enabled: true
         type: nfs
