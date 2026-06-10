@@ -29,17 +29,49 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    # Pin the TrueCharts redis subchart's valkey image to the exact digest
-    # currently cached on the node. TrueCharts default = docker.io/bitnamisecure/valkey:latest,
-    # which requires Bitnami Premium auth (HTTP 401). Image is cached and survives
-    # in-place, but next eviction/restart fails to pull. Pinning by digest
-    # gives us a known-good snapshot and removes the floating-tag risk.
-    # Tracked in tasks #181 (this pin) and #182 (migrate to valkey/valkey).
+    # Migrated off Bitnami (paid bitnamisecure tier, HTTP 401 on pull) to
+    # the official upstream valkey/valkey image (#182). The TrueCharts redis
+    # subchart defaults to the bitnami entrypoint + /health probe scripts;
+    # valkey/valkey is a plain image, so we override command/args/probes:
+    #   - run valkey-server directly with --requirepass (valkey/valkey does
+    #     NOT read the bitnami VALKEY_PASSWORD env var)
+    #   - --dir /tmp --save "" --appendonly no: pure in-memory cache (no PVC).
+    #     blocky's redis is just a DNS-query cache — fully regenerable, so
+    #     losing it on restart is harmless. /tmp is a writable emptyDir.
+    #   - probes use valkey-cli -a instead of the bitnami /health scripts.
     redis:
       image:
-        repository: docker.io/bitnamisecure/valkey
-        tag: latest@sha256:5ce04fc20634fa151c6050a3aea9fdf30b709509a27af5af1a379b73d18ad58f
+        repository: docker.io/valkey/valkey
+        tag: 8.1.8-alpine
         pullPolicy: IfNotPresent
+      workload:
+        main:
+          podSpec:
+            containers:
+              main:
+                command:
+                  - valkey-server
+                args:
+                  - --requirepass
+                  - PLACEHOLDERPASSWORD
+                  - --port
+                  - "6379"
+                  - --dir
+                  - /tmp
+                  - --save
+                  - ""
+                  - --appendonly
+                  - "no"
+                probes:
+                  liveness:
+                    type: exec
+                    command: [valkey-cli, -a, PLACEHOLDERPASSWORD, ping]
+                  readiness:
+                    type: exec
+                    command: [valkey-cli, -a, PLACEHOLDERPASSWORD, ping]
+                  startup:
+                    type: exec
+                    command: [valkey-cli, -a, PLACEHOLDERPASSWORD, ping]
 
     global:
       stopAll: false
