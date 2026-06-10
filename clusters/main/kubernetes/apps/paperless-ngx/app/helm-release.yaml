@@ -25,19 +25,49 @@ spec:
     remediation:
       retries: 3
   values:
-    # Pinned to the cached bitnamisecure/valkey digest (valkey 9.1.0).
-    # NOTE: this is Bitnami's PAID Secure tier (HTTP 401 on pull) — it only
-    # works because the image is cached on the node. It will break on the
-    # next Talos OS upgrade when images re-pull. The bitnamilegacy archive
-    # was tried (2026-06-10) but is frozen at valkey 8.1.3, whose older
-    # valkey-cli doesn't honor VALKEYCLI_AUTH — the TrueCharts redis-2.3.4
-    # health probe fails NOAUTH. Proper fix (#182) needs valkey/valkey
-    # upstream with a custom command/args/probe (the ~4-6h migration).
+    # Migrated off Bitnami (paid bitnamisecure tier, HTTP 401 on pull) to
+    # the official upstream valkey/valkey image (#182). The TrueCharts redis
+    # subchart defaults to the bitnami entrypoint + /health probe scripts;
+    # valkey/valkey is a plain image, so we override command/args/probes:
+    #   - run valkey-server directly with --requirepass (valkey/valkey does
+    #     NOT read the bitnami VALKEY_PASSWORD env var)
+    #   - --dir /tmp --save "" --appendonly no: pure in-memory cache (no PVC;
+    #     losing it on restart just re-queues work). /tmp is a writable
+    #     emptyDir (the image default /data is owned by UID 999, not 568).
+    #   - probes use valkey-cli -a instead of the bitnami /health scripts.
     redis:
       image:
-        repository: docker.io/bitnamisecure/valkey
-        tag: latest@sha256:5ce04fc20634fa151c6050a3aea9fdf30b709509a27af5af1a379b73d18ad58f
+        repository: docker.io/valkey/valkey
+        tag: 8.1.8-alpine
         pullPolicy: IfNotPresent
+      workload:
+        main:
+          podSpec:
+            containers:
+              main:
+                command:
+                  - valkey-server
+                args:
+                  - --requirepass
+                  - PLACEHOLDERPASSWORD
+                  - --port
+                  - "6379"
+                  - --dir
+                  - /tmp
+                  - --save
+                  - ""
+                  - --appendonly
+                  - "no"
+                probes:
+                  liveness:
+                    type: exec
+                    command: [valkey-cli, -a, PLACEHOLDERPASSWORD, ping]
+                  readiness:
+                    type: exec
+                    command: [valkey-cli, -a, PLACEHOLDERPASSWORD, ping]
+                  startup:
+                    type: exec
+                    command: [valkey-cli, -a, PLACEHOLDERPASSWORD, ping]
 
     credentials:
       s3:
