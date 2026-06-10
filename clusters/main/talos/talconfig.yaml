@@ -45,8 +45,11 @@ controlPlane:
     patches:
         - '@./patches/controlplane.yaml'
         - '@./patches/nvidia.yaml'
-        - '@./patches/encryption-config.secret.yaml'
-        - '@./patches/audit-policy.yaml'
+        # Two-phase etcd encryption + audit logging.
+        # Phase 1 (files, SOPS-encrypted, contains AES-GCM key):
+        - '@./patches/encryption-audit-files.secret.yaml'
+        # Phase 2 (apiserver config, no secrets):
+        - '@./patches/encryption-audit-apiserver.yaml'
     kernelModules:
      - name: nvme_tcp
      - name: vfio_pci
