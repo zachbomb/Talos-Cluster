@@ -1,119 +1,127 @@
 # Etcd encryption + Audit policy — staged Talos patch
 
-Staged on the live control-plane node via `talosctl patch mc --mode=staged`
-on 2026-06-09. Takes effect at the next reboot of `k8s-control-1`
-(192.168.10.89).
+**Status:** repo files updated 2026-06-09 to use `/var/etc/kubernetes/` host paths after the original `/etc/kubernetes/` paths boot-wedged the cluster. Patch has NOT yet been applied/staged to the live node — that's a separate operation pending a quiet maintenance window.
 
-The same configuration exists in the SOPS-encrypted Talos patch
-`clusters/main/talos/patches/encryption-config.secret.yaml` and
-`clusters/main/talos/patches/audit-policy.yaml`, but a full
-`talos apply` of the generated machine config would:
+## Background — what changed
 
-- reboot the node anyway (new `machine.files` aren't hot-reloadable)
-- re-introduce the `scheduler.config` block that wedged the cluster
-  on May 26 (memory note: it was removed via JSON patch as the live
-  workaround)
-- bump `install.image` v1.11.1 → v1.13.4
+The 2026-06-09 first attempt used host paths under `/etc/kubernetes/` (matching what the K8s docs typically show as the apiserver-side encryption-config location). That triggered a boot wedge:
 
-So the surgical strategic-merge patch below was applied directly
-to the live node instead. The repo files remain authoritative for
-what the EncryptionConfiguration *should* be — this is the runbook
-for re-staging or re-applying it on a fresh node.
-
-## Patch contents
-
-```yaml
-machine:
-  files:
-    - path: /etc/kubernetes/encryption-config.yaml
-      permissions: 0o600
-      op: create
-      content: |
-        apiVersion: apiserver.config.k8s.io/v1
-        kind: EncryptionConfiguration
-        resources:
-          - resources:
-              - secrets
-            providers:
-              - aesgcm:
-                  keys:
-                    - name: key1
-                      secret: <THE-KEY-FROM-encryption-config.secret.yaml>
-              - identity: {}
-    - path: /etc/kubernetes/audit-policy.yaml
-      permissions: 0o600
-      op: create
-      content: |
-        apiVersion: audit.k8s.io/v1
-        kind: Policy
-        omitStages:
-          - RequestReceived
-        rules:
-          - level: Metadata
-            resources:
-              - group: ""
-                resources: ["secrets"]
-          - level: None
-cluster:
-  apiServer:
-    extraArgs:
-      encryption-provider-config: /etc/kubernetes/encryption-config.yaml
-      audit-policy-file: /etc/kubernetes/audit-policy.yaml
-      audit-log-path: /var/log/audit/audit.log
-      audit-log-maxsize: "100"
-      audit-log-maxbackup: "5"
-    extraVolumes:
-      - hostPath: /etc/kubernetes/encryption-config.yaml
-        mountPath: /etc/kubernetes/encryption-config.yaml
-        readonly: true
-      - hostPath: /etc/kubernetes/audit-policy.yaml
-        mountPath: /etc/kubernetes/audit-policy.yaml
-        readonly: true
-      - hostPath: /var/log/audit
-        mountPath: /var/log/audit
-        readonly: false
+```
+error writing kubelet PKI: open /etc/kubernetes/bootstrap-kubeconfig: read-only file system
 ```
 
-## To re-stage
+Talos mounts `/etc/kubernetes/` read-only during early boot (before the `machine.files` controller runs) so the kubelet `KubeletServiceController` controller can lay down its bootstrap kubeconfig safely. Declaring our own `machine.files` entries under `/etc/kubernetes/` confused the mount ordering — the directory came up RO before kubelet bootstrap could write to it.
+
+**The fix in this PR:** move host-side paths to `/var/etc/kubernetes/` (same area Talos already uses for `nfsmount.conf`). Keep the in-pod `mountPath` at `/etc/kubernetes/` so the apiserver still finds its files where it expects them.
+
+## Host vs in-pod path mapping
+
+| Component | Host path | In-pod path (apiserver) |
+|---|---|---|
+| EncryptionConfiguration | `/var/etc/kubernetes/encryption-config.yaml` | `/etc/kubernetes/encryption-config.yaml` |
+| Audit policy | `/var/etc/kubernetes/audit-policy.yaml` | `/etc/kubernetes/audit-policy.yaml` |
+| Audit log output | `/var/log/k8s-audit/audit.log` | `/var/log/audit/audit.log` |
+
+Alloy DaemonSet mounts host `/var/log/k8s-audit/` → in-pod `/var/log/audit/` so its `loki.source.file "audit"` config can keep targeting `/var/log/audit/audit.log` unchanged.
+
+## Repo files (authoritative)
+
+- `clusters/main/talos/patches/encryption-config.secret.yaml` (SOPS-encrypted)
+- `clusters/main/talos/patches/audit-policy.yaml`
+- `clusters/main/kubernetes/system/alloy/app/helm-release.yaml`
+- `.sops.yaml` (rule for talos patches/*.secret.yaml)
+
+## Apply procedure (DEFERRED — requires hands-on maintenance window)
+
+The apply path is the same as the prior attempt, just with the new host paths:
 
 ```bash
-# Get the key from the SOPS-encrypted patch
-SOPS_AGE_KEY_FILE=$PWD/age.agekey \
-  sops --decrypt clusters/main/talos/patches/encryption-config.secret.yaml \
-  | grep "secret:" | awk '{print $2}'
+# 1. Generate Talos config (needs HEADLAMP_IP set in clusterenv per b9741b40b)
+./clustertool-new genconfig
 
-# Write the patch with the key inlined, then:
-talosctl --talosconfig clusters/main/talos/generated/talosconfig --nodes 192.168.10.89 \
-  patch mc -p @/tmp/encryption-audit-patch.yaml --mode=staged
+# 2. Restore any decrypt-in-place artifacts (feedback_genconfig_decrypts_in_place)
+git status --short  # check for unintended .secret.yaml diffs
+for f in $(git status --short | awk '{print $2}'); do
+  case "$f" in
+    *.secret.yaml|clusters/main/clusterenv.yaml|clusters/main/talos/generated/talsecret.yaml)
+      git restore "$f" ;;
+  esac
+done
+
+# 3. CRITICAL: dry-run BEFORE staging. Must report "no reboot required" — if it
+# still says "Applied configuration with a reboot", DO NOT proceed. Investigate
+# whether the new host paths trigger different filesystem semantics.
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 \
+  apply-config --file clusters/main/talos/generated/main-k8s-control-1.yaml --dry-run
+
+# 4a. If dry-run is clean, stage for next maintenance reboot:
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 \
+  patch mc -p @clusters/main/talos/generated/main-k8s-control-1.yaml --mode=staged
+
+# 4b. Then reboot during a planned window:
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 etcd snapshot /tmp/etcd-pre-reboot-$(date -u +%Y%m%dT%H%M%S).snap
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 reboot
 ```
 
-## To check whether it's active (after reboot)
+## Post-reboot verification
 
 ```bash
-# 1. apiserver flags
-kubectl get pod -n kube-system kube-apiserver-k8s-control-1 -o yaml \
-  | grep -E "encryption-provider-config|audit-policy-file"
+# 1. apiserver back?
+until kubectl get --raw=/livez >/dev/null 2>&1; do sleep 5; done
 
-# 2. force cluster-secrets through the new provider
+# 2. encryption-config file present on host AND in apiserver pod?
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 \
+  read /var/etc/kubernetes/encryption-config.yaml | head -5
+kubectl exec -n kube-system kube-apiserver-k8s-control-1 -- ls -la /etc/kubernetes/encryption-config.yaml
+
+# 3. Force-replace cluster-secrets so it's encrypted via the new provider
 kubectl get secret -n flux-system cluster-secrets -o yaml | kubectl replace -f -
 
-# 3. verify etcd ciphertext
-talosctl --talosconfig clusters/main/talos/generated/talosconfig --nodes 192.168.10.89 \
-  etcd snapshot /tmp/etcd.snap
-go install go.etcd.io/bbolt/cmd/bbolt@latest
+# 4. Verify etcd-side encryption (bbolt)
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 etcd snapshot /tmp/etcd.snap
+go install go.etcd.io/bbolt/cmd/bbolt@latest  # if not installed
 bbolt get /tmp/etcd.snap key /registry/secrets/flux-system/cluster-secrets | head -c 200
 # Expect prefix: k8s:enc:aesgcm:v1:key1:
-```
 
-## Post-reboot fleet rewrite
+# 5. Audit log flowing into Loki via Alloy
+kubectl logs -n loki -l app.kubernetes.io/name=alloy --tail=20 | grep audit
+# In Grafana: {audit_resource="secrets"}
 
-After reboot + cluster-secrets verified encrypted, run the fleet rewrite
-from plan Task 5.4 to bring all other Secrets through the new provider:
-
-```bash
+# 6. Fleet-wide Secret rewrite (resolves Decision A2). Script from plan Task 5.4.
 /tmp/fleet-rewrite-secrets.sh dry-run | tee /tmp/rewrite-dryrun.log
 /tmp/fleet-rewrite-secrets.sh apply   | tee /tmp/rewrite-apply.log
 ```
 
-Script body is in `.claude/plans/2026-06-09-flux-secrets-migration.md`
-Task 5.4 (lines 1282–1421).
+## Rollback (symmetric)
+
+If something goes wrong, the recovery from 2026-06-09 demonstrated the working pattern:
+
+```bash
+# Remove the apiserver bits via JSON patch (apid is reachable even when apiserver isn't)
+cat > /tmp/revert-patch.json <<'EOF'
+[
+  {"op": "remove", "path": "/cluster/apiServer/extraArgs/encryption-provider-config"},
+  {"op": "remove", "path": "/cluster/apiServer/extraArgs/audit-policy-file"},
+  {"op": "remove", "path": "/cluster/apiServer/extraArgs/audit-log-path"},
+  {"op": "remove", "path": "/cluster/apiServer/extraArgs/audit-log-maxsize"},
+  {"op": "remove", "path": "/cluster/apiServer/extraArgs/audit-log-maxbackup"},
+  {"op": "remove", "path": "/cluster/apiServer/extraVolumes/2"},
+  {"op": "remove", "path": "/cluster/apiServer/extraVolumes/1"},
+  {"op": "remove", "path": "/cluster/apiServer/extraVolumes/0"},
+  {"op": "remove", "path": "/machine/files/3"},
+  {"op": "remove", "path": "/machine/files/2"}
+]
+EOF
+talosctl --talosconfig clusters/main/talos/generated/talosconfig \
+  --endpoints 192.168.10.89 --nodes 192.168.10.89 \
+  patch mc -p @/tmp/revert-patch.json --mode=auto
+# Talos will reboot once into a clean config.
+```
+
+NOTE: the array indices in `/machine/files/N` and `/cluster/apiServer/extraVolumes/N` depend on the current config state. Use `talosctl get machineconfigs -o yaml` to confirm indices before running the revert.
