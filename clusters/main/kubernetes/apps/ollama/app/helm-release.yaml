@@ -197,7 +197,12 @@ spec:
     persistence:
       config:
         enabled: true
-        size: 50Gi
+        # Bumped 50Gi → 60Gi 2026-06-10 to match the live PVC (had been
+        # manually expanded at some point). Helm release was failing with
+        # "field can not be less than status.capacity" because helm wanted
+        # to set 50Gi while the bound PVC was already 60Gi (Kubernetes
+        # rejects PVC shrinks).
+        size: 60Gi
         mountPath: /root/.ollama
         volsync:
           - name: config
