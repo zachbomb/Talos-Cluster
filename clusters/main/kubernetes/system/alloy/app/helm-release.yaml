@@ -81,12 +81,20 @@ spec:
             forward_to = [loki.write.default.receiver]
           }
 
-          // Scrape kube-apiserver audit log mounted from the host.
-          // Audit policy logs Metadata level for secrets — who/when/which-secret,
-          // NOT cleartext credentials. Source: Talos patch audit-policy.yaml.
+          // Scrape kube-apiserver audit logs mounted from the host.
+          //
+          // **Where the logs actually live:** Talos manages the apiserver
+          // audit config natively (via talsecret.yaml's secretboxEncryptionSecret
+          // mechanism) and writes audit logs to a fixed Talos-controlled path,
+          // /var/log/audit/kube/, with hourly rotation. The PR 5 attempt to
+          // override --audit-log-path via apiServer.extraArgs was silently
+          // dropped by Talos in favor of its own management. We point Alloy
+          // at the REAL log location instead.
+          //
+          // Audit policy is Talos's default (level: Metadata, all resources).
           loki.source.file "audit" {
             targets = [{
-              __path__ = "/var/log/audit/audit.log",
+              __path__ = "/var/log/audit/kube-apiserver-*.log",
               job      = "kube-audit",
             }]
             forward_to = [loki.process.audit.receiver]
@@ -123,6 +131,8 @@ spec:
           }
 
       # Mount the host audit log path read-only into every Alloy DaemonSet pod.
+      # Inside the Alloy container the mount appears at /var/log/audit/ — that's
+      # where loki.source.file "audit" looks for kube-apiserver-*.log files.
       # Requires the loki namespace to carry pod-security.kubernetes.io/enforce=privileged
       # because hostPath is forbidden under the baseline PodSecurity profile.
       mounts:
@@ -138,14 +148,12 @@ spec:
         extra:
           - name: kube-audit
             hostPath:
-              # Talos writes audit logs here (audit-policy.yaml patch sets
-              # the apiserver --audit-log-path to /var/log/audit/audit.log
-              # INSIDE the apiserver pod, which is bind-mounted from this
-              # host path). The original /var/log/audit path worked, but
-              # /var/log/k8s-audit avoids any collision with system auditd
-              # (Talos's auditd service writes to /var/log/audit/* on the
-              # host too).
-              path: /var/log/k8s-audit
+              # Talos writes kube-apiserver audit logs to /var/log/audit/kube/
+              # on the host (hourly rotation, file pattern kube-apiserver-*.log).
+              # This is a Talos-managed location set via talsecret.yaml — the
+              # PR 5 attempt to redirect it via apiServer.extraArgs was silently
+              # dropped. See memory note talos-native-encryption-and-audit.
+              path: /var/log/audit/kube
               type: DirectoryOrCreate
 
     serviceMonitor:
