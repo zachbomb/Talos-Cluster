@@ -138,7 +138,14 @@ spec:
         extra:
           - name: kube-audit
             hostPath:
-              path: /var/log/audit
+              # Talos writes audit logs here (audit-policy.yaml patch sets
+              # the apiserver --audit-log-path to /var/log/audit/audit.log
+              # INSIDE the apiserver pod, which is bind-mounted from this
+              # host path). The original /var/log/audit path worked, but
+              # /var/log/k8s-audit avoids any collision with system auditd
+              # (Talos's auditd service writes to /var/log/audit/* on the
+              # host too).
+              path: /var/log/k8s-audit
               type: DirectoryOrCreate
 
     serviceMonitor:
