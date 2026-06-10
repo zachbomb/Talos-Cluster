@@ -25,18 +25,18 @@ spec:
     remediation:
       retries: 3
   values:
-    # TrueCharts redis subchart valkey image, moved off the paid
-    # bitnamisecure tier (HTTP 401, would break on the next Talos upgrade
-    # when images re-pull) to the FREE bitnamilegacy archive. Same Bitnami
-    # image shape — identical entrypoint, VALKEY_PASSWORD handling, and
-    # /health probe scripts — so it's a true drop-in (verified 2026-06-10).
-    # bitnamilegacy is a frozen archive (valkey 8.1.3, no further updates);
-    # acceptable for a cache/queue store. Digest-pinned for reproducibility.
-    # Resolves task #182.
+    # Pinned to the cached bitnamisecure/valkey digest (valkey 9.1.0).
+    # NOTE: this is Bitnami's PAID Secure tier (HTTP 401 on pull) — it only
+    # works because the image is cached on the node. It will break on the
+    # next Talos OS upgrade when images re-pull. The bitnamilegacy archive
+    # was tried (2026-06-10) but is frozen at valkey 8.1.3, whose older
+    # valkey-cli doesn't honor VALKEYCLI_AUTH — the TrueCharts redis-2.3.4
+    # health probe fails NOAUTH. Proper fix (#182) needs valkey/valkey
+    # upstream with a custom command/args/probe (the ~4-6h migration).
     redis:
       image:
-        repository: docker.io/bitnamilegacy/valkey
-        tag: 8.1.3@sha256:7fb981553408c77c8801a501fbd82043763cbcc87268988a442c5dac0b6ff1b5
+        repository: docker.io/bitnamisecure/valkey
+        tag: latest@sha256:5ce04fc20634fa151c6050a3aea9fdf30b709509a27af5af1a379b73d18ad58f
         pullPolicy: IfNotPresent
 
     credentials:
