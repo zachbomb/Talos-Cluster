@@ -130,8 +130,6 @@ spec:
           dnsserver: 192.168.10.196
         - domain: tunarr-code.sf.wethecommon.com
           dnsserver: 192.168.10.196
-        - domain: dizquetv.sf.wethecommon.com
-          dnsserver: 192.168.10.196
         - domain: tdarr.sf.wethecommon.com
           dnsserver: 192.168.10.196
         - domain: tinymediamanager.sf.wethecommon.com
