@@ -1,0 +1,46 @@
+# gitleaks configuration for Talos-Cluster.
+#
+# Division of labor (defense in depth):
+#   - .githooks/pre-commit  guards SOPS-managed secret FILES (*.secret.yaml,
+#     clusterenv.yaml, talsecret.yaml) — blocks committing them cleartext.
+#   - gitleaks (this config) guards EVERYTHING ELSE — hardcoded secrets in
+#     helm-releases, configmaps, scripts, plain manifests — the class that the
+#     2026-06-11 history audit found (plex/overseerr/notifiarr/nzbget tokens
+#     committed as literal values in helm-release.yaml).
+#
+# CI scans the current working tree (--no-git), so it fails only on a real
+# cleartext secret in the merged result — NOT on the 6 historical leaks still
+# in old commits (those await rotation + history purge; see
+# memory reference_git_history_secret_audit_2026_06 / the rotation plan).
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe: SOPS-encrypted files, prose docs, and public Discord identifiers"
+
+# SOPS-encrypted files are guaranteed encrypted by the pre-commit hook; their
+# ENC[AES256_GCM,...] base64 blobs are safe at rest. Allowlisting them here
+# prevents false positives without weakening secret-FILE protection (the
+# pre-commit hook is what enforces those stay encrypted).
+paths = [
+  '''.*\.secret\.ya?ml$''',
+  '''.*clusterenv\.ya?ml$''',
+  '''.*talsecret\.ya?ml$''',
+  '''clusters/main/talos/patches/.*\.secret\.ya?ml$''',
+  # planning docs discuss "application public key" in prose (no real secrets)
+  '''docs/plans/.*\.md$''',
+  # config backup with literal placeholder values (weatherapikey, etc.)
+  '''docs/homepage-config-backup/.*''',
+]
+
+# Public Discord identifiers gitleaks misclassifies as tokens/keys. These are
+# NOT secrets — application public key (used to VERIFY inbound interaction
+# signatures), guild/channel/owner snowflake IDs. Safe to be cleartext.
+regexes = [
+  '''7579eaae387985eea13c2275db7a9c3fea3bf531aa2eaf825e892111c8dc2ab3''',  # triparr DISCORD_PUBLIC_KEY
+  '''91a5dfc4744ef5ef63771a0ec5be338f46eb9231da3fd585af0614c520bb6acd''',  # alert-remediation discord-app-public-key
+  '''324728643559358464''',   # Discord owner ID
+  '''1448028450748104796''',  # Discord channel ID
+  '''1404592[0-9]{10}''',     # Discord application/guild ID
+]

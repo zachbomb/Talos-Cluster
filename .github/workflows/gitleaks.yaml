@@ -1,0 +1,64 @@
+name: gitleaks secret scan
+
+# Blocks NEW hardcoded secrets from entering the repo. Scans the current
+# working tree (--no-git) so it fails only on a real cleartext secret in the
+# merged result — it deliberately does NOT scan full git history, which still
+# contains 6 known historical leaks (plex/overseerr/notifiarr/nzbget tokens)
+# awaiting rotation + a filter-repo purge. Re-enable a full-history scan after
+# that purge to assert it stays clean.
+#
+# Complements .githooks/pre-commit (which guards SOPS secret FILES); this guards
+# hardcoded values in every other file type. Config + allowlist: .gitleaks.toml
+#
+# Security note: this workflow interpolates NO untrusted GitHub event inputs
+# (PR titles, bodies, branch names) into run: commands. The gitleaks version is
+# a hardcoded constant; all paths are repo-relative literals.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan working tree for secrets
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 1
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+        run: |
+          set -euo pipefail
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan working tree
+        run: |
+          set -euo pipefail
+          gitleaks dir . \
+            --config .gitleaks.toml \
+            --no-banner \
+            --redact \
+            --report-format sarif \
+            --report-path gitleaks.sarif \
+            --exit-code 2
+          echo "✓ no cleartext secrets found in the working tree"
+
+      - name: Upload findings (on failure)
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitleaks-sarif
+          path: gitleaks.sarif
+          if-no-files-found: ignore
