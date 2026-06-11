@@ -93,6 +93,7 @@ spec:
                 FEATURE_AMADEUS_PRICING: "true"
                 FEATURE_AWARDWALLET_SYNC: "true"
                 FEATURE_TRANSFER_BONUSES: "true"
+                FEATURE_SCRAPING: "true"
                 ENABLE_UNIFIED_SEARCH: "true"
                 ENABLE_CONSOLIDATED_MONITORING: "true"
                 ENABLE_ROUTE_ANALYTICS: "true"
