@@ -28,7 +28,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/sabnzbd
       pullPolicy: IfNotPresent
-      tag: 5.0.3
+      tag: 5.0.4
     TZ: America/Los_Angeles
     credentials:
       s3:
