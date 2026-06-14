@@ -31,6 +31,14 @@ spec:
       defaultReplicaCount: "1"
       storageOverProvisioningPercentage: "100000"
       guaranteedInstanceManagerCPU: 8
+      # Raised 10s→30s during the 2026-06-14 IM crash-loop outage. After a
+      # cascade, the instance-manager liveness probe (nc localhost 8500-8503)
+      # timed out at 10s while bringing up ~100 engines, so kubelet killed the
+      # IM before it could stabilize → permanent death spiral (every ~90s).
+      # 30s lets the IM survive the attach storm. Root trigger was the Longhorn
+      # 1.11.2→1.12.0 auto-upgrade (#4177, June 2) — Renovate is supposed to be
+      # disabled for this chart but the automerge-action bypassed it; re-block.
+      instanceManagerPodLivenessProbeTimeout: "30"
       # v2DataEngine: true
     persistence:
       defaultClass: true
