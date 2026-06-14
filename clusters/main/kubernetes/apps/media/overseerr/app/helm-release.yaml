@@ -93,6 +93,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 2Gi
+              trigger:
+                schedule: "32 4 * * *"
       media:
         enabled: true
         type: nfs

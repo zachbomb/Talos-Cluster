@@ -55,6 +55,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 5Gi
+              trigger:
+                schedule: "0 0 * * *"
       media:
         enabled: true
         type: nfs
@@ -139,6 +141,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 3Gi
+              trigger:
+                schedule: "48 0 * * *"
     plex:
       additionalAdvertiseURL: ""
       disableGDM: false

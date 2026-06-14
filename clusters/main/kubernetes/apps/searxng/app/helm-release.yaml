@@ -102,6 +102,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 2Gi
+              trigger:
+                schedule: "8 4 * * *"
 
     securityContext:
       container:

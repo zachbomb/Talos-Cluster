@@ -175,6 +175,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 8Gi
+              trigger:
+                schedule: "44 3 * * *"
             dest:
               enabled: false
               cacheCapacity: 8Gi
@@ -189,6 +191,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 8Gi
+              trigger:
+                schedule: "0 4 * * *"
             dest:
               enabled: false
               cacheCapacity: 8Gi
@@ -203,6 +207,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 8Gi
+              trigger:
+                schedule: "52 3 * * *"
             dest:
               enabled: false
               cacheCapacity: 8Gi

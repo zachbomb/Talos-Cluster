@@ -163,6 +163,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 2Gi
+              trigger:
+                schedule: "32 0 * * *"
       library:
         size: 2Gi
         mountPath: /usr/src/app/upload/library
@@ -175,6 +177,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 2Gi
+              trigger:
+                schedule: "16 0 * * *"
       # Expanded 2026-05-27 from chart-default 100Gi → 250Gi after
       # KubePersistentVolumeFillingUp critical fired (96G/98G, 1.95% free).
       # Thumbs grow with the photo library; revisit when library expansion

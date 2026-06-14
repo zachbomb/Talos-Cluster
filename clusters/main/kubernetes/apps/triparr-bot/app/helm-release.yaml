@@ -178,6 +178,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 2Gi
+              trigger:
+                schedule: "24 4 * * *"
             dest:
               enabled: true
               cacheCapacity: 2Gi

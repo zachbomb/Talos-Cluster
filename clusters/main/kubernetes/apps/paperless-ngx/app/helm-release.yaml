@@ -133,6 +133,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 8Gi
+              trigger:
+                schedule: "40 2 * * *"
       media:
         enabled: true
         size: 20Gi
@@ -147,6 +149,8 @@ spec:
             src:
               enabled: true
               cacheCapacity: 8Gi
+              trigger:
+                schedule: "56 2 * * *"
       consume:
         enabled: true
         size: 5Gi
