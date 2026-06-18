@@ -28,7 +28,7 @@ spec:
     image:
       # renovate: datasource=github-releases depName=chrisbenincasa/tunarr extractVersion=^v(?<version>.+)$
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 1.3.6
+      tag: 1.3.7
       pullPolicy: IfNotPresent
     env:
       TZ: America/Los_Angeles
