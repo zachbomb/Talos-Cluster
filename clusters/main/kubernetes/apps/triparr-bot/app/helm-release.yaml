@@ -64,6 +64,11 @@ spec:
                 DISCORD_OWNER_ID: "324728643559358464"
                 DISCORD_PUBLIC_KEY: "7579eaae387985eea13c2275db7a9c3fea3bf531aa2eaf825e892111c8dc2ab3"
                 ADMIN_USER_IDS: "324728643559358464"
+                # Web dashboard — SPA + Discord OAuth served on :3001 via the
+                # triparr.${BASE_DOMAIN} ingress (below).
+                DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+                WEBAPP_BASE_URL: "https://triparr.${BASE_DOMAIN}"
+                DISCORD_REDIRECT_URI: "https://triparr.${BASE_DOMAIN}/auth/discord/callback"
                 # Security
                 ENCRYPTION_KEY: ${TRIPARR_ENCRYPTION_KEY}
                 SESSION_SECRET: ${TRIPARR_SESSION_SECRET}
