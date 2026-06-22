@@ -6,9 +6,27 @@
   ],
   "packageRules": [
     {
-      "matchPackageNames": ["longhorn"],
-      "enabled": false,
-      "description": "Longhorn 1.11.x has upgrade loop bug on single-node clusters"
+      // Longhorn: MANUAL-MERGE ONLY. The 1.11.2 -> 1.12.0 auto-upgrade (PR #4177,
+      // June 2026) caused a cluster-wide outage — the instance-manager liveness
+      // probe death-spiraled on this single node. The previous rule used
+      // matchPackageNames:["longhorn"] with enabled:false, but the TrueCharts
+      // home-ops-mirror tracks the chart via the *container* datasource, whose
+      // packageName is the OCI image path (NOT the bare "longhorn"), so the rule
+      // never matched, the PR was created, inherited the preset's `automerge`
+      // label, and pascalgn/automerge-action merged it.
+      //
+      // Fix: match on depName — in this Renovate version matchPackageNames matches
+      // the packageName (OCI path) only, NOT the depName, which is why the old
+      // exact rule missed; the depName is reliably "longhorn". And instead of
+      // enabled:false, attach `do-not-merge` so the automerge workflow's
+      // `!do-not-merge` gate hard-blocks it (proven pattern, same as the Talos
+      // rule below — which correctly keys on packageName because Talos deps are
+      // identified by their ghcr.io path). PRs still appear for visibility —
+      // merge by hand after testing the upgrade on this single-node cluster.
+      "matchDepNames": ["longhorn"],
+      "automerge": false,
+      "addLabels": ["do-not-merge"],
+      "description": "Longhorn manual-merge only: June 2026 1.12.0 instance-manager liveness outage + 1.11 single-node upgrade loop. Human review + test before merge."
     },
     {
       "matchPackageNames": [
