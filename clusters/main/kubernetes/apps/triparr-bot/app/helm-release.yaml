@@ -121,6 +121,11 @@ spec:
                 # See .rootcause/a3_codeshare_resolution_segment_trip_mismatch.md.
                 ENABLE_CODESHARE_RESOLUTION: "true"
                 ENABLE_CODESHARE_MERGE: "true"
+                # Leg-mapping 1-stop cohort expansion (Phase 2.1). Tuned in PR #587: capped 3 hubs,
+                # 60-240min connection window, detour cap = nonstop + LEG_ONESTOP_MAX_DETOUR_MIN (default
+                # 240/+4h). Multiplies AeroDataBox board pulls (~1/hub) — booked-legs-only keeps it cheap.
+                # Validated live 2026-06-23 (France CDG->LAX: 6 direct + 3 one-stop via DTW/BOS/ATL).
+                ENABLE_LEG_ONESTOP: "true"
                 # Availability scrapers (Chrome CDP sidecar at chrome-cdp service)
                 ENABLE_BA_SCRAPER: "true"
                 ENABLE_ANA_SCRAPER: "true"
