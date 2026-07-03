@@ -45,11 +45,12 @@ controlPlane:
     patches:
         - '@./patches/controlplane.yaml'
         - '@./patches/nvidia.yaml'
-        # Two-phase etcd encryption + audit logging.
-        # Phase 1 (files, SOPS-encrypted, contains AES-GCM key):
-        - '@./patches/encryption-audit-files.secret.yaml'
-        # Phase 2 (apiserver config, no secrets):
-        - '@./patches/encryption-audit-apiserver.yaml'
+        # NOTE: the two-phase etcd-encryption + audit-logging patches were removed
+        # 2026-07-03. They were redundant — Talos encrypts etcd with secretbox and
+        # audit-logs natively — and the apiserver mounted an unreadable audit-policy
+        # file that fatal-crashed kube-apiserver on a fresh render (permission
+        # denied), taking down the whole control plane after a reboot. Alloy ships
+        # Talos's native audit logs from /var/log/audit/kube/ independently.
     kernelModules:
      - name: nvme_tcp
      - name: vfio_pci
