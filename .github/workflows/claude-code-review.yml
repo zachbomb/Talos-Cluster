@@ -36,6 +36,10 @@ jobs:
         uses: anthropics/claude-code-action@01872ccc02bf66740207fb338a783ce028216758 # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Renovate/dependency bots open most PRs here; the action blocks
+          # bot-initiated runs by default. The review is read-only (posts a
+          # comment), so allow all bots to be reviewed.
+          allowed_bots: "*"
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
