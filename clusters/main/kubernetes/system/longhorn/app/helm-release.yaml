@@ -39,6 +39,16 @@ spec:
       # 1.11.2→1.12.0 auto-upgrade (#4177, June 2) — Renovate is supposed to be
       # disabled for this chart but the automerge-action bypassed it; re-block.
       instanceManagerPodLivenessProbeTimeout: "30"
+      # Enable the revision counter. With it DISABLED (Longhorn's default since
+      # 1.2), a single-replica volume that faults on an unclean node reboot will
+      # NOT auto-salvage — Longhorn can't confirm the lone replica is consistent,
+      # so auto-salvage logs "bringing up 0 replicas" and the volume stays
+      # detached/faulted until failedAt is cleared by hand. On 2026-07-03 a Talos
+      # reboot faulted ~50 single-replica volumes this way (Longhorn #2309/#7714).
+      # On a single-node cluster the lone replica IS the data, so salvaging it is
+      # always correct. NOTE: this applies to NEW volumes only; pre-existing
+      # volumes keep their setting until rebuilt — see the salvage runbook.
+      disableRevisionCounter: false
       # v2DataEngine: true
     persistence:
       defaultClass: true
