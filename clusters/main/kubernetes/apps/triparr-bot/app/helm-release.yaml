@@ -105,6 +105,7 @@ spec:
                 ENABLE_PROFILE_QUERY: "true"
                 ENABLE_BUDGET_AWARENESS: "true"
                 FEATURE_BOOKING_CLASS_MONITORING: "true"
+                FEATURE_WEBPUSH: "true"
                 BOOKING_CLASS_SOURCE: "both"
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
