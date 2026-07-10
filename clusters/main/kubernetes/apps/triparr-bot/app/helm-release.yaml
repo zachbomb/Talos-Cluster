@@ -106,6 +106,10 @@ spec:
                 ENABLE_BUDGET_AWARENESS: "true"
                 FEATURE_BOOKING_CLASS_MONITORING: "true"
                 FEATURE_WEBPUSH: "true"
+                # Award open-probability engine (1A): validated on prod backtest (high tier —
+                # Brier 0.003, AUC 0.95); surfaces the P(space opens by your date) number only
+                # for high-confidence keys, hedged copy otherwise.
+                FEATURE_OPEN_PROBABILITY: "true"
                 BOOKING_CLASS_SOURCE: "both"
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
