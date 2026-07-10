@@ -32,7 +32,7 @@ spec:
           main:
             image:
               repository: prom/graphite-exporter
-              tag: v0.16.0
+              tag: v0.17.0
             args:
               - --graphite.listen-address=:9109
             resources:
