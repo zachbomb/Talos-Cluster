@@ -110,6 +110,12 @@ spec:
                 # Brier 0.003, AUC 0.95); surfaces the P(space opens by your date) number only
                 # for high-confidence keys, hedged copy otherwise.
                 FEATURE_OPEN_PROBABILITY: "true"
+                # Pipeline yield-anomaly detector (5A): generic false-green gate — median+MAD
+                # baselines per (pipeline, metric) over cron_job_runs.result_summary + a probe
+                # registry; digests newly-opened episodes via securityAudit at high. Self-guards
+                # with an 8-observation min-history, so it learns silently (~10 days) before it
+                # can alert. Gates cron registration only; daily yieldAnomalyScan 13:40 UTC.
+                FEATURE_YIELD_ANOMALY: "true"
                 BOOKING_CLASS_SOURCE: "both"
                 # Unifies route-alert + home-route + release monitoring under one
                 # scheduler; legacy monitors defer init (no double-scheduling).
