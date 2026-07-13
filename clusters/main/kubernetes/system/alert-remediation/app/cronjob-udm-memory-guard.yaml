@@ -1,0 +1,73 @@
+# -----------------------------------------------------------------------------
+# udm-memory-guard  —  TEMPORARY BAND-AID (2026-07)
+#
+# Works around the UniFi OS 5.1.x / Network-app 10.5.61 memory leak on the UDM
+# Pro SE (earlyOOM SIGKILLs unifi-core, which corrupts MongoDB). Two jobs in one
+# light SSH round-trip every 5 min:
+#   (a) self-heal the 2 GB disk swap on /data (survives reboot; `swapon` does not)
+#   (b) gracefully `systemctl restart unifi-core.service` ONLY if free mem < 350 MB
+#       AND unifi-core has been up > 5 min (startup grace, avoids restart loops)
+#
+# REMOVE THIS once the firmware leak is cured (Ubiquiti patch or 10.5.56 rollback
+# — see task #193). It restarts a SHARED router; it is not meant to be permanent.
+#
+# Secret `udm-ssh-pw` (key `password`) is LIVE-APPLIED, not in git yet — pending
+# rotation of the leaked UDM SSH password (task #193 / #161). git-ify the secret
+# in the same step you rotate the password.
+# -----------------------------------------------------------------------------
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: udm-memory-guard
+  namespace: alert-remediation
+  labels: { app: udm-memory-guard }
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 120
+      ttlSecondsAfterFinished: 600
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: guard
+            image: alpine:3.20
+            env:
+            - name: SSHPASS
+              valueFrom: { secretKeyRef: { name: udm-ssh-pw, key: password } }
+            command: ["sh","-c"]
+            args:
+            - |
+              apk add --no-cache sshpass openssh-client >/dev/null 2>&1
+              S="sshpass -e ssh -o StrictHostKeyChecking=no -o ConnectTimeout=12 root@192.168.10.1"
+              # ONE ssh round-trip does everything (keep controller load light):
+              #  (a) self-heal the 2G disk swap  — /data persists across reboot, but `swapon` does not,
+              #      so re-activate it (recreate the file only if it's actually missing).
+              #  (b) read free-mem + unifi-core uptime for the restart decision.
+              OUT=$($S '
+                if grep -q /data/swapfile /proc/swaps 2>/dev/null; then SW=swap_ok; else
+                  if [ ! -f /data/swapfile ]; then (fallocate -l 2G /data/swapfile 2>/dev/null || dd if=/dev/zero of=/data/swapfile bs=1M count=2048 2>/dev/null); chmod 600 /data/swapfile; mkswap /data/swapfile >/dev/null 2>&1; fi
+                  swapon /data/swapfile 2>/dev/null && SW=swap_reactivated || SW=swap_FAILED
+                fi
+                A=$(free -m | awk "/Mem:/{print \$7}")
+                N=$(awk "{print int(\$1)}" /proc/uptime)
+                AE=$(systemctl show unifi-core.service -p ActiveEnterTimestampMonotonic --value 2>/dev/null); AES=$((AE/1000000))
+                echo "$SW $A $((N-AES))"' 2>/dev/null)
+              SW=$(echo "$OUT"   | awk '{print $1}')
+              AVAIL=$(echo "$OUT" | awk '{print $2}')
+              UP=$(echo "$OUT"   | awk '{print $3}')
+              echo "$(date -u +%H:%M) swap=${SW:-unknown} available=${AVAIL}MB unifi_core_up=${UP}s"
+              case "$AVAIL" in ''|*[!0-9]*) echo "no mem reading - skip restart"; exit 0;; esac
+              case "$UP" in ''|*[!0-9-]*) UP=9999;; esac
+              # gracefully recycle unifi-core ONLY if starved AND past 5-min startup grace
+              if [ "$AVAIL" -lt 350 ] && [ "$UP" -gt 300 ]; then
+                echo "low mem + up>5min -> restart unifi-core"
+                $S "systemctl restart unifi-core.service" 2>&1 | tail -1
+              else
+                echo "no action (healthy, or in startup grace)"
+              fi

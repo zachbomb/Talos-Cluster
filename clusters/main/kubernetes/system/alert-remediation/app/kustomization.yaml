@@ -12,6 +12,7 @@ resources:
   - pvc.yaml
   - service.yaml
   - deployment.yaml
+  - cronjob-udm-memory-guard.yaml
   - middleware-discord-callback-chain.yaml
   - certificate.yaml
   - ingressroute.yaml
