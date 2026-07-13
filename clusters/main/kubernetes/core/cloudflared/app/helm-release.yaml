@@ -37,6 +37,12 @@ spec:
               env:
                 TUNNEL_TOKEN: "${CLOUDFLARE_TOKEN}"
                 TUNNEL_METRICS: "0.0.0.0:2000"
+                # QUIC (default) tears the tunnel down on brief WAN egress blips
+                # ("no recent network activity") — all 4 conns dropped together
+                # ~2x/hr, causing external-access loss. http2 (TCP) rides through
+                # a ~10s blip instead of reconnecting. See UDM WAN1-failover /
+                # #158 investigation, 2026-07.
+                TUNNEL_TRANSPORT_PROTOCOL: "http2"
 
     service:
       main:
