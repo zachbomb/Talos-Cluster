@@ -61,7 +61,7 @@ spec:
               SW=$(echo "$OUT"   | awk '{print $1}')
               AVAIL=$(echo "$OUT" | awk '{print $2}')
               UP=$(echo "$OUT"   | awk '{print $3}')
-              echo "$(date -u +%H:%M) swap=${SW:-unknown} available=${AVAIL}MB unifi_core_up=${UP}s"
+              echo "$(date -u +%H:%M) swap=$${SW:-unknown} available=$${AVAIL}MB unifi_core_up=$${UP}s"
               case "$AVAIL" in ''|*[!0-9]*) echo "no mem reading - skip restart"; exit 0;; esac
               case "$UP" in ''|*[!0-9-]*) UP=9999;; esac
               # gracefully recycle unifi-core ONLY if starved AND past 5-min startup grace
