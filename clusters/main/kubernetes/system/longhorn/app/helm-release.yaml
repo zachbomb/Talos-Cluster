@@ -49,6 +49,18 @@ spec:
       # always correct. NOTE: this applies to NEW volumes only; pre-existing
       # volumes keep their setting until rebuilt — see the salvage runbook.
       disableRevisionCounter: false
+      # Throttle concurrent clone/rebuild + heavy-snapshot ops so a VolSync
+      # bulk-resume (or any burst of ReplicationSource clones) can't stampede the
+      # single-node instance-manager. 2026-07-13: resuming VolSync after a long
+      # suspension fired ~51 clone-volume creations at once → node 54→93% CPU,
+      # 49 clone volumes faulting. The etcd SLOG (added same day) kept the IM
+      # ALIVE through it, but these caps meter the burst so it never gets severe
+      # in the first place (belt + suspenders). Default is 5 each; 2 is the
+      # single-node-safe value — less thrash, slightly slower rebuilds (an
+      # acceptable trade on 1 node). See [[volsync-operational-procedures]] and
+      # [[longhorn-mass-salvage-im-deathspiral-2026-07]].
+      concurrentReplicaRebuildPerNodeLimit: "2"
+      snapshotHeavyTaskConcurrentLimit: "2"
       # v2DataEngine: true
     persistence:
       defaultClass: true
