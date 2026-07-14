@@ -119,10 +119,10 @@ spec:
                     -o jsonpath='{.status.startTime}')" +%s)
                   AGE_HRS=$(( ($(date +%s) - START_EPOCH) / 3600 ))
                   if [ "$AGE_HRS" -lt 24 ]; then
-                    echo "Skipping rotation: $POD is only ${AGE_HRS}h old (< 24h)."
+                    echo "Skipping rotation: $POD is only $${AGE_HRS}h old (< 24h)."
                     exit 0
                   fi
-                  echo "Rotating instance-manager: $POD (uptime ${AGE_HRS}h)"
+                  echo "Rotating instance-manager: $POD (uptime $${AGE_HRS}h)"
                   # Grace period matches runbook Recovery A. 60s allows in-flight
                   # iSCSI sessions to drain cleanly without aborting volumes mid-IO.
                   kubectl delete pod -n longhorn-system "$POD" --grace-period=60
