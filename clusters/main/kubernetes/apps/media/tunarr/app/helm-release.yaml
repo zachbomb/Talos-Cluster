@@ -95,67 +95,6 @@ spec:
                 runAsUser: 0
                 runAsGroup: 0
                 readOnlyRootFilesystem: false
-            # Self-healing Plex token: if the Plex media-source can't query Plex
-            # (accessToken wiped by a config restore — the Jul 2026 failure mode),
-            # re-apply ${PLEX_API} from git via the Tunarr API. Idempotent: only
-            # acts when the connection is dead. See memory tunarr-plex-token-recovery.
-            token-heal:
-              enabled: true
-              image:
-                repository: python
-                tag: "3.14-alpine"
-              env:
-                PLEX_API: "${PLEX_API}"
-              command:
-                - python3
-                - -c
-                - |
-                  import json,os,time,uuid,urllib.request,urllib.error
-                  API="http://localhost:8000"; TOKEN=os.environ.get("PLEX_API","")
-                  def get(p):
-                      try:
-                          with urllib.request.urlopen(API+p,timeout=10) as r: return r.status,r.read()
-                      except Exception: return None,None
-                  def put(p,b):
-                      req=urllib.request.Request(API+p,data=json.dumps(b).encode(),method="PUT",headers={"Content-Type":"application/json"})
-                      try:
-                          with urllib.request.urlopen(req,timeout=15) as r: return r.status
-                      except urllib.error.HTTPError as e: return e.code
-                      except Exception: return None
-                  while True:
-                      s,_=get("/api/version")
-                      if s==200: break
-                      time.sleep(5)
-                  print("[token-heal] Tunarr API up",flush=True)
-                  while True:
-                      s,body=get("/api/media-sources")
-                      if s==200 and TOKEN:
-                          for src in [x for x in json.loads(body) if x.get("type")=="plex"]:
-                              pid=src["id"]; st,_=get("/api/plex/"+pid+"/libraries")
-                              if st!=200:
-                                  print("[token-heal] plex "+pid+" unhealthy (status="+str(st)+") -> reapplying token",flush=True)
-                                  pl=dict(src); pl["accessToken"]=TOKEN
-                                  if not pl.get("clientIdentifier"): pl["clientIdentifier"]=str(uuid.uuid4())
-                                  print("[token-heal] PUT -> "+str(put("/api/media-sources/"+pid,pl)),flush=True)
-                      time.sleep(300)
-              probes:
-                liveness:
-                  enabled: false
-                readiness:
-                  enabled: false
-                startup:
-                  enabled: false
-              resources:
-                requests:
-                  cpu: 5m
-                  memory: 32Mi
-                limits:
-                  cpu: 50m
-                  memory: 64Mi
-              securityContext:
-                runAsUser: 0
-                runAsGroup: 0
-                readOnlyRootFilesystem: false
     autoscaling:
       vpa:
         enabled: true
