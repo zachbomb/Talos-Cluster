@@ -1,0 +1,102 @@
+# Self-healing Plex token for Tunarr. The Plex media-source accessToken lives in
+# Tunarr's DB (not Helm values), so a config-PVC restore silently wipes it and
+# every Plex-backed program goes state:missing -> error screens (the Jul 2026
+# failure mode). This CronJob re-applies ${PLEX_API} (from cluster-secrets) via
+# the Tunarr API whenever the Plex source can't reach Plex. Idempotent: it only
+# acts when the connection is dead. Implemented as a CronJob (not a helm-release
+# sidecar) because TrueCharts app-template silently drops additional containers
+# that carry an env field. See memory tunarr-plex-token-recovery.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tunarr-token-heal
+  namespace: media
+  labels:
+    app.kubernetes.io/name: tunarr-token-heal
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 120
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: tunarr-token-heal
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: heal
+              image: python:3.14-alpine
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: PLEX_API
+                  value: "${PLEX_API}"
+                - name: TUNARR_URL
+                  value: "http://tunarr-app-template:8000"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 5m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 96Mi
+              command:
+                - python3
+                - -c
+                - |
+                  import json, os, uuid, urllib.request, urllib.error
+                  API = os.environ.get("TUNARR_URL", "http://tunarr-app-template:8000")
+                  TOKEN = os.environ.get("PLEX_API", "")
+                  def get(p):
+                      try:
+                          with urllib.request.urlopen(API + p, timeout=15) as r:
+                              return r.status, r.read()
+                      except Exception:
+                          return None, None
+                  def put(p, b):
+                      req = urllib.request.Request(API + p, data=json.dumps(b).encode(),
+                                                   method="PUT", headers={"Content-Type": "application/json"})
+                      try:
+                          with urllib.request.urlopen(req, timeout=20) as r:
+                              return r.status
+                      except urllib.error.HTTPError as e:
+                          return e.code
+                      except Exception:
+                          return None
+                  s, body = get("/api/media-sources")
+                  if s != 200 or not TOKEN:
+                      print("[token-heal] cannot list media-sources (status=" + str(s) + ") or no token; skip")
+                      raise SystemExit(0)
+                  healed = 0
+                  for src in [x for x in json.loads(body) if x.get("type") == "plex"]:
+                      pid = src["id"]
+                      st, _ = get("/api/plex/" + pid + "/libraries")
+                      if st == 200:
+                          print("[token-heal] plex " + pid + " healthy")
+                          continue
+                      pl = dict(src)
+                      pl["accessToken"] = TOKEN
+                      if not pl.get("clientIdentifier"):
+                          pl["clientIdentifier"] = str(uuid.uuid4())
+                      code = put("/api/media-sources/" + pid, pl)
+                      print("[token-heal] plex " + pid + " unhealthy (status=" + str(st) + ") -> reapplied token -> " + str(code))
+                      healed += 1
+                  print("[token-heal] done, healed=" + str(healed))
