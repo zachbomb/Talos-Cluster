@@ -61,19 +61,21 @@ spec:
                 - /bin/sh
                 - -c
                 - |
-                  echo "Cache purge sidecar started (60m interval, 5m threshold)"
+                  echo "Cache purge sidecar started (2m interval; transcode>2m, caches>30m/120m)"
                   while true; do
-                    echo "[$(date)] Purging cache files older than 5 minutes..."
-                    find /.cache -type f -mmin +5 -delete 2>/dev/null
-                    find /.local -type f -mmin +5 -delete 2>/dev/null
-                    find /root/.local/share/tunarr/cache -type f -mmin +5 -delete 2>/dev/null
-                    find /.transcode -type f -mmin +5 -delete 2>/dev/null
+                    # HLS transcode segments are the runaway growth vector (~8.8GB/hr per active
+                    # stream, and streams linger after client disconnect). Purge tightly so
+                    # /.transcode stays well under its 5Gi PVC even during heavy channel-surfing.
+                    find /.transcode -type f -mmin +2 -delete 2>/dev/null
+                    find /.transcode -type d -empty -delete 2>/dev/null
+                    # Image/misc caches grow slowly; purge gently to preserve cache hit-rate.
+                    find /.cache -type f -mmin +30 -delete 2>/dev/null
+                    find /.local -type f -mmin +30 -delete 2>/dev/null
+                    find /root/.local/share/tunarr/cache -type f -mmin +120 -delete 2>/dev/null
                     find /.cache -type d -empty -delete 2>/dev/null
                     find /.local -type d -empty -delete 2>/dev/null
                     find /root/.local/share/tunarr/cache -type d -empty -delete 2>/dev/null
-                    find /.transcode -type d -empty -delete 2>/dev/null
-                    echo "[$(date)] Purge complete"
-                    sleep 3600
+                    sleep 120
                   done
               probes:
                 liveness:
