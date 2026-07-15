@@ -105,8 +105,7 @@ spec:
                 repository: python
                 tag: "3.14-alpine"
               env:
-                - name: PLEX_API
-                  value: "${PLEX_API}"
+                PLEX_API: "${PLEX_API}"
               command:
                 - python3
                 - -c
