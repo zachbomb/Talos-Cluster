@@ -103,7 +103,7 @@ spec:
               enabled: true
               image:
                 repository: python
-                tag: "3.12-alpine"
+                tag: "3.14-alpine"
               env:
                 - name: PLEX_API
                   value: "${PLEX_API}"
