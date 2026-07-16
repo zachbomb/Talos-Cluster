@@ -102,7 +102,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: 40 0 * * *
+                schedule: 32 3 * * *
       machine-id:
         enabled: true
     addons:

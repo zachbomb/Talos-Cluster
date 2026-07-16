@@ -94,7 +94,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "50 0 * * *"
+                schedule: "12 4 * * *"
       logs:
         size: 2Gi
         volsync:
@@ -108,7 +108,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "50 0 * * *"
+                schedule: "20 4 * * *"
       server:
         size: 5Gi
         volsync:
@@ -122,7 +122,7 @@ spec:
               enabled: true
               cacheCapacity: 3Gi
               trigger:
-                schedule: "50 0 * * *"
+                schedule: "44 4 * * *"
       transcode-cache:
         type: emptyDir
       media:

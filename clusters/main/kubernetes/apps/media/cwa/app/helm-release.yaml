@@ -109,7 +109,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: 40 0 * * *
+                schedule: 16 3 * * *
       library:
         enabled: true
         type: nfs
