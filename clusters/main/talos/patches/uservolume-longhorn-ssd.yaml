@@ -1,0 +1,26 @@
+# UserVolumeConfig — Intel D3-S4510 1.92TB enterprise SSD (#158, Longhorn hot-tier).
+#
+# WHY: The consumer QLC NVMe (Talos root zvol) could not sustain Longhorn's I/O and
+# mass-faulted for days. On 2026-07-20 all 113 Longhorn volumes were migrated off it
+# onto this SSD via full-quiesce disk eviction. This disk is the permanent Longhorn
+# data home; the QLC is kept unschedulable in Longhorn.
+#
+# MECHANISM: Talos 1.13 mounts USER disks via UserVolumeConfig (a separate machine-
+# config document), NOT machine.disks. Mounts at /var/mnt/<name> => /var/mnt/longhorn-ssd.
+# A kubelet extraMount in all.yaml bind-mounts (rshared) that path for the Longhorn mgr.
+#
+# STATUS: Applied to the live node out-of-band via `talosctl patch machineconfig`
+# because forgetool/talhelper genconfig is broken on Talos v1.13.5 (#151). Once #151 is
+# fixed, run genconfig and confirm this renders identically before the next talos apply.
+#
+# diskSelector matches the D3-S4510: virtio-attached, ~1.92TB (1.5–2.0 TB window).
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: longhorn-ssd
+provisioning:
+  diskSelector:
+    match: disk.transport == "virtio" && disk.size > 1500000000000u && disk.size < 2000000000000u
+  minSize: 1500GB
+  grow: true
+filesystem:
+  type: xfs

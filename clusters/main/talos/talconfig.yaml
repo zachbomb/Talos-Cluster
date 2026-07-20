@@ -45,6 +45,11 @@ controlPlane:
     patches:
         - '@./patches/controlplane.yaml'
         - '@./patches/nvidia.yaml'
+        # D3-S4510 SSD Longhorn hot-tier (#158). Applied to the live node via
+        # `talosctl patch` since genconfig is broken on v1.13.5 (#151); wired here so a
+        # fixed genconfig includes it. VALIDATE it renders as a UserVolumeConfig doc
+        # before the next `talos apply`.
+        - '@./patches/uservolume-longhorn-ssd.yaml'
         # NOTE: the two-phase etcd-encryption + audit-logging patches were removed
         # 2026-07-03. They were redundant — Talos encrypts etcd with secretbox and
         # audit-logs natively — and the apiserver mounted an unreadable audit-policy

@@ -2,6 +2,11 @@ cluster:
   proxy:
     disabled: true
 machine:
+  # D3-S4510 1.92TB SSD (#158) — Longhorn hot-tier, all volumes migrated off the dying
+  # QLC on 2026-07-20. Mounted at /var/mnt/longhorn-ssd via UserVolumeConfig, NOT
+  # machine.disks (which is legacy/ineffective for user disks on Talos 1.13). The
+  # UserVolumeConfig lives in patches/uservolume-longhorn-ssd.yaml; the kubelet
+  # extraMount below bind-mounts (rshared) that path so Longhorn's manager can see it.
   time:
     disabled: false
     servers:
@@ -24,6 +29,13 @@ machine:
       - destination: /var/lib/longhorn
         type: bind
         source: /var/lib/longhorn
+        options:
+          - bind
+          - rshared
+          - rw
+      - destination: /var/mnt/longhorn-ssd
+        type: bind
+        source: /var/mnt/longhorn-ssd
         options:
           - bind
           - rshared
