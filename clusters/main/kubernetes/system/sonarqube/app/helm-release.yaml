@@ -53,8 +53,10 @@ spec:
     monitoringPasscodeSecretKey: MONITORING_PASSCODE
     # Resources — SonarQube needs ~3GB headroom on Java init.
     resources:
+      # Right-sized 2026-07-21: reserved 500m, used ~23m at idle. 200m covers JVM
+      # GC/scan bursts for scheduling; the 2-core limit still absorbs real analysis load.
       requests:
-        cpu: 500m
+        cpu: 200m
         memory: 2Gi
       limits:
         cpu: "2"

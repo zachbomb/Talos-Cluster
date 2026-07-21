@@ -205,7 +205,9 @@ spec:
               resources:
                 requests:
                   memory: 2Gi
-                  cpu: 500m
+                  # Right-sized 2026-07-21: reserved 500m, used ~7m idle. 250m covers
+                  # library-scan/thumbnail bursts; HW transcode uses the iGPU + 4-core limit.
+                  cpu: 250m
                 limits:
                   memory: 8Gi
                   cpu: "4"
@@ -254,7 +256,7 @@ spec:
     resources:
       requests:
         memory: 2Gi
-        cpu: 500m
+        cpu: 250m   # right-sized 2026-07-21 (see container-level note)
       limits:
         memory: 8Gi
         cpu: "4"

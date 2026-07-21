@@ -47,7 +47,10 @@ spec:
               resources:
                 requests:
                   memory: 2Gi
-                  cpu: 500m
+                  # Right-sized 2026-07-21: reserved 500m, idle ~3m. Transcode is VAAPI/iGPU,
+                  # so streaming CPU is muxing/IO (~150-250m). 250m GUARANTEES that under node
+                  # contention (request = guaranteed floor); 4-core limit still covers peaks.
+                  cpu: 250m
                 limits:
                   gpu.intel.com/i915: 1
                   memory: 8Gi
