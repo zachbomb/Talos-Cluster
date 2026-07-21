@@ -1,0 +1,52 @@
+---
+# Bound VolSync restic mover pods so unbounded restic (BestEffort by default) can't
+# saturate the single-node CPU and starve the Longhorn instance-manager (liveness
+# timeout -> mass-fault cascade). Discovered 2026-07-21 after VolSync catch-up of 51
+# overdue sources repeatedly cascaded the IM.
+#
+# - The CPU *request* throttles concurrency via the scheduler (only what fits the
+#   node's freed headroom runs; the rest queue Pending) — VolSync has no operator
+#   concurrency knob, so requests ARE the throttle.
+# - The CPU *limit* caps restic burst so it physically cannot starve the IM.
+#
+# Applied at pod admission by name prefix (volsync-src-*), so it is HR-revert-proof:
+# independent of the ReplicationSource spec and the TrueCharts chart (neither of which
+# exposes moverResources). Pairs with VM 105 cpuunits=4096 (host CPU priority for Talos)
+# and the app-request right-sizing that freed ~800m of scheduling headroom.
+# See memory: project_qlc_ssd_migration_2026_07.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: volsync-mover-resources
+  annotations:
+    policies.kyverno.io/title: Bound VolSync mover resources
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/description: >-
+      Injects CPU/memory requests+limits into VolSync restic mover pods to throttle
+      concurrency (via scheduler) and cap restic burst, preventing single-node
+      Longhorn instance-manager CPU starvation and mass-fault cascades.
+spec:
+  background: false
+  rules:
+    - name: cap-volsync-mover-resources
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              names:
+                - "volsync-src-*"
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - name: "{{ element.name }}"
+                    resources:
+                      requests:
+                        cpu: 500m
+                        memory: 256Mi
+                      limits:
+                        cpu: 750m
+                        memory: 1Gi

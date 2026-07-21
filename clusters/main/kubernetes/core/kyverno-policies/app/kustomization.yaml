@@ -5,3 +5,4 @@ resources:
   - schematic-to-pod.yaml
   - dockerhub-regcred.secret.yaml
   - ensure-digest.yaml
+  - volsync-mover-resources.yaml
