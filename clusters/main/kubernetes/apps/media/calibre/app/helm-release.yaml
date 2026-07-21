@@ -5,6 +5,10 @@ metadata:
   namespace: media
 spec:
   interval: 5m
+  # calibre (linuxserver) boots a full KasmVNC/selkies desktop before :8080 answers
+  # (~5 min; startup probe allows 60x5s). Default Helm timeout (5m) races it → upgrade
+  # times out → rollback loop. 15m lets Helm wait out the slow boot. (2026-07-21)
+  timeout: 15m
   chart:
     spec:
       chart: calibre
