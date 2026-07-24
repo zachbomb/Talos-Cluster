@@ -18,6 +18,12 @@ machine:
       maxPods: 250
       shutdownGracePeriod: 15s
       shutdownGracePeriodCriticalPods: 10s
+      # #158: containerd on the QLC pool (local-zfs, shared with etcd) accumulated
+      # ~450 images (~350 stale Renovate digests, 72GB) because kubelet's %-based
+      # image GC never trips on the 2.2TB EPHEMERAL partition. Age-based GC clears
+      # unused images >7d, reclaiming pool space and cutting image-pull write-bursts
+      # that spike etcd's fsync. Only GCs images not referenced by any container.
+      imageMaximumGCAge: 168h
     extraMounts:
       - destination: /var/openebs/local
         type: bind
