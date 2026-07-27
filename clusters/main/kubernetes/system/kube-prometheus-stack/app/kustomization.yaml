@@ -8,6 +8,7 @@ resources:
   - alertmanager-secret.secret.yaml
   - prometheusrule-meta.yaml
   - prometheusrule-solidigm-pool.yaml
+  - prometheusrule-crowdsec.yaml
   - prometheusrule-bgp.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
