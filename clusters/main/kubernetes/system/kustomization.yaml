@@ -13,6 +13,7 @@ resources:
   - loki/ks.yaml
   - longhorn/ks.yaml
   - metallb/ks.yaml
+  - node-fstrim/ks.yaml
   - openebs/ks.yaml
   - pve-exporter/ks.yaml
   - smartctl-exporter/ks.yaml

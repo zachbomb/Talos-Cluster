@@ -1,0 +1,58 @@
+---
+# Capacity alerts for the `solidigm` ZFS pool — etcd's home since the #158 disk-move
+# (2026-07-27, docs/runbooks/2026-07-27-etcd-solidigm-diskmove.md).
+#
+# WHY: the Talos system disk is a 2 TB THIN zvol on a 444 GB pool. The Talos node's
+# node-exporter only sees the 2 TB xfs (reports ~10% used) — it is BLIND to the real
+# pool fullness. Only the Proxmox host sees it, via prometheus-pve-exporter
+# (`pve_disk_*` on the `solidigm` storage). If the pool fills, ZFS can't allocate and
+# etcd writes FAIL. The node-fstrim CronJob keeps it lean; these alerts are the
+# backstop if it creeps anyway.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: solidigm-etcd-pool
+  namespace: kube-prometheus-stack
+spec:
+  groups:
+    - name: solidigm-etcd-pool
+      rules:
+        - alert: SolidigmEtcdPoolFillingUp
+          expr: |
+            pve_disk_usage_bytes{id=~"storage/.+/solidigm"}
+              / pve_disk_size_bytes{id=~"storage/.+/solidigm"} > 0.90
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "etcd Solidigm pool >90% full"
+            description: >-
+              The `solidigm` ZFS pool (etcd's home since the #158 disk-move) is
+              {{ $value | humanizePercentage }} full. It is a 2 TB thin zvol on a
+              444 GB pool — the Talos node cannot see this. Prune stale containerd
+              images and confirm the node-fstrim CronJob ran. Runbook:
+              docs/runbooks/2026-07-27-etcd-solidigm-diskmove.md.
+        - alert: SolidigmEtcdPoolCritical
+          expr: |
+            pve_disk_usage_bytes{id=~"storage/.+/solidigm"}
+              / pve_disk_size_bytes{id=~"storage/.+/solidigm"} > 0.95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "etcd Solidigm pool >95% full — ACT NOW"
+            description: >-
+              The `solidigm` pool is {{ $value | humanizePercentage }} full. At 100%
+              ZFS cannot allocate and etcd writes will FAIL (cluster outage).
+              Immediately prune containerd images + fstrim, or expand the pool.
+        - alert: SolidigmEtcdPoolExporterMissing
+          expr: absent(pve_disk_size_bytes{id=~"storage/.+/solidigm"})
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Cannot see the etcd Solidigm pool capacity"
+            description: >-
+              pve-exporter is not reporting the `solidigm` storage — the pool-full
+              backstop for etcd is blind. Check the pve-exporter and that `solidigm`
+              is still a registered Proxmox storage.
