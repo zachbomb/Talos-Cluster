@@ -1,0 +1,84 @@
+---
+# Weekly containerd image prune + reclaim on the single Talos node.
+#
+# WHY (#158 disk-move, 2026-07-27): etcd's new home is a 444GB Solidigm pool (vs the
+# old 3.5TB QLC). The kubelet's age-GC (imageMaximumGCAge=168h) only removes images
+# after 168h of *uptime* — the age clock resets on every reboot, so right after a
+# reboot stale Renovate image digests accumulate unchecked and the small pool creeps
+# toward full. Talos has NO bulk image prune (`talosctl image` is per-image only).
+#
+# This CronJob runs `crictl rmi --prune` (CRI-aware — only removes images NOT used by
+# any running container, never live ones), then fstrims so the freed blocks return to
+# ZFS immediately (Talos never issues discard on EPHEMERAL). Verified 2026-07-27: a
+# one-shot run pruned 203→147 images. Pairs with the daily node-fstrim CronJob.
+# crictl is fetched at runtime (no maintained tiny crictl image exists); a failed
+# fetch just means the next weekly run retries — non-critical.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: node-image-prune
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: node-image-prune
+spec:
+  schedule: "47 4 * * 0"          # weekly, Sunday 04:47 (before the daily fstrim)
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1200
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: node-image-prune
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          tolerations:
+            - operator: Exists            # single control-plane node
+          containers:
+            - name: prune
+              # renovate: datasource=docker depName=alpine
+              image: alpine:3.22.1
+              command: ["sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  apk add -q --no-cache curl tar util-linux
+                  # renovate: datasource=github-releases depName=kubernetes-sigs/cri-tools
+                  VER=v1.32.0
+                  curl -sSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${VER}/crictl-${VER}-linux-amd64.tar.gz" | tar xz -C /usr/local/bin
+                  export CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
+                  echo "images before: $(crictl images -q | wc -l)"
+                  crictl -t 300s rmi --prune 2>&1 | tail -5 || true
+                  echo "images after:  $(crictl images -q | wc -l)"
+                  echo "reclaiming freed blocks to ZFS..."
+                  fstrim -v /host-var || true
+              securityContext:
+                privileged: true          # CRI socket + FITRIM ioctl
+                runAsUser: 0
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              volumeMounts:
+                - name: cri
+                  mountPath: /run/containerd
+                - name: var
+                  mountPath: /host-var
+          volumes:
+            - name: cri
+              hostPath:
+                path: /run/containerd
+                type: Directory
+            - name: var
+              hostPath:
+                path: /var
+                type: Directory
