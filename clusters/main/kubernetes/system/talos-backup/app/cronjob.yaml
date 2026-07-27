@@ -42,6 +42,7 @@ spec:
             - name: talos-backup
               # renovate: datasource=docker depName=ghcr.io/siderolabs/talos-backup
               image: ghcr.io/siderolabs/talos-backup:v0.1.0-beta.3-10-gb9fd478
+              workingDir: /tmp                # talos-backup writes its .snap.part to cwd; keep it on the writable emptyDir
               env:
                 - name: AWS_ACCESS_KEY_ID
                   value: "${S3ID}"
