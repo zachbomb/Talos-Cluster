@@ -10,11 +10,19 @@
 # never returned to ZFS, so the thin pool creeps toward FULL. If it fills, ZFS can't
 # allocate and etcd writes fail — a worse outage than #158 itself.
 #
-# This CronJob discards freed blocks back to ZFS so the pool self-manages, making the
-# kubelet's image GC actually reclaim pool space. Mechanism verified 2026-07-27 (a
-# privileged busybox pod fstrim'd /var cleanly on Talos). Runs in kube-system, which
-# is Kyverno-excluded (resourceFilters) and PSA-privileged-capable.
-# See docs/runbooks/2026-07-27-etcd-solidigm-diskmove.md.
+# ⚠️ LIMITED EFFECTIVENESS — read this. Deep audit 2026-07-27 found the in-guest fstrim
+# reclaims almost NOTHING to the zvol: the zvol is volblocksize=16K but the guest xfs
+# writes/discards at 4K, so ZFS only frees a 16K volblock when all four 4K sub-blocks
+# are free — and post-churn scatter means ~none are (also suspect QEMU virtio-scsi +
+# iothread not cleanly propagating the guest UNMAP). Observed: /var dropped 202→144G
+# but pool ALLOC stayed 388G (0 reclaimed). This CronJob is therefore BEST-EFFORT ONLY
+# — it reclaims large *contiguous* freed regions (rare) and is a no-op for fine-grained
+# containerd churn. The RELIABLE reclaim is an OFFLINE host-side fstrim (VM off → mount
+# zd0p6 → fstrim → on) or the raw-disk-passthrough re-architecture. Kept as harmless
+# best-effort; do NOT rely on it to bound the pool.
+# See docs/runbooks/2026-07-27-etcd-raw-passthrough-rearchitecture.md (the real fix)
+# and project_etcd_solidigm_diskmove_done_2026_07_27 memory for the full root-cause.
+# Runs in kube-system (Kyverno-excluded + PSA-privileged-capable).
 apiVersion: batch/v1
 kind: CronJob
 metadata:
