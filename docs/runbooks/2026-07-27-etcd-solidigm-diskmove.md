@@ -20,9 +20,10 @@ Talos does not care which physical disk backs `scsi0`. Moving the zvol **one lay
 
 | Item | Value |
 |---|---|
-| Talos VM | 105, `scsi0 = local-zfs:vm-105-disk-0` (2 TB, `cache=writeback,discard=on,ssd=1`) |
-| Talos system disk REFER | **1.23 TB** on `local-zfs` — but `/var/lib` is only ~117 GB → **~1.1 TB is stale, un-TRIMmed blocks** |
-| Target | Solidigm D3-S4520 = `sdd` (447 GB), **currently the `local-zfs` log vdev (SLOG)** |
+| Talos VM | 105, 8 cores / 48 GB. `scsi0: local-zfs:vm-105-disk-0,cache=writeback,discard=on,iothread=1,size=2T,ssd=1` (the disk we move). Also `efidisk0: local-zfs:vm-105-disk-1` (1 MB EFI — leave it, idle) and `scsi2:` D3-S4510 Longhorn passthrough (untouched). |
+| Talos system disk REFER | **1.23 TB** confirmed on `local-zfs` — but `/var/lib` is only ~117 GB → **~1.1 TB is stale, un-TRIMmed blocks** to reclaim via fstrim |
+| Target = SLOG (same disk) | `SOLIDIGM_BYID = SLOG_BYID =` **`ata-SOLIDIGM_SSDSCKKB480GZ_PHYK5051023U480B`** (`sdd`, 447 GiB / 480 GB S4520). PF-1 confirmed it IS the `local-zfs` `logs` vdev. SMART PASSED, **0 % wear, 326 power-on hrs** (near-new). |
+| QLC mirror | `nvme0n1` + `nvme1n1` (2× Sabrent Rocket Q) = `local-zfs` `mirror-0` |
 | `local-zfs` | 2× Sabrent Rocket Q QLC **mirror**, 3.5 TB usable, 1.33 TB free |
 | Other `local-zfs` tenants | `vm-100-disk-0` (TrueNAS boot, 152 GB, low-I/O), `vm-105-disk-1` (3 MB) |
 | EPHEMERAL encryption | **none** (`machine.systemDiskEncryption` not set) → host can mount the xfs directly |
@@ -73,22 +74,23 @@ Reduces the data the send must ship (the fstrim in Phase 3 does the heavy reclai
 ---
 
 ## Phase 2 — Free the Solidigm and make it a Proxmox storage (host)
-This can be done **before** the downtime window (removing the SLOG is online).
 
-1. **Remove the SLOG from `local-zfs`** (log-vdev removal is supported and online):
+> ⚠️ **CORRECTED SEQUENCING (PF-1 finding):** These steps run **INSIDE the downtime window, AFTER the Talos VM is shut down** (Phase 3 step 2) — **NOT** before. Removing the SLOG while etcd is **live** reverts its fsync from ~0.73 ms back to ~84 ms (the #158 condition per `project_proxmox_etcd_disk_layer` / the Jul-13 SLOG upgrade note), which could trigger the cascade in the interim. With the VM off, etcd isn't writing, so the SLOG-less window is harmless. Nothing SLOG-touching happens before shutdown; the only safe pre-window prep is the etcd snapshot (PF-3) and the optional containerd prune (Phase 1).
+
+1. **Remove the SLOG from `local-zfs`** (log-vdev removal is supported; VM already off):
    ```bash
-   zpool remove local-zfs $SLOG_BYID
+   zpool remove local-zfs ata-SOLIDIGM_SSDSCKKB480GZ_PHYK5051023U480B
    zpool status local-zfs         # confirm no 'logs' vdev remains; pool ONLINE
    ```
-   Impact: `local-zfs` sync writes now hit the QLC directly. Acceptable — its only busy sync tenant (etcd) is about to leave; TrueNAS boot is idle.
 
 2. **Wipe the freed disk's old ZFS labels and create the new single-disk pool:**
    ```bash
-   wipefs -a $SOLIDIGM_BYID        # or: zpool labelclear -f $SOLIDIGM_BYID
-   zpool create -o ashift=12 -O compression=lz4 -O atime=off solidigm $SOLIDIGM_BYID
-   pvesm add zfspool solidigm -pool solidigm -content images -sparse 1   # -sparse 1 = thin zvols
+   wipefs -a /dev/disk/by-id/ata-SOLIDIGM_SSDSCKKB480GZ_PHYK5051023U480B   # clears the old SLOG label
+   zpool create -o ashift=12 -O compression=lz4 -O atime=off solidigm \
+     /dev/disk/by-id/ata-SOLIDIGM_SSDSCKKB480GZ_PHYK5051023U480B
+   pvesm add zfspool solidigm -pool solidigm -content images -sparse 1   # -sparse 1 = thin zvols (required)
    ```
-   `-sparse 1` is required: the destination zvol keeps its 2 TB `volsize` but only consumes referenced blocks, which must fit the 447 GB pool.
+   `-sparse 1` is required: the destination zvol keeps its 2 TB `volsize` but only consumes referenced blocks (~150 GB post-fstrim), which must fit the 447 GiB pool.
 
 ---
 
@@ -110,7 +112,9 @@ The Kyverno `system-cluster-critical` fix (committed 95ce16689) now protects the
    qm status 105          # -> stopped
    ```
 
-3. **Reclaim the stale ~1.1 TB via host-side `fstrim` of the offline EPHEMERAL xfs** (host):
+3. **→ Now run Phase 2** (remove SLOG + create the `solidigm` pool) — safe only now that etcd is off.
+
+4. **Reclaim the stale ~1.1 TB via host-side `fstrim` of the offline EPHEMERAL xfs** (host):
    ```bash
    # Expose the zvol partitions to the host
    ls /dev/zvol/local-zfs/vm-105-disk-0*        # partitions appear as ...-part1..-part6
@@ -126,7 +130,7 @@ The Kyverno `system-cluster-critical` fix (committed 95ce16689) now protects the
    - If the EPHEMERAL partition is not `part6`, identify it with `lsblk -f /dev/zvol/local-zfs/vm-105-disk-0` (the large xfs one).
    - **If REFER does NOT drop below ~400 GB, STOP.** Do not attempt the send; investigate (was the 1.1 TB actually stale? is there live data?). Fall back to Path A (contention reduction) for the window.
 
-4. **Snapshot and send to the Solidigm** (host):
+5. **Snapshot and send to the Solidigm** (host):
    ```bash
    zfs snapshot local-zfs/vm-105-disk-0@migrate
    zfs send local-zfs/vm-105-disk-0@migrate | zfs recv solidigm/vm-105-disk-0
@@ -134,7 +138,7 @@ The Kyverno `system-cluster-critical` fix (committed 95ce16689) now protects the
    ```
    ~150 GB over local NVMe → SATA SSD ≈ a few minutes.
 
-5. **Repoint the VM's system disk and boot** (host):
+6. **Repoint the VM's system disk and boot** (host):
    ```bash
    qm rescan --vmid 105                    # registers solidigm:vm-105-disk-0 as an unused disk
    qm set 105 -scsi0 solidigm:vm-105-disk-0,cache=writeback,discard=on,iothread=1,ssd=1
