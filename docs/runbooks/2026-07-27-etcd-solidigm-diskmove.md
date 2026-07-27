@@ -166,6 +166,15 @@ The Kyverno `system-cluster-critical` fix (committed 95ce16689) now protects the
 
 ## Phase 5 — Cleanup + hardening (after 24–48 h of clean operation)
 
+0. **⚠️ DESTROY THE `@migrate` SNAPSHOT ON THE DESTINATION — do this FIRST, not 24h later.** `zfs recv` preserves the sent snapshot, so `solidigm/vm-105-disk-0@migrate` persists and **pins every block from migration time** — the guest can free/discard all it wants but ZFS can't reclaim snapshot-referenced blocks, so the pool stays bloated (this cost us hours of misdiagnosis on 2026-07-27: pool stuck at 87% / 388 G despite only 144 G real data, until `zfs destroy solidigm/vm-105-disk-0@migrate` dropped it to 43 %). Do NOT confuse with the SOURCE snapshot in step 1.
+   ```bash
+   zfs list -t snapshot -r solidigm                    # find it
+   zfs destroy solidigm/vm-105-disk-0@migrate          # frees the pinned blocks (async; watch `zpool get freeing`)
+   zpool list solidigm                                 # confirm ALLOC drops
+   ```
+   **General rule: a stuck pool is a snapshot until proven otherwise — check `zfs list -t snapshot` BEFORE investigating discard/volblocksize/QEMU.**
+
+
 1. **Destroy the old zvol** (only after full confidence — this is the point of no return for rollback):
    ```bash
    qm set 105 -delete unusedN         # detaches + removes local-zfs:vm-105-disk-0

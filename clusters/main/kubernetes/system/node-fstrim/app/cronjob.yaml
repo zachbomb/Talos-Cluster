@@ -10,18 +10,18 @@
 # never returned to ZFS, so the thin pool creeps toward FULL. If it fills, ZFS can't
 # allocate and etcd writes fail — a worse outage than #158 itself.
 #
-# ⚠️ LIMITED EFFECTIVENESS — read this. Deep audit 2026-07-27 found the in-guest fstrim
-# reclaims almost NOTHING to the zvol: the zvol is volblocksize=16K but the guest xfs
-# writes/discards at 4K, so ZFS only frees a 16K volblock when all four 4K sub-blocks
-# are free — and post-churn scatter means ~none are (also suspect QEMU virtio-scsi +
-# iothread not cleanly propagating the guest UNMAP). Observed: /var dropped 202→144G
-# but pool ALLOC stayed 388G (0 reclaimed). This CronJob is therefore BEST-EFFORT ONLY
-# — it reclaims large *contiguous* freed regions (rare) and is a no-op for fine-grained
-# containerd churn. The RELIABLE reclaim is an OFFLINE host-side fstrim (VM off → mount
-# zd0p6 → fstrim → on) or the raw-disk-passthrough re-architecture. Kept as harmless
-# best-effort; do NOT rely on it to bound the pool.
-# See docs/runbooks/2026-07-27-etcd-raw-passthrough-rearchitecture.md (the real fix)
-# and project_etcd_solidigm_diskmove_done_2026_07_27 memory for the full root-cause.
+# WHY (#158 disk-move): the system disk is a thin zvol on the 444GB Solidigm pool, and
+# Talos doesn't auto-discard EPHEMERAL, so the kubelet's image GC frees xfs blocks that
+# need an explicit fstrim to return to ZFS. VERIFIED EFFECTIVE 2026-07-27: fstrim DOES
+# reclaim to the zvol (a run took the pool 203→194G) — the discard path works.
+# NOTE: zvol volblocksize=16K vs xfs 4K leaves a FIXED ~35%-of-data fragmentation floor
+# fstrim can't reclaim (inherent, non-growing — not a leak).
+# ⚠️ CRITICAL LESSON (the acute bloat that triggered the whole 2026-07-27 audit): a
+# LEFTOVER `@migrate` zfs snapshot from the send/recv pinned 185G of freed blocks (pool
+# stuck at 87% despite only 144G real data). `zfs destroy solidigm/vm-105-disk-0@migrate`
+# dropped it to 43% instantly. ALWAYS destroy the @migrate snapshot after a send-based
+# disk move (now in the disk-move runbook Phase 5). Snapshots pin freed blocks — check
+# `zfs list -t snapshot` BEFORE diagnosing any "discard/reclaim" problem.
 # Runs in kube-system (Kyverno-excluded + PSA-privileged-capable).
 apiVersion: batch/v1
 kind: CronJob

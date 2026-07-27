@@ -1,7 +1,7 @@
 # Runbook: Re-architect etcd onto a RAW Solidigm passthrough (permanent pool-ratchet fix)
 
-**Date:** 2026-07-27 (planning — NOT yet executed)
-**Status:** DRAFT — validate the Talos reinstall flags on a throwaway VM before running for real.
+**Date:** 2026-07-27 (planning — NOT executed)
+**Status:** ⚠️ **SUPERSEDED / NOT NEEDED** (2026-07-27, same day). The pool bloat that motivated this was NOT the discard path — it was a **leftover `@migrate` zfs snapshot** pinning 185 G of freed blocks. `zfs destroy solidigm/vm-105-disk-0@migrate` took the pool 87% → 43% with zero downtime, and a clean fstrim then reclaimed further (203→194 G) — proving **in-guest discard works**. The only residual is a fixed ~35% volblocksize-fragmentation floor (minor, non-growing), not worth a destructive reinstall. This runbook is kept ONLY as a documented last-resort option if the fragmentation floor ever becomes a real problem; **do not execute it** — the CronJobs + snapshot hygiene self-manage the pool.
 **Goal:** Eliminate the Solidigm pool space-ratchet by removing the ZFS/zvol layer under etcd. Move the Talos system disk from a **thin 16 K zvol on a ZFS pool** to a **raw disk passthrough** of the Solidigm — exactly how the D3-S4510 (Longhorn) is attached today (`scsi2: /dev/disk/by-id/ata-INTEL…`). etcd then writes straight to the SSD, TRIM/discard works at native granularity, and the pool can never ratchet full.
 
 ## Why (root cause, see project_etcd_solidigm_diskmove_done_2026_07_27 memory)

@@ -8,14 +8,12 @@
 # toward full. Talos has NO bulk image prune (`talosctl image` is per-image only).
 #
 # This CronJob runs `crictl rmi --prune` (CRI-aware — only removes images NOT used by
-# any running container, never live ones). This is the GENUINELY USEFUL part: it bounds
-# the containerd image footprint (the real /var data) and slows the churn. Verified
-# 2026-07-27: a one-shot run pruned 203→147 images (freed ~58G in xfs). The trailing
-# fstrim is BEST-EFFORT only — deep audit found in-guest discard does NOT reclaim the
-# thin 16K zvol against 4K churn (the freed xfs space did NOT return to ZFS; pool
-# stayed 388G). So this prune bounds DATA but does NOT shrink the pool by itself;
-# reliable pool reclaim needs an offline host-fstrim or the raw-passthrough
-# re-architecture (docs/runbooks/2026-07-27-etcd-raw-passthrough-rearchitecture.md).
+# any running container, never live ones) to bound the containerd image footprint, then
+# fstrims to return the freed blocks to ZFS. Verified 2026-07-27: pruned 203→147 images
+# (freed ~58G), and post-snapshot-cleanup the fstrim reclaim to the pool WORKS. (During
+# the audit the reclaim looked broken, but that was a leftover `@migrate` zfs snapshot
+# pinning the freed blocks — destroyed; see the node-fstrim CronJob comment + disk-move
+# runbook Phase 5. Always check `zfs list -t snapshot` before diagnosing reclaim.)
 # crictl is fetched at runtime (no maintained tiny crictl image exists); a failed
 # fetch just means the next weekly run retries — non-critical.
 apiVersion: batch/v1
