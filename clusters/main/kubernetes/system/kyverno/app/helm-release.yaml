@@ -77,6 +77,14 @@ spec:
             memory: 512Mi
     admissionController:
       replicas: 1
+      # #157 recurring cold-start deadlock: on reboot a VolSync mover storm (500m each)
+      # filled the node's CPU before Kyverno's admission-controller could schedule
+      # (it was prio=0, tied with the movers). Its Fail webhook then blocked ALL pod
+      # creation (incl. the Longhorn IM) → permanent deadlock needing manual webhook
+      # deletion. system-cluster-critical (2e9) lets it preempt the movers and schedule
+      # FIRST after a reboot, so the webhook is always up. (Longhorn IM already has
+      # longhorn-critical=1e9; this was the missing half.)
+      priorityClassName: system-cluster-critical
       serviceMonitor:
         enabled: true
       container:
