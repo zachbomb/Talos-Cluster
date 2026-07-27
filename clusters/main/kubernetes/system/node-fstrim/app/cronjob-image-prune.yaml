@@ -51,7 +51,7 @@ spec:
                   apk add -q --no-cache curl tar util-linux
                   # renovate: datasource=github-releases depName=kubernetes-sigs/cri-tools
                   VER=v1.32.0
-                  curl -sSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${VER}/crictl-${VER}-linux-amd64.tar.gz" | tar xz -C /usr/local/bin
+                  curl -sSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/$${VER}/crictl-$${VER}-linux-amd64.tar.gz" | tar xz -C /usr/local/bin
                   export CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
                   echo "images before: $(crictl images -q | wc -l)"
                   crictl -t 300s rmi --prune 2>&1 | tail -5 || true
