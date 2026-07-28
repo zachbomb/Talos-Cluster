@@ -7,3 +7,6 @@ resources:
   - helm-release.yaml
   - chrome-cdp.yaml
   - longhorn-monitor-rbac.yaml
+  - metrics-service.yaml
+  - servicemonitor.yaml
+  - prometheusrule.yaml

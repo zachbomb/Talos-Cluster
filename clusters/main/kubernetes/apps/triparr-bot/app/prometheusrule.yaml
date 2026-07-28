@@ -1,0 +1,110 @@
+---
+# Alerts for triparr-bot (personal flight-award scraper). Keyed to metrics actually
+# emitted on :9090 as of 2026-07-27: triparr_metrics_db_collector_up,
+# triparr_cron_last_success_timestamp_seconds{job}, triparr_cron_runs_total{job,status}.
+# Severity is warning/info (personal bot, not cluster-critical infra — no critical/page).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: triparr-bot
+  namespace: triparr-bot
+  labels:
+    app.kubernetes.io/name: triparr-bot-metrics
+spec:
+  groups:
+    - name: triparr-bot.availability
+      rules:
+        # The :9090 metrics endpoint is the true liveness signal — :3001 answers even
+        # when the bot is Discord-disconnected. Target down = bot process/listener down.
+        - alert: TriparrBotMetricsDown
+          expr: up{service="triparr-bot-metrics"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: triparr-bot :9090 metrics endpoint is not scrapeable
+            description: >-
+              Prometheus cannot scrape triparr-bot's :9090 endpoint for >5m. The bot
+              process or its metrics listener is likely down (the public :3001 health
+              port can still answer while the bot is Discord-disconnected, so this is
+              the reliable signal).
+
+        # Belt-and-suspenders: the whole series set vanished (ServiceMonitor removed,
+        # relabelled, or the metric was dropped) — catches what up==0 can miss.
+        - alert: TriparrBotMetricsAbsent
+          expr: absent(triparr_metrics_db_collector_up)
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: triparr-bot metrics are absent from Prometheus
+            description: >-
+              triparr_metrics_db_collector_up has been absent for >15m — the target is
+              gone entirely (not merely down). Check the ServiceMonitor and the
+              triparr-bot-metrics Service selector.
+
+    - name: triparr-bot.collector
+      rules:
+        # The DB-backed collector freezes the cron last-success timestamps in place when
+        # it fails (deliberate, so a blip doesn't stampede every staleness alert). Without
+        # this alert, frozen-but-stale data would look healthy — and the staleness rule
+        # below is intentionally suppressed while the collector is down.
+        - alert: TriparrDBCollectorDown
+          expr: triparr_metrics_db_collector_up == 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: triparr-bot DB-backed metric collector is failing
+            description: >-
+              triparr_metrics_db_collector_up == 0 for >10m. Cron last-success
+              timestamps are now frozen, so staleness alerts are suppressed until the
+              collector recovers. Investigate the triparr-db connection / query path.
+
+    - name: triparr-bot.cron
+      rules:
+        # Per-job failure — fires on any recorded terminal failure. The status="failure"
+        # series does not exist until the first failure, so increase() is empty (no fire)
+        # until then, which is correct.
+        - alert: TriparrCronJobFailing
+          expr: increase(triparr_cron_runs_total{status="failure"}[1h]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'triparr cron job {{ $labels.job }} is failing'
+            description: >-
+              Cron job {{ $labels.job }} recorded {{ $value | printf "%.0f" }}
+              failure(s) in the last hour.
+
+        # Timed-out is a distinct terminal state from failure — slow-but-alive, not
+        # crashed. Lower severity, separate signal (cron_job_runs table can't express it).
+        - alert: TriparrCronJobTimingOut
+          expr: increase(triparr_cron_runs_total{status="timeout"}[1h]) > 0
+          for: 5m
+          labels:
+            severity: info
+          annotations:
+            summary: 'triparr cron job {{ $labels.job }} is timing out'
+            description: >-
+              Cron job {{ $labels.job }} recorded {{ $value | printf "%.0f" }}
+              timeout(s) in the last hour (slow-but-alive, distinct from failure).
+
+        # Generic staleness catch-all, GUARDED against the frozen-collector stampede:
+        # only fires when the collector is healthy (== 1). 24h is a conservative floor
+        # that won't false-fire on the frequent jobs; per-{job} cadence windows
+        # (ANA 2h, BA daily, CoC biweekly, hotel daily) are a follow-on once the
+        # cadence table is wired in.
+        - alert: TriparrCronJobStale
+          expr: >-
+            (time() - triparr_cron_last_success_timestamp_seconds > 86400)
+            and on() (triparr_metrics_db_collector_up == 1)
+          for: 30m
+          labels:
+            severity: info
+          annotations:
+            summary: 'triparr cron job {{ $labels.job }} has not succeeded in >24h'
+            description: >-
+              Cron job {{ $labels.job }} last succeeded
+              {{ $value | humanizeDuration }} ago (collector healthy, so this is real
+              staleness, not a frozen timestamp). Generic 24h floor — tune per-job later.

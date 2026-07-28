@@ -1,0 +1,24 @@
+---
+# Scrapes triparr-bot's dedicated :9090/metrics (prom-client) — NOT the public :3001
+# health port. :3001 answers even when the bot is Discord-disconnected, so it is the
+# wrong liveness signal; :9090 is the real one. Prometheus serviceMonitorSelector={}
+# discovers this automatically.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: triparr-bot
+  namespace: triparr-bot
+  labels:
+    app.kubernetes.io/name: triparr-bot-metrics
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: triparr-bot-metrics
+  namespaceSelector:
+    matchNames:
+      - triparr-bot
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

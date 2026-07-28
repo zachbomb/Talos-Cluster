@@ -1,0 +1,23 @@
+---
+# Dedicated ClusterIP for the triparr-bot Prometheus endpoint (:9090/metrics),
+# kept SEPARATE from the LoadBalancer `main` service so the metrics port is never
+# exposed on the LB IP / ingress. Selector mirrors the chart's `main` service so it
+# targets the single app pod (not the chrome-cdp sidecar deployment).
+apiVersion: v1
+kind: Service
+metadata:
+  name: triparr-bot-metrics
+  namespace: triparr-bot
+  labels:
+    app.kubernetes.io/name: triparr-bot-metrics
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/instance: triparr-bot
+    app.kubernetes.io/name: app-template
+    pod.name: main
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
