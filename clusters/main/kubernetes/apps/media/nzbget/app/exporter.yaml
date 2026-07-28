@@ -1,0 +1,98 @@
+---
+# Standalone nzbget metrics exporter — decoupled from the nzbget pod (see
+# reference_exportarr_metrics_gotchas). NZBGet uses HTTP basic auth, not an API key:
+# NZBGET_API in cluster-config == the nzbget ControlPassword; username is from
+# nzbget.conf ControlUsername (zach). Only :latest is published for this exporter,
+# so pinned by digest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nzbget-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: nzbget-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nzbget-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nzbget-exporter
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          # renovate: datasource=docker depName=ghcr.io/frebib/nzbget-exporter
+          image: ghcr.io/frebib/nzbget-exporter:latest@sha256:af2cb4ef63b5801f6e0002562dfe3e36e1c4bf1777e0a96d2cad9c322722a692
+          env:
+            - name: NZBGET_HOST
+              value: http://nzbget:10057
+            - name: NZBGET_USERNAME
+              value: zach
+            - name: NZBGET_PASSWORD
+              value: ${NZBGET_API}
+            - name: NZBGET_LISTEN
+              value: ":9452"
+          ports:
+            - name: metrics
+              containerPort: 9452
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nzbget-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: nzbget-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: nzbget-exporter
+  ports:
+    - name: metrics
+      port: 9452
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nzbget-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: nzbget-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nzbget-exporter
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 30s
