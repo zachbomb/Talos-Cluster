@@ -1,0 +1,36 @@
+---
+# immich app metrics — telemetry is already enabled in the helm-release
+# (immich.metrics.enabled + IMMICH_TELEMETRY_INCLUDE=all); the immich-server pod
+# serves ~985 immich_* metrics on :8081. It just wasn't exposed/scraped. This adds a
+# Service selecting the server pods (pod.name=main) + a ServiceMonitor. No HR edit.
+apiVersion: v1
+kind: Service
+metadata:
+  name: immich-metrics
+  namespace: media
+  labels:
+    app.kubernetes.io/name: immich-metrics
+spec:
+  selector:
+    app.kubernetes.io/name: immich
+    pod.name: main
+  ports:
+    - name: metrics
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: immich-metrics
+  namespace: media
+  labels:
+    app.kubernetes.io/name: immich-metrics
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: immich-metrics
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 30s
