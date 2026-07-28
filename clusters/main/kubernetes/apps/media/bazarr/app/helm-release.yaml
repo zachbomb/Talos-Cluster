@@ -37,12 +37,6 @@ spec:
         accessKey: ${S3ID}
         secretKey: ${S3KEY}
         encrKey: ${S3KEY}
-    # exportarr sidecar → Prometheus metrics (mirrors the sonarr wiring). exportarr
-    # supports bazarr; it reads the API key from /config (mounted read-only below).
-    exportarrImage:
-      pullPolicy: IfNotPresent
-      repository: ghcr.io/onedr0p/exportarr
-      tag: v2.3.0@sha256:af535d94061cf97a52e1661945ffba78c03f9443eae7c0da1a80a5a4be56b520
     ingress:
       main:
         enabled: true
@@ -95,27 +89,11 @@ spec:
           initContainers:
             initconfig:
               enabled: false
-    metrics:
-      main:
-        enabled: true
-        endpoints:
-          - path: /metrics
-            port: metrics
-        prometheusRule:
-          enabled: false
-        targetSelector: metrics
-        type: servicemonitor
     persistence:
       config:
         enabled: true
         size: 2Gi
-        # main gets /config rw; exportarr sidecar gets it read-only (to read the API key)
-        main:
-          enabled: true
-          mountPath: /config
-        exportarr:
-          mountPath: /config
-          readOnly: true
+        mountPath: /config
         volsync:
           - name: config
             type: restic
