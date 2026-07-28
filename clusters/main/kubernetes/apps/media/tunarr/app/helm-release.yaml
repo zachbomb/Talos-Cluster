@@ -221,14 +221,29 @@ spec:
         enabled: true
         size: 2Gi
         mountPath: /.cache
+        # cache-purge sidecar also purges /.cache (30m) — must be mounted there too.
+        targetSelector:
+          main:
+            main: { mountPath: /.cache }
+            cache-purge: { mountPath: /.cache }
       local-root:
         enabled: true
         size: 2Gi
         mountPath: /.local
+        # cache-purge sidecar also purges /.local (30m) — must be mounted there too.
+        targetSelector:
+          main:
+            main: { mountPath: /.local }
+            cache-purge: { mountPath: /.local }
       icache:
         enabled: true
         size: 5Gi
         mountPath: /root/.local/share/tunarr/cache
+        # cache-purge sidecar also purges the image cache (120m) — mount there too.
+        targetSelector:
+          main:
+            main: { mountPath: /root/.local/share/tunarr/cache }
+            cache-purge: { mountPath: /root/.local/share/tunarr/cache }
       msidx:
         enabled: true
         size: 5Gi
@@ -335,6 +350,14 @@ spec:
         enabled: true
         size: 5Gi
         mountPath: /.transcode
+        # Mount into the cache-purge sidecar too (chart default is main-only). Without
+        # this, the sidecar's `find /.transcode -mmin +2 -delete` loop ran against its
+        # OWN empty ephemeral dir → purged nothing → PVC filled to 100% (root-caused
+        # 2026-07-28; verified via helm-render that targetSelector mounts into both).
+        targetSelector:
+          main:
+            main: { mountPath: /.transcode }
+            cache-purge: { mountPath: /.transcode }
     securityContext:
       container:
         runAsUser: 0
