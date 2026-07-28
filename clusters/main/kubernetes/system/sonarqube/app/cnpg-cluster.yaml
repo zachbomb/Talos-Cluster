@@ -57,4 +57,6 @@ spec:
         compression: gzip
     retentionPolicy: "30d"
   monitoring:
-    enablePodMonitor: false
+    # Postgres server metrics (cnpg_*/pg_*) via CNPG native exporter :9187;
+    # Prometheus podMonitorSelector={} auto-scrapes the operator PodMonitor.
+    enablePodMonitor: true

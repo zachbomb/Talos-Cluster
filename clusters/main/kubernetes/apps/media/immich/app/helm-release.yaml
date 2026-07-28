@@ -226,6 +226,9 @@ spec:
 
     cnpg:
       main:
+        monitoring:
+          # Postgres server metrics via CNPG native exporter :9187 (was dark).
+          enablePodMonitor: true
         cluster:
           storage:
             size: 5Gi
