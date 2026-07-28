@@ -1,0 +1,98 @@
+---
+# Standalone exportarr for bazarr — DECOUPLED from the bazarr pod on purpose.
+# bazarr has no config.xml, so exportarr can't auto-read the key like the *arr
+# charts do; it needs APIKEY passed explicitly. Running it as its own Deployment
+# (not a sidecar in the bazarr pod) means a misconfigured/crashing exporter can
+# NEVER make bazarr's pod not-ready → no repeat of the 2026-07-27 bazarr outage.
+# See memory reference_exportarr_metrics_gotchas.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazarr-exportarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: bazarr-exportarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bazarr-exportarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bazarr-exportarr
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exportarr
+          image: ghcr.io/onedr0p/exportarr:v2.3.0
+          args: ["bazarr"]
+          env:
+            - name: APIKEY
+              value: ${BAZARR_API}
+            - name: URL
+              value: http://bazarr:6767
+            - name: PORT
+              value: "9709"
+            - name: INTERFACE
+              value: 0.0.0.0
+          ports:
+            - name: metrics
+              containerPort: 9709
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazarr-exportarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: bazarr-exportarr
+spec:
+  selector:
+    app.kubernetes.io/name: bazarr-exportarr
+  ports:
+    - name: metrics
+      port: 9709
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: bazarr-exportarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: bazarr-exportarr
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bazarr-exportarr
+  endpoints:
+    - port: metrics
+      interval: 60s
