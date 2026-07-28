@@ -72,9 +72,9 @@ spec:
           labels:
             severity: warning
           annotations:
-            summary: 'triparr cron job {{ $labels.job }} is failing'
+            summary: 'triparr cron job {{ $labels.exported_job }} is failing'
             description: >-
-              Cron job {{ $labels.job }} recorded {{ $value | printf "%.0f" }}
+              Cron job {{ $labels.exported_job }} recorded {{ $value | printf "%.0f" }}
               failure(s) in the last hour.
 
         # Timed-out is a distinct terminal state from failure — slow-but-alive, not
@@ -85,26 +85,37 @@ spec:
           labels:
             severity: info
           annotations:
-            summary: 'triparr cron job {{ $labels.job }} is timing out'
+            summary: 'triparr cron job {{ $labels.exported_job }} is timing out'
             description: >-
-              Cron job {{ $labels.job }} recorded {{ $value | printf "%.0f" }}
+              Cron job {{ $labels.exported_job }} recorded {{ $value | printf "%.0f" }}
               timeout(s) in the last hour (slow-but-alive, distinct from failure).
 
-        # Generic staleness catch-all, GUARDED against the frozen-collector stampede:
-        # only fires when the collector is healthy (== 1). 24h is a conservative floor
-        # that won't false-fire on the frequent jobs; per-{job} cadence windows
-        # (ANA 2h, BA daily, CoC biweekly, hotel daily) are a follow-on once the
-        # cadence table is wired in.
+        # Staleness catch-all, doubly guarded:
+        #  (1) `and on() collector_up==1` — suppress while the DB collector is frozen
+        #      (else frozen timestamps stampede every job).
+        #  (2) `and on(exported_job) increase(cron_runs_total[24h])>0` — SCOPE TO ACTIVE
+        #      JOBS. The app emits last_success for ~53 DEPRECATED jobs that no longer
+        #      run (125 in last_success vs 72 in cron_runs_total, 2026-07-28). Without
+        #      this scope the 24h floor fires on all of them (45 dead jobs, 27-61d stale).
+        #      Scoping means it only fires for a job that RAN in 24h but didn't SUCCEED —
+        #      the actionable "running but failing" case. App-side follow-up: stop
+        #      emitting last_success for deprecated jobs to close the 125→72 gap.
+        # NOTE: labeled by `exported_job` — Prometheus overwrites the metric's own `job`
+        # label with the scrape job (triparr-bot-metrics), so the cron name lands there.
         - alert: TriparrCronJobStale
           expr: >-
-            (time() - triparr_cron_last_success_timestamp_seconds > 86400)
-            and on() (triparr_metrics_db_collector_up == 1)
+            (
+              (time() - triparr_cron_last_success_timestamp_seconds > 86400)
+              and on() (triparr_metrics_db_collector_up == 1)
+            )
+            and on(exported_job)
+            (sum by (exported_job) (increase(triparr_cron_runs_total[24h])) > 0)
           for: 30m
           labels:
             severity: info
           annotations:
-            summary: 'triparr cron job {{ $labels.job }} has not succeeded in >24h'
+            summary: 'triparr cron job {{ $labels.exported_job }} has not succeeded in >24h'
             description: >-
-              Cron job {{ $labels.job }} last succeeded
+              Cron job {{ $labels.exported_job }} last succeeded
               {{ $value | humanizeDuration }} ago (collector healthy, so this is real
               staleness, not a frozen timestamp). Generic 24h floor — tune per-job later.
