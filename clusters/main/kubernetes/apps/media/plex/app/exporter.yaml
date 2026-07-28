@@ -1,7 +1,9 @@
 ---
 # Standalone Plex metrics exporter — decoupled from the plex pod (see
-# reference_exportarr_metrics_gotchas). Talks to PMS :32400 with the Plex token
-# (${PLEX_API}); serves /metrics on :9594. Only :latest/commit tags upstream → digest-pinned.
+# reference_exportarr_metrics_gotchas). Go-based jsclayton/prometheus-plex-exporter
+# (the Ruby axsuul image ships an ARM-only Gemfile.lock, broken on this x86_64 node).
+# Talks to PMS :32400 with ${PLEX_API}; serves /metrics on :9000. Only latest/main
+# tags upstream → digest-pinned.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -27,24 +29,16 @@ spec:
           type: RuntimeDefault
       containers:
         - name: exporter
-          # renovate: datasource=docker depName=ghcr.io/axsuul/plex-media-server-exporter
-          image: ghcr.io/axsuul/plex-media-server-exporter:latest@sha256:5881469f8c40e32e83514b94e1f2a6ea5804a6b58a6864e49b8b75557b0bcad2
+          # renovate: datasource=docker depName=ghcr.io/jsclayton/prometheus-plex-exporter
+          image: ghcr.io/jsclayton/prometheus-plex-exporter:latest@sha256:18ef1b2197efbcb75bd7276380955760995f10a9fbe55106809a6fcff91c2940
           env:
-            - name: PLEX_ADDR
+            - name: PLEX_SERVER
               value: http://plex:32400
             - name: PLEX_TOKEN
               value: ${PLEX_API}
-            - name: PORT
-              value: "9594"
-            # Ruby/bundler image: don't let bundler rewrite Gemfile.lock (would need
-            # to write the app dir); use the baked-in lock as-is.
-            - name: BUNDLE_FROZEN
-              value: "true"
-            - name: HOME
-              value: /tmp
           ports:
             - name: metrics
-              containerPort: 9594
+              containerPort: 9000
           livenessProbe:
             tcpSocket:
               port: metrics
@@ -57,16 +51,16 @@ spec:
             periodSeconds: 15
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false  # Ruby/bundler needs a writable FS
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           resources:
             requests:
               cpu: 10m
-              memory: 64Mi
+              memory: 48Mi
             limits:
               cpu: 200m
-              memory: 160Mi
+              memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
@@ -80,7 +74,7 @@ spec:
     app.kubernetes.io/name: plex-exporter
   ports:
     - name: metrics
-      port: 9594
+      port: 9000
       targetPort: metrics
 ---
 apiVersion: monitoring.coreos.com/v1
