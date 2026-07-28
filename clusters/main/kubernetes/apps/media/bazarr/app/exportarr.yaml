@@ -95,4 +95,7 @@ spec:
       app.kubernetes.io/name: bazarr-exportarr
   endpoints:
     - port: metrics
-      interval: 60s
+      interval: 90s
+      # bazarr's /api/movies is slow (~9s — it tracks the full ~2.4k-movie library
+      # for subtitles), so the full exportarr scrape exceeds the default 10s timeout.
+      scrapeTimeout: 45s
