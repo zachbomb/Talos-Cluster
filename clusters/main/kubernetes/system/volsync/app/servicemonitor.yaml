@@ -1,0 +1,24 @@
+---
+# Wires VolSync's metrics into Prometheus. VolSync exposes metrics on :8443 behind
+# kube-rbac-proxy, so scrape over HTTPS with the Prometheus SA bearer token
+# (insecureSkipVerify — the proxy uses a self-signed cert). Before this, VolSync had
+# NO ServiceMonitor and backup health was invisible to Prometheus.
+# Key metric: volsync_volume_out_of_sync (1 = a ReplicationSource missed its schedule).
+# Alerted by kube-prometheus-stack prometheusrule-storage.yaml (volsync-backups group).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: volsync
+  namespace: volsync
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: volsync
+      service.name: metrics
+  endpoints:
+    - port: metrics
+      scheme: https
+      interval: 60s
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true

@@ -1,0 +1,140 @@
+# Unit tests for prometheusrule-storage.yaml. CI extracts the rule .spec to
+# prometheusrule-storage-extracted.yaml (loaded below). exp_annotations must match
+# the rule's rendered output byte-for-byte.
+rule_files:
+  - prometheusrule-storage-extracted.yaml
+evaluation_interval: 1m
+tests:
+  # PVC at 10% free → PVCNearFull (warning); NOT PVCCritical (10% > 5%).
+  - interval: 1m
+    input_series:
+      - series: 'kubelet_volume_stats_available_bytes{namespace="media", persistentvolumeclaim="sonarr-config"}'
+        values: "10x20"
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="media", persistentvolumeclaim="sonarr-config"}'
+        values: "100x20"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: PVCNearFull
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: media
+              persistentvolumeclaim: sonarr-config
+            exp_annotations:
+              summary: "PVC media/sonarr-config nearly full"
+              description: "PVC media/sonarr-config has 10% space free. Resize or clear it before it fills — a full PVC wedges the app and can cascade on this single node."
+      - eval_time: 16m
+        alertname: PVCCritical
+        exp_alerts: []
+
+  # PVC at 3% free → PVCCritical (critical).
+  - interval: 1m
+    input_series:
+      - series: 'kubelet_volume_stats_available_bytes{namespace="media", persistentvolumeclaim="plex-config"}'
+        values: "3x10"
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="media", persistentvolumeclaim="plex-config"}'
+        values: "100x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: PVCCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: media
+              persistentvolumeclaim: plex-config
+            exp_annotations:
+              summary: "PVC media/plex-config critically full"
+              description: "PVC media/plex-config has only 3% free — imminent write failure. Resize now."
+
+  # Healthy PVC (50% free) → no alert.
+  - interval: 1m
+    input_series:
+      - series: 'kubelet_volume_stats_available_bytes{namespace="media", persistentvolumeclaim="ok"}'
+        values: "50x20"
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="media", persistentvolumeclaim="ok"}'
+        values: "100x20"
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: PVCNearFull
+        exp_alerts: []
+
+  # VolSync out_of_sync=1 for 2h → VolSyncBackupOutOfSync.
+  - interval: 1m
+    input_series:
+      - series: 'volsync_volume_out_of_sync{obj_namespace="media", obj_name="sonarr-config"}'
+        values: "1x130"
+    alert_rule_test:
+      - eval_time: 121m
+        alertname: VolSyncBackupOutOfSync
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              obj_namespace: media
+              obj_name: sonarr-config
+            exp_annotations:
+              summary: "VolSync backup out of sync: media/sonarr-config"
+              description: "VolSync ReplicationSource media/sonarr-config has missed its schedule window (out_of_sync=1 for 2h+) — the restic backup to S3 is behind. Check the mover pod + S3 reachability. Runbook: memory reference_volsync_operational_procedures."
+
+  # No VolSync series → VolSyncMetricsAbsent (guards silent scrape loss).
+  - interval: 1m
+    input_series:
+      - series: 'up{job="dummy"}'
+        values: "1x40"
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: VolSyncMetricsAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "VolSync metrics absent — backup health is blind"
+              description: "No volsync_volume_out_of_sync series. The VolSync ServiceMonitor (volsync ns) is missing or its scrape is failing — backup failures cannot be detected. Verify the volsync ServiceMonitor and that its target is up."
+
+  # Longhorn robustness=3 → LonghornVolumeFaulted (critical).
+  - interval: 1m
+    input_series:
+      - series: 'longhorn_volume_robustness{volume="pvc-faulted"}'
+        values: "3x10"
+      - series: 'longhorn_volume_robustness{volume="pvc-healthy"}'
+        values: "1x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: LonghornVolumeFaulted
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              volume: pvc-faulted
+            exp_annotations:
+              summary: "Longhorn volume FAULTED: pvc-faulted"
+              description: "Longhorn volume pvc-faulted is FAULTED (robustness=3) — no healthy replica, data at risk / app down. Investigate immediately."
+
+  # Longhorn robustness=2 for 10m → LonghornVolumeDegraded (warning).
+  - interval: 1m
+    input_series:
+      - series: 'longhorn_volume_robustness{volume="pvc-degraded"}'
+        values: "2x15"
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: LonghornVolumeDegraded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              volume: pvc-degraded
+            exp_annotations:
+              summary: "Longhorn volume degraded: pvc-degraded"
+              description: "Longhorn volume pvc-degraded is DEGRADED (robustness=2) — a replica is rebuilding or lost. On this single-node cluster this often precedes an instance-manager cascade. Runbook: memory project_longhorn_1_12_im_liveness_outage_2026_06."
+
+  # No Longhorn series → LonghornMetricsAbsent (guards the current broken scrape).
+  - interval: 1m
+    input_series:
+      - series: 'up{job="dummy"}'
+        values: "1x30"
+    alert_rule_test:
+      - eval_time: 21m
+        alertname: LonghornMetricsAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Longhorn metrics absent — volume health is blind"
+              description: "No longhorn_volume_robustness series. The longhorn-manager /metrics scrape is failing (context-deadline timeout with many volumes) — Longhorn volume health, this cluster's top outage source, cannot be alerted on. Fix the scrape (metrics.serviceMonitor.scrapeTimeout in the longhorn helm-release)."
