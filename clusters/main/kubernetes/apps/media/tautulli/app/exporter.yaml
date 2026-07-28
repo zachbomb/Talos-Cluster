@@ -1,0 +1,95 @@
+---
+# Standalone tautulli metrics exporter — decoupled from tautulli (see
+# reference_exportarr_metrics_gotchas). Tautulli tracks Plex sessions/history; this
+# exporter surfaces those as Prometheus metrics via the Tautulli API (${TAUTULLI_API}).
+# Only dev-* tags published upstream (Go rewrite) → pinned by digest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tautulli-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: tautulli-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tautulli-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tautulli-exporter
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          # renovate: datasource=docker depName=mm404/tautulli-exporter
+          image: docker.io/mm404/tautulli-exporter:dev-0.2.7-go-rewrite-34083b5@sha256:9b5e4c55a784b7b6f1270026b66ab3dc6b2262aef417af07d36f191aeacfd180
+          env:
+            - name: TAUTULLI_URL
+              value: http://tautulli:8181
+            - name: TAUTULLI_API_KEY
+              value: ${TAUTULLI_API}
+            - name: METRICS_PORT
+              value: "8000"
+          ports:
+            - name: metrics
+              containerPort: 8000
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tautulli-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: tautulli-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: tautulli-exporter
+  ports:
+    - name: metrics
+      port: 8000
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tautulli-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: tautulli-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tautulli-exporter
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 30s
