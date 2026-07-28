@@ -36,6 +36,12 @@ spec:
               value: ${PLEX_API}
             - name: PORT
               value: "9594"
+            # Ruby/bundler image: don't let bundler rewrite Gemfile.lock (would need
+            # to write the app dir); use the baked-in lock as-is.
+            - name: BUNDLE_FROZEN
+              value: "true"
+            - name: HOME
+              value: /tmp
           ports:
             - name: metrics
               containerPort: 9594
@@ -51,7 +57,7 @@ spec:
             periodSeconds: 15
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false  # Ruby/bundler needs a writable FS
             capabilities:
               drop: ["ALL"]
           resources:
