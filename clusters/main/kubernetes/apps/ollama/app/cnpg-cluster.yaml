@@ -20,6 +20,10 @@ spec:
     parameters:
       shared_buffers: "128MB"
       max_connections: "50"
+  monitoring:
+    # Postgres server metrics (cnpg_*/pg_*) via CNPG native exporter :9187;
+    # Prometheus podMonitorSelector={} auto-scrapes the operator PodMonitor.
+    enablePodMonitor: true
   bootstrap:
     initdb:
       database: openwebui
