@@ -1,0 +1,94 @@
+---
+# Standalone Plex metrics exporter — decoupled from the plex pod (see
+# reference_exportarr_metrics_gotchas). Talks to PMS :32400 with the Plex token
+# (${PLEX_API}); serves /metrics on :9594. Only :latest/commit tags upstream → digest-pinned.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: plex-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: plex-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: plex-exporter
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          # renovate: datasource=docker depName=ghcr.io/axsuul/plex-media-server-exporter
+          image: ghcr.io/axsuul/plex-media-server-exporter:latest@sha256:5881469f8c40e32e83514b94e1f2a6ea5804a6b58a6864e49b8b75557b0bcad2
+          env:
+            - name: PLEX_ADDR
+              value: http://plex:32400
+            - name: PLEX_TOKEN
+              value: ${PLEX_API}
+            - name: PORT
+              value: "9594"
+          ports:
+            - name: metrics
+              containerPort: 9594
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 160Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: plex-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: plex-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: plex-exporter
+  ports:
+    - name: metrics
+      port: 9594
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: plex-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: plex-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: plex-exporter
+  endpoints:
+    - port: metrics
+      interval: 90s
+      scrapeTimeout: 45s
