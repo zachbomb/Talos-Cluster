@@ -1,0 +1,92 @@
+---
+# Standalone ollama metrics exporter — decoupled from the ollama pod (see
+# reference_exportarr_metrics_gotchas). Scrapes the Ollama API (:11434, no auth);
+# serves /metrics on :8000. ollama-ingress netpol already allows kube-prometheus-stack.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-exporter
+  namespace: ollama
+  labels:
+    app.kubernetes.io/name: ollama-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ollama-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ollama-exporter
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          # renovate: datasource=docker depName=lucabecker42/ollama-exporter
+          image: docker.io/lucabecker42/ollama-exporter:1.0.3@sha256:9fb1f4c5bc4ff819eb13e148debeb7fd474a4c8956d83d39928ea22d95d3de5c
+          env:
+            - name: OLLAMA_HOST
+              value: ollama-api:11434
+            - name: PORT
+              value: "8000"
+          ports:
+            - name: metrics
+              containerPort: 8000
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-exporter
+  namespace: ollama
+  labels:
+    app.kubernetes.io/name: ollama-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: ollama-exporter
+  ports:
+    - name: metrics
+      port: 8000
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ollama-exporter
+  namespace: ollama
+  labels:
+    app.kubernetes.io/name: ollama-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ollama-exporter
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 30s
