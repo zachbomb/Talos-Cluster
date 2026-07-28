@@ -1,0 +1,96 @@
+---
+# Standalone exportarr for sabnzbd — decoupled from the sabnzbd pod (see
+# reference_exportarr_metrics_gotchas: a crashing sidecar makes the app not-ready).
+# exportarr sabnzbd mode; APIKEY passed explicitly (${SABNZBD_API}).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sabnzbd-exportarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: sabnzbd-exportarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sabnzbd-exportarr
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sabnzbd-exportarr
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exportarr
+          image: ghcr.io/onedr0p/exportarr:v2.3.0
+          args: ["sabnzbd"]
+          env:
+            - name: APIKEY
+              value: ${SABNZBD_API}
+            - name: URL
+              value: http://sabnzbd:10097
+            - name: PORT
+              value: "9709"
+            - name: INTERFACE
+              value: 0.0.0.0
+          ports:
+            - name: metrics
+              containerPort: 9709
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sabnzbd-exportarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: sabnzbd-exportarr
+spec:
+  selector:
+    app.kubernetes.io/name: sabnzbd-exportarr
+  ports:
+    - name: metrics
+      port: 9709
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sabnzbd-exportarr
+  namespace: media
+  labels:
+    app.kubernetes.io/name: sabnzbd-exportarr
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sabnzbd-exportarr
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 30s
