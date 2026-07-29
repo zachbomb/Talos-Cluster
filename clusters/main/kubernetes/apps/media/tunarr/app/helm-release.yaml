@@ -70,7 +70,12 @@ spec:
                     # stream, and streams linger after client disconnect). Purge tightly so
                     # /.transcode stays well under its 5Gi PVC even during heavy channel-surfing.
                     find /.transcode -type f -mmin +2 -delete 2>/dev/null
-                    find /.transcode -type d -empty -delete 2>/dev/null
+                    # mtime guard is CRITICAL: Tunarr creates stream_<ch>/ then launches
+                    # ffmpeg, leaving the dir empty for several seconds (HEVC-QSV encoder
+                    # init is slow). An unguarded `-type d -empty -delete` deletes that
+                    # live dir mid-tune → ffmpeg writes to nothing → "No master playlist" →
+                    # 500. Only reap empty dirs untouched >2m (abandoned), never live ones.
+                    find /.transcode -mindepth 1 -type d -empty -mmin +2 -delete 2>/dev/null
                     # Image/misc caches grow slowly; purge gently to preserve cache hit-rate.
                     find /.cache -type f -mmin +30 -delete 2>/dev/null
                     find /.local -type f -mmin +30 -delete 2>/dev/null
