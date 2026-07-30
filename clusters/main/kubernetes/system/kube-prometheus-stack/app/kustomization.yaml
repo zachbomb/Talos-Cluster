@@ -10,7 +10,6 @@ resources:
   - prometheusrule-solidigm-pool.yaml
   - prometheusrule-crowdsec.yaml
   - prometheusrule-storage.yaml
-  - prometheusrule-bgp.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
   - grafana-dashboard-dcgm-gpu.yaml
@@ -23,3 +22,4 @@ resources:
   - grafana-dashboard-cloudflared.yaml
   - grafana-dashboard-smartctl.yaml
   - grafana-dashboard-graphite.yaml
+  - promtool-tests
