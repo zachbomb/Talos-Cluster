@@ -64,7 +64,11 @@ spec:
                 - /bin/sh
                 - -c
                 - |
-                  echo "Cache purge sidecar started (2m interval; transcode>2m, caches>30m; subtitle cache NEVER purged)"
+                  echo "Cache purge sidecar started (2m interval; transcode>2m, caches>30m; subtitle cache NEVER purged; zombie-transcode reaper armed)"
+                  # curl is needed for the reaper's DELETE (busybox wget cannot send DELETE).
+                  # If this fails (no network at start), the reaper self-disables and the
+                  # purge loop below still runs — fail-safe, never fail-dangerous.
+                  command -v curl >/dev/null 2>&1 || apk add --no-cache curl >/dev/null 2>&1
                   while true; do
                     # HLS transcode segments are the runaway growth vector (~8.8GB/hr per active
                     # stream, and streams linger after client disconnect). Purge tightly so
@@ -97,6 +101,50 @@ spec:
                     # that a process is about to write into.
                     find /.cache -mindepth 1 -type d -empty -mmin +2 -delete 2>/dev/null
                     find /.local -mindepth 1 -type d -empty -mmin +2 -delete 2>/dev/null
+
+                    # ---- ZOMBIE-TRANSCODE REAPER -------------------------------------
+                    # 2026-07-30 incident: Tunarr marked a session "stopped" and shut down
+                    # its connection tracker, but the ffmpeg kept transcoding at ~82% CPU
+                    # with no viewer. That pinned the node at 96%, which dropped the
+                    # longhorn-admission-webhook endpoints, which blocked Longhorn
+                    # mutations, which wedged VolSync clones -> stale backups + a faulted
+                    # volume. One orphan cascaded into a storage incident.
+                    #
+                    # DETECTION (no PID namespace needed - sidecars cannot see the main
+                    # container's processes): a stream dir still producing .ts segments
+                    # (mtime <1m) while its channel uuid is ABSENT from /api/sessions.
+                    # Absence is a plain substring test - no JSON parsing to get wrong.
+                    #
+                    # DELIBERATELY CONSERVATIVE:
+                    #  * sessions API unreachable/empty -> do nothing (fail safe)
+                    #  * a session that EXISTS with 0 connections is NOT reaped (that is
+                    #    the held-tuner case; a paused/buffering client looks identical)
+                    #  * requires 3 consecutive checks (~6 min) before acting
+                    #  * teardown via Tunarr's own DELETE, never kill -9
+                    # A naive signal (per-channel GET returning 404) was measured and
+                    # REJECTED: it 404s for healthy sessions too and would kill live streams.
+                    SESS=$(curl -sf --max-time 10 http://localhost:8000/api/sessions 2>/dev/null)
+                    if [ -n "$SESS" ]; then
+                      for d in /.transcode/stream_*/; do
+                        [ -d "$d" ] || continue
+                        u=$(basename "$d"); u=${u#stream_}
+                        if [ -n "$(find "$d" -maxdepth 1 -name '*.ts' -mmin -1 2>/dev/null | head -1)" ]; then
+                          if echo "$SESS" | grep -q "$u"; then
+                            rm -f "/tmp/zombie_$u"
+                          else
+                            n=$(cat "/tmp/zombie_$u" 2>/dev/null || echo 0); n=$((n+1))
+                            echo "$n" > "/tmp/zombie_$u"
+                            if [ "$n" -ge 3 ]; then
+                              echo "REAPER: channel $u producing segments with no session for ${n} checks - tearing down"
+                              curl -sf -X DELETE --max-time 10 "http://localhost:8000/api/channels/$u/sessions" >/dev/null 2>&1
+                              rm -f "/tmp/zombie_$u"
+                            fi
+                          fi
+                        else
+                          rm -f "/tmp/zombie_$u"
+                        fi
+                      done
+                    fi
                     sleep 120
                   done
               probes:
