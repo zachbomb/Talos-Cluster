@@ -43,6 +43,7 @@ spec:
           registry: ghcr.io
           username: zachbomb
           password: ${TRIPARR_GHCR_TOKEN}
+          email: zachbomb@gmail.com
     workload:
       main:
         podSpec:
