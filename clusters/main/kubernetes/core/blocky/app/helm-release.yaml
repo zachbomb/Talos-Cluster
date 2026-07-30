@@ -221,7 +221,7 @@ spec:
           dnsserver: 192.168.10.196
         - domain: triparr.sf.wethecommon.com
           dnsserver: 192.168.10.196
-        - domain: triparr-map.sf.wethecommon.com
+        - domain: transsafetymap.sf.wethecommon.com
           dnsserver: 192.168.10.196
         - domain: external.sf.wethecommon.com
           dnsserver: 192.168.10.194
