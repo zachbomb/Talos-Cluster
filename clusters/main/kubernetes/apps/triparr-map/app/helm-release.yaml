@@ -60,6 +60,17 @@ spec:
                   type: http
                   port: 8080
                   path: /
+    persistence:
+      # TrueCharts defaults to a read-only root filesystem (good); nginx needs these
+      # two writable. Ephemeral scratch only — the site itself stays immutable.
+      nginx-cache:
+        enabled: true
+        type: emptyDir
+        mountPath: /var/cache/nginx
+      nginx-run:
+        enabled: true
+        type: emptyDir
+        mountPath: /run
     service:
       main:
         enabled: true
