@@ -123,25 +123,31 @@ spec:
                     #  * teardown via Tunarr's own DELETE, never kill -9
                     # A naive signal (per-channel GET returning 404) was measured and
                     # REJECTED: it 404s for healthy sessions too and would kill live streams.
-                    SESS=$(curl -sf --max-time 10 http://localhost:8000/api/sessions 2>/dev/null)
-                    if [ -n "$SESS" ]; then
+                    # NOTE: every shell variable sigil below is DOUBLED. Flux runs strict
+                    # envsubst over this manifest, so a single-sigil shell variable is
+                    # treated as a cluster variable and fails the build with
+                    # "variable substitution failed: variable not set (strict mode)".
+                    # A doubled sigil renders to a single literal one for the shell.
+                    # This applies to comments too - do not write a single sigil anywhere.
+                    SESS=$$(curl -sf --max-time 10 http://localhost:8000/api/sessions 2>/dev/null)
+                    if [ -n "$$SESS" ]; then
                       for d in /.transcode/stream_*/; do
-                        [ -d "$d" ] || continue
-                        u=$(basename "$d"); u=${u#stream_}
-                        if [ -n "$(find "$d" -maxdepth 1 -name '*.ts' -mmin -1 2>/dev/null | head -1)" ]; then
-                          if echo "$SESS" | grep -q "$u"; then
-                            rm -f "/tmp/zombie_$u"
+                        [ -d "$$d" ] || continue
+                        u=$$(basename "$$d"); u=$${u#stream_}
+                        if [ -n "$$(find "$$d" -maxdepth 1 -name '*.ts' -mmin -1 2>/dev/null | head -1)" ]; then
+                          if echo "$$SESS" | grep -q "$$u"; then
+                            rm -f "/tmp/zombie_$$u"
                           else
-                            n=$(cat "/tmp/zombie_$u" 2>/dev/null || echo 0); n=$((n+1))
-                            echo "$n" > "/tmp/zombie_$u"
-                            if [ "$n" -ge 3 ]; then
-                              echo "REAPER: channel $u producing segments with no session for ${n} checks - tearing down"
-                              curl -sf -X DELETE --max-time 10 "http://localhost:8000/api/channels/$u/sessions" >/dev/null 2>&1
-                              rm -f "/tmp/zombie_$u"
+                            n=$$(cat "/tmp/zombie_$$u" 2>/dev/null || echo 0); n=$$((n+1))
+                            echo "$$n" > "/tmp/zombie_$$u"
+                            if [ "$$n" -ge 3 ]; then
+                              echo "REAPER: channel $$u producing segments with no session for $$n checks - tearing down"
+                              curl -sf -X DELETE --max-time 10 "http://localhost:8000/api/channels/$$u/sessions" >/dev/null 2>&1
+                              rm -f "/tmp/zombie_$$u"
                             fi
                           fi
                         else
-                          rm -f "/tmp/zombie_$u"
+                          rm -f "/tmp/zombie_$$u"
                         fi
                       done
                     fi
