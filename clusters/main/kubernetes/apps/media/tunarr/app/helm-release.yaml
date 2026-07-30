@@ -78,7 +78,14 @@ spec:
                     find /.transcode -mindepth 1 -type d -empty -mmin +2 -delete 2>/dev/null
                     # Image/misc caches grow slowly; purge gently to preserve cache hit-rate.
                     find /.cache -type f -mmin +30 -delete 2>/dev/null
-                    find /.local -type f -mmin +30 -delete 2>/dev/null
+                    # EXCLUDE Tunarr's log dir: at logLevel=debug the log is written
+                    # constantly so mtime stayed fresh and it survived — but dropping to
+                    # info made writes sparse, the 30m rule deleted tunarr.log, and the
+                    # then-empty dir was reaped too. Tunarr's own settings API 500s with
+                    # ENOENT scandir when logsDirectory is missing, and ALL diagnostics
+                    # are lost. Log size is now bounded by Tunarr's own rolling
+                    # (50MB x 3, enabled 2026-07-30), so this purge must not touch it.
+                    find /.local -type f -mmin +30 -not -path "/.local/share/tunarr/logs/*" -delete 2>/dev/null
                     # DO NOT purge /root/.local/share/tunarr/cache: it is Tunarr's SUBTITLE
                     # EXTRACTION cache (tiny .srt files — ~18M for 400+ entries on a 5Gi PVC,
                     # and the tree contains nothing else). Purging it capped subtitle coverage
