@@ -15,4 +15,5 @@ resources:
   - searxng/ks.yaml
   - stirling-pdf/ks.yaml
   - triparr-bot/ks.yaml
+  - triparr-map/ks.yaml
   - network-policies/ks.yaml
