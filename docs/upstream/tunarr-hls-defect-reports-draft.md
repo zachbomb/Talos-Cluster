@@ -86,6 +86,44 @@ session's fate.
 
 ---
 
+## Report 4 — Subtitle rendition playlist (`subs.m3u8`) is served frozen: pre-populated then never updated, with no ENDLIST
+
+**Severity: this one silently breaks HLS playback for any standards-compliant player
+that deep-probes at open** (ffmpeg/libavformat, hence mpv, and anything embedding
+them). It is the highest-impact defect in this set.
+
+**Observed (Tunarr v1.3.10, channel with `subtitlesEnabled` + webvtt sidecar):** on a
+freshly-started session, `GET /stream/channels/{id}/hls/subs.m3u8` returns a playlist
+containing **17 `.vtt` entries immediately**, and that playlist is **byte-identical
+40 seconds later** — first entry `sub000000.vtt`, last `sub000016.vtt`, count 17,
+unchanged — while the video variant `stream.m3u8` advances normally over the same
+interval (2 → 8 segments). The subtitle playlist carries **no `#EXT-X-ENDLIST`**, so
+it advertises itself as a live playlist that will receive more segments.
+
+**Failure mode it produces:** a player whose open-time probe is long enough to pull
+the subtitle rendition (e.g. ffmpeg with a multi-second `analyzeduration`) attaches
+to `subs.m3u8`, consumes all 17 cues, then — correctly, per RFC 8216 for a live
+playlist without ENDLIST — **re-polls the playlist waiting for new entries that never
+arrive**. The demuxer never completes its open, so the *video* stream never starts:
+the client sits at 0% buffer with no error until its own watchdog aborts. The
+resulting client-side error names the first *video* segment, which is misleading —
+that fetch is a casualty of the aborted open, not its cause. (Two days were lost to
+that misdirection here.)
+
+**Why it looks intermittent:** on a mature session the subtitle playlist has caught
+up with real elapsed content, so the drain-then-wait window closes and playback
+succeeds. Fresh sessions fail; established ones work.
+
+**Suggested fixes (any one suffices):**
+- Keep `subs.m3u8` in lockstep with the video variant — append vtt entries as
+  subtitle segments are produced, matching the media sequence of the video playlist; or
+- If the subtitle set for the current program is genuinely complete and final, emit
+  `#EXT-X-ENDLIST` so players stop polling; or
+- Do not advertise the `EXT-X-MEDIA` subtitle rendition in the master until the
+  subtitle playlist is being maintained live.
+
+---
+
 ## Appendix — two additional reproducible defects (from earlier in this investigation)
 
 **A. Channel-number master URL returns 500 during cold-start (while starting the
