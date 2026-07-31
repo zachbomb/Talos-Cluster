@@ -28,6 +28,24 @@ metadata:
 spec:
   background: false
   rules:
+    # Make movers preemptible by user-facing pods. The CPU request above is a
+    # concurrency semaphore and must NOT be lowered, but it also meant a backup
+    # could block an app from scheduling at all: every app and every mover sat at
+    # priority 0, so the scheduler found "No preemption victims" and tunarr stayed
+    # down (2026-07-30). Movers now sit below default priority, so an app can evict
+    # one. See priorityclass-volsync-mover.yaml for the full rationale.
+    - name: volsync-mover-preemptible
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              names:
+                - "volsync-src-*"
+      mutate:
+        patchStrategicMerge:
+          spec:
+            priorityClassName: volsync-mover-low
     - name: cap-volsync-mover-resources
       match:
         any:

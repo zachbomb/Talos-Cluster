@@ -1,0 +1,44 @@
+---
+# Make VolSync backup movers PREEMPTIBLE by user-facing workloads.
+#
+# WHY (tunarr outage 2026-07-30): every media app AND every volsync mover ran at
+# priority 0, so the scheduler could not tell a backup job from live TV. When the
+# node hit 97% CPU requests, a routine tunarr pod roll could not schedule and the
+# scheduler reported, verbatim:
+#     preemption: 0/1 nodes are available: No preemption victims found
+# There were no victims because nothing was lower priority than anything else.
+# The helm upgrade then timed out, Flux remediation rolled back to a spec that
+# also did not fit, and Tunarr stayed hard-down until CPU was freed by hand.
+#
+# WHAT THIS DOES NOT CHANGE: the mover CPU *request* (500m) stays exactly as it is.
+# That value is deliberately a CONCURRENCY SEMAPHORE — VolSync has no operator
+# concurrency knob, so the request is what keeps a catch-up wave of 50 sources from
+# swamping the Longhorn instance-manager (the 2026-07-21 mass-fault cascade). Do NOT
+# "right-size" it to reclaim headroom; it is doing real work while idle. This adds
+# an orthogonal axis instead: movers keep their reservation, but yield it to apps.
+#
+# preemptionPolicy: Never — movers may BE preempted, but must never preempt anything
+# themselves. Without this, a queued mover could evict another mover and thrash.
+#
+# Value -100: below the default 0 that all app workloads use, and far below
+# longhorn-critical (1e9) / system-*-critical (2e9+), which stay untouchable.
+#
+# SAFETY: a preempted restic mover is not data loss. The mover is a Job; VolSync
+# retries on the next schedule, and restic resumes from its repository state. An
+# interrupted backup is strictly cheaper than a user-facing outage.
+#
+# BOOTSTRAP NOTE: a pod naming a non-existent PriorityClass is REJECTED, so this
+# object must exist before the Kyverno mutation that references it. Both live in
+# this same kustomization so they apply together; on a cold bootstrap a few early
+# mover pods may be rejected and retried, which is harmless (backups are not
+# critical-path during bootstrap).
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: volsync-mover-low
+value: -100
+globalDefault: false
+preemptionPolicy: Never
+description: >-
+  VolSync restic backup movers. Preemptible by any default-priority (0) workload so
+  backups can never block a user-facing pod from scheduling. Never preempts others.
