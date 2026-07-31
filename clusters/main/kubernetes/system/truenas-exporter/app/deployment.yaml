@@ -15,8 +15,13 @@ spec:
       labels:
         app.kubernetes.io/name: truenas-exporter
       annotations:
-        checksum/script: "v1"
+        checksum/script: "v2"
     spec:
+      # Stop Kubernetes injecting legacy Docker-link env vars for every Service in
+      # the namespace. The Service `truenas-exporter` otherwise sets
+      # TRUENAS_EXPORTER_PORT="tcp://<clusterIP>:9100", which collided with the
+      # exporter's own port variable and crash-looped it at import.
+      enableServiceLinks: false
       # Full TLS verification depends on connecting by a name the wildcard cert
       # (*.wethecommon.com) actually covers. TrueNAS has no LAN DNS record that both
       # resolves to 192.168.10.122 AND matches that wildcard - the public names point

@@ -36,7 +36,13 @@ data:
     # password, which would put reusable account credentials on the wire.
     API_KEY = os.environ.get("TRUENAS_API_KEY", "")
     INTERVAL = int(os.environ.get("TRUENAS_POLL_INTERVAL", "60"))
-    PORT = int(os.environ.get("TRUENAS_EXPORTER_PORT", "9100"))
+    # NOT named TRUENAS_EXPORTER_PORT: Kubernetes injects legacy Docker-link vars for
+    # every Service in the namespace, and the Service `truenas-exporter` produces
+    # TRUENAS_EXPORTER_PORT="tcp://<clusterIP>:9100". That collides with our own name,
+    # the Service value wins, and int() dies at import. The Deployment also sets
+    # enableServiceLinks: false to stop the injection at source; this rename means the
+    # exporter is safe even if that is ever dropped.
+    PORT = int(os.environ.get("LISTEN_PORT", "9100"))
     
     # FULL TLS verification - deliberately NOT disabled.
     #
