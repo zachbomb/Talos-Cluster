@@ -1,0 +1,99 @@
+---
+# Closes the blind spot that let pool Pibbs-Horde run DEGRADED with ZERO remaining
+# RAIDZ2 redundancy for three days (2026-07-27 -> 07-30) with nothing alerting.
+# 77 TB of irreplaceable media was one disk failure from total loss and the only
+# signal was a TrueNAS-UI banner nobody was looking at.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: truenas-exporter
+  namespace: truenas-exporter
+  labels:
+    app.kubernetes.io/name: truenas-exporter
+spec:
+  groups:
+    - name: truenas-pool
+      rules:
+        - alert: TrueNASPoolDegraded
+          expr: truenas_pool_healthy == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS pool {{ $labels.pool }} is NOT healthy"
+            description: >-
+              Pool {{ $labels.pool }} reports unhealthy. RAIDZ2 redundancy may be
+              partly or fully consumed - if two disks in one vdev are already down,
+              a THIRD failure destroys the entire pool, both vdevs, all data.
+              Check `zpool status` before doing anything physical, and do NOT pull
+              or reseat a drive while redundancy is gone.
+
+        - alert: TrueNASVdevDegraded
+          expr: truenas_vdev_healthy == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS vdev {{ $labels.vdev }} in {{ $labels.pool }} is {{ $labels.status }}"
+            description: >-
+              vdev {{ $labels.vdev }} ({{ $labels.type }}) is {{ $labels.status }}.
+              Verify with SMART + live disk temperature before assuming drive death -
+              transient I/O errors from a link or enclosure glitch look identical here
+              and are cleared with `zpool clear`, not replacement.
+
+        - alert: TrueNASVdevErrors
+          expr: increase(truenas_vdev_errors_total[1h]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TrueNAS {{ $labels.vdev }}: {{ $labels.kind }} errors increasing"
+            description: >-
+              vdev {{ $labels.vdev }} in pool {{ $labels.pool }} accumulated
+              {{ $labels.kind }} errors in the last hour. Recurring errors after a
+              `zpool clear` mean real hardware, not a transient glitch.
+
+        - alert: TrueNASPoolFillingUp
+          expr: truenas_pool_used_ratio > 0.80
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TrueNAS pool {{ $labels.pool }} is {{ $value | humanizePercentage }} full"
+            description: >-
+              Ratio is of RAW capacity (parity included), so it is directly comparable
+              across vdev layouts. ZFS performance degrades well before 100%.
+
+        - alert: TrueNASPoolCritical
+          expr: truenas_pool_used_ratio > 0.90
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS pool {{ $labels.pool }} is {{ $value | humanizePercentage }} full"
+            description: >-
+              Pool is nearly full. Writes will begin failing and ZFS fragmentation
+              becomes hard to reverse.
+
+        - alert: TrueNASExporterDown
+          expr: truenas_scrape_success == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TrueNAS exporter cannot reach the API"
+            description: >-
+              The exporter is serving LAST-KNOWN values, so pool metrics are stale and
+              a real degradation would look healthy. The monitor must itself be
+              monitored - this is the alert that says "believe nothing above".
+
+        - alert: TrueNASCriticalAlerts
+          expr: truenas_alerts{level="CRITICAL"} > 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS reports {{ $value }} CRITICAL alert(s)"
+            description: >-
+              TrueNAS raised its own CRITICAL alert(s). Check the TrueNAS UI or
+              /api/v2.0/alert/list for detail.

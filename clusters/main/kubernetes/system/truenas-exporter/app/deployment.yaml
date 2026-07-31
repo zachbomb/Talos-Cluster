@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: truenas-exporter
+  namespace: truenas-exporter
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: truenas-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: truenas-exporter
+      annotations:
+        checksum/script: "v1"
+    spec:
+      # Full TLS verification depends on connecting by a name the wildcard cert
+      # (*.wethecommon.com) actually covers. TrueNAS has no LAN DNS record that both
+      # resolves to 192.168.10.122 AND matches that wildcard - the public names point
+      # at Cloudflare, and truenas.sf.* resolves to Traefik. This alias supplies the
+      # mapping pod-locally, so no cluster DNS change is needed and verification is
+      # genuinely enforced rather than disabled.
+      hostAliases:
+        - ip: "192.168.10.122"
+          hostnames:
+            - truenas-api.wethecommon.com
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          image: python:3.12-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["python3", "-u", "/app/exporter.py"]
+          ports:
+            - name: metrics
+              containerPort: 9100
+              protocol: TCP
+          env:
+            - name: TRUENAS_URL
+              value: "https://truenas-api.wethecommon.com:444"
+            - name: TRUENAS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: truenas-exporter
+                  key: TRUENAS_API_KEY
+          readinessProbe:
+            httpGet: { path: /metrics, port: metrics }
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          livenessProbe:
+            httpGet: { path: /metrics, port: metrics }
+            initialDelaySeconds: 15
+            periodSeconds: 60
+          resources:
+            requests:
+              # Deliberately small. An idle poller reserving more would be exactly the
+              # waste that made tunarr unschedulable on 2026-07-30.
+              cpu: 10m
+              memory: 48Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: script
+              mountPath: /app
+      volumes:
+        - name: script
+          configMap:
+            name: truenas-exporter-script
