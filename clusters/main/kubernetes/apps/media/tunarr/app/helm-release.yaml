@@ -44,6 +44,29 @@ spec:
         podSpec:
           containers:
             main:
+              # GitOps durability for the double-`-ss` ffmpeg wrapper.
+              # The wrapper lives on the `local` PVC (/root/.local), so a VolSync
+              # restore silently removes it and EVERY transcode breaks - while Tunarr
+              # itself looks perfectly healthy. This rewrites it on every container
+              # start, so the shim can never go missing.
+              # Written with literal paths and NO shell variables: Flux runs strict
+              # envsubst over this manifest, and the script is base64 so its own `$1`
+              # / `$@` / `$preval` can never collide with substitution.
+              # Atomic (temp + mv) so a container killed mid-write cannot leave a
+              # truncated wrapper for ffmpeg to exec. Always exits 0 - a failing
+              # postStart hook would make Kubernetes kill the container.
+              lifecycle:
+                postStart:
+                  type: exec
+                  command:
+                    - /bin/sh
+                    - -c
+                    - |
+                      mkdir -p /root/.local/share/tunarr 2>/dev/null
+                      printf %s 'IyEvYmluL3NoCiMgVHVuYXJyIGRvdWJsZS1gLXNzYCB3b3JrYXJvdW5kIChzZWUgZG9jcy9ydW5ib29rcy90dW5hcnItZG91YmxlLXNzLWZmbXBlZy13cmFwcGVyLm1kKS4KIwojIFR1bmFycidzIHBpcGVsaW5lIGJ1aWxkZXIgZW1pdHMgdGhlIHNlZWsgVFdJQ0Ug4oCUIGAtc3MgPHY+YCBiZWZvcmUgYC1pYCAoZGVtdXhlcgojIHNlZWspIEFORCBhZ2FpbiBhZnRlciBgLWlgIChhY2N1cmF0ZS9vdXRwdXQgc2VlaykuIEZvciBmaWxlcyB3aXRoIGEgbm9uLXplcm8KIyBjb250YWluZXIgc3RhcnRfdGltZSB0aGlzIG1ha2VzIGZmbXBlZyBwcm9kdWNlIHplcm8gSExTIHNlZ21lbnRzIOKGkiAiTm8gbWFzdGVyCiMgcGxheWxpc3QiIOKGkiBIVFRQIDUwMCDihpIgdGhlIGNoYW5uZWwgaXMgZGVhZCBmb3IgdGhhdCB3aG9sZSBhaXJpbmcuIFJlcHJvZHVjZWQKIyBzdGFuZGFsb25lOyB0aGUgc29sZSBmYWlsaW5nIGVsZW1lbnQgaXMgdGhlIHJlZHVuZGFudCBwb3N0LWlucHV0IGAtc3NgIChkZWNvZGVyLQojIGFuZCByZWFkcmF0ZS1pbmRlcGVuZGVudCkuIFJlbW92aW5nIGl0IGZpeGVzIHRoZSB0dW5lIChwbGF5bGlzdCBpbiB+NXMpLgojCiMgVGhpcyB3cmFwcGVyIHN0cmlwcyB0aGUgRklSU1QgcG9zdC1pbnB1dCBgLXNzIDx2PmAgd2hvc2UgdmFsdWUgZXF1YWxzIHRoZQojIHByZS1pbnB1dCBgLXNzYCwgdGhlbiBFWEVDJ3MgdGhlIHJlYWwgZmZtcGVnIOKAlCBzbyBhbnkgc2lnbmFsIChpbmNsLiBTSUdLSUxMIGZyb20KIyBUdW5hcnIncyBzZXNzaW9uIHRlYXJkb3duKSBoaXRzIGZmbXBlZyBkaXJlY3RseSwgd2l0aCBubyBvcnBoYW5lZCByZWFsdGltZQojIHByb2Nlc3MuIE5vbi1kdXBsaWNhdGUgY29tbWFuZHMgcGFzcyB0aHJvdWdoIGJ5dGUtZm9yLWJ5dGUgdW5jaGFuZ2VkLgojCiMgRW5hYmxlOiBzZXQgVHVuYXJyIGZmbXBlZy1zZXR0aW5ncyBgZmZtcGVnRXhlY3V0YWJsZVBhdGhgIHRvIHRoaXMgZmlsZSdzIHBhdGguCiMgVmVyaWZpZWQ6IHN0cmlwcyBvbmx5IHRoZSBkdXAgLXNzIChhdWRpbyBtYXBzIHVudG91Y2hlZCDihpIgdHJhY2sgc2VsZWN0aW9uIGludGFjdCkuCgojIHBhc3MgMTogcHJldmFsID0gbGFzdCAtc3MgdmFsdWUgYmVmb3JlIHRoZSBmaXJzdCAtaQpwcmV2YWw9IiI7IGJlZm9yZT0xOyBwcmV2PSIiCmZvciBhIGluICIkQCI7IGRvCiAgWyAiJGJlZm9yZSIgPSAxIF0gJiYgWyAiJHByZXYiID0gIi1zcyIgXSAmJiBwcmV2YWw9IiRhIgogIFsgIiRhIiA9ICItaSIgXSAmJiBiZWZvcmU9MAogIHByZXY9IiRhIgpkb25lCgojIHBhc3MgMjogcm90YXRlIHBvc2l0aW9uYWwgcGFyYW1zLCBkcm9wcGluZyB0aGUgZmlyc3QgbWF0Y2hpbmcgcG9zdC1pICItc3MgcHJldmFsIgphZnRlcj0wOyBwZW5kPTA7IGRyb3BwZWQ9MApzZXQgLS0gIiRAIiAiLy8vV1JBUEVORC8vLyIKd2hpbGUgWyAiJDEiICE9ICIvLy9XUkFQRU5ELy8vIiBdOyBkbwogIGE9IiQxIjsgc2hpZnQKICBpZiBbICIkcGVuZCIgPSAxIF07IHRoZW4KICAgIHBlbmQ9MAogICAgaWYgWyAtbiAiJHByZXZhbCIgXSAmJiBbICIkZHJvcHBlZCIgPSAwIF0gJiYgWyAiJGEiID0gIiRwcmV2YWwiIF07IHRoZW4KICAgICAgZHJvcHBlZD0xOyBjb250aW51ZQogICAgZmkKICAgIHNldCAtLSAiJEAiICItc3MiICIkYSI7IGNvbnRpbnVlCiAgZmkKICBpZiBbICIkYWZ0ZXIiID0gMSBdICYmIFsgLW4gIiRwcmV2YWwiIF0gJiYgWyAiJGRyb3BwZWQiID0gMCBdICYmIFsgIiRhIiA9ICItc3MiIF07IHRoZW4KICAgIHBlbmQ9MTsgY29udGludWUKICBmaQogIFsgIiRhIiA9ICItaSIgXSAmJiBhZnRlcj0xCiAgc2V0IC0tICIkQCIgIiRhIgpkb25lCnNoaWZ0ICAjIGRyb3AgdGhlIC8vL1dSQVBFTkQvLy8gc2VudGluZWwgbm93IGF0IHRoZSBmcm9udAoKZXhlYyAvdXNyL2Jpbi9mZm1wZWcgIiRAIgo=' | base64 -d > /root/.local/share/tunarr/.ffmpeg-wrap.new 2>/dev/null
+                      chmod 0755 /root/.local/share/tunarr/.ffmpeg-wrap.new 2>/dev/null
+                      mv -f /root/.local/share/tunarr/.ffmpeg-wrap.new /root/.local/share/tunarr/ffmpeg-wrap 2>/dev/null
+                      exit 0
               resources:
                 requests:
                   memory: 2Gi
