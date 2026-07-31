@@ -158,6 +158,65 @@ mutate session state, and an out-of-range index must be rejected rather than cla
 
 **Reproduction: three curl calls, no media player required.**
 
+### Controlled A/B, single channel, single variable = whether subtitles are consumed
+
+Identical protocol both legs; the ONLY difference is whether the client also fetches
+subtitle segments.
+
+**CONTROL (video fetches only), 510s:**
+```
+EXT-X-MEDIA-SEQUENCE 0 -> 124, strictly monotonic
+backward steps: 0        404s: 0        no death
+```
+
+**ON LEG (video AND subtitle fetches), same protocol:**
+```
+t=126  vSEQ=0    sSEQ=40    all 200          subtitles pulling ahead
+t=162  vSEQ=44   sSEQ=40    all 200          anchor YANKED to 44 by a subtitle fetch
+t=180  vSEQ=34   sSEQ=48    all 200          *** BACKWARD ***
+t=198  vSEQ=24   sSEQ=61    vfirst 404       *** BACKWARD ***   first casualty
+t=216  vSEQ=14   sSEQ=61    vfirst+vlast 404 *** BACKWARD ***
+t=234  vSEQ=4    sSEQ=61    all video 404    *** BACKWARD ***
+t=252  vSEQ=0    sSEQ=73    all video 404    *** BACKWARD ***
+...
+t=486  vSEQ=0    sSEQ=115   all video 404, ALL SUBTITLE FETCHES STILL 200
+```
+```
+backward steps: 5        404s: sustained from t=216 to end (4.5 min)
+```
+
+Three points a maintainer can check independently:
+
+1. **The 404s appear exactly ONE SAMPLE AFTER the anchor overshoots** (t=162 overshoot ->
+   t=198 first 404). Cause and effect, in order.
+2. **The window DESCENDS monotonically (44->34->24->14->4->0) while subtitles CLIMB**
+   (40->115). A window that merely lagged would sit still. A descending staircase against
+   a climbing counterpart is two consumers writing one variable and pulling opposite
+   ways, with the janitor deleting against whichever wrote last.
+3. **Video dies while subtitles stay perfectly healthy for 4.5 minutes** in the SAME
+   session and SAME directory - which is why this can be mistaken for a stale-directory
+   or session-collision problem. It is neither.
+
+Independently reproduced with a real media player (libmpv) on a different channel:
+`hls: Media sequence changed unexpectedly: 53 -> 25`, followed by a stall and
+auto-retune - i.e. a 28-segment backward jump under authentic sequential playback, not
+an artifact of a polling probe.
+
+### Scope note: throttling the subtitle input MITIGATES but does NOT fix this
+
+The subtitle rendition runs ahead because its input is not readrate-throttled
+(`-readrate` binds to input 0; the sidecar is a second input). Adding `-readrate` to the
+second input collapses the divergence that lets a subtitle fetch push the anchor past
+live video, and is worth doing.
+
+**But the shared anchor remains broken.** Any second consumer of the same session - a
+client fetching out of order, a second player, a validation probe, a bandwidth-estimator
+prefetch - reproduces this with no pacing divergence required at all. The pacing is what
+makes it fire reliably today; the shared anchor is what makes it possible. Fix the
+anchor.
+
+
+
 ### Additional observable: served MEDIA-SEQUENCE walks BACKWARD
 
 Across consecutive fetches the served `EXT-X-MEDIA-SEQUENCE` was observed decreasing
