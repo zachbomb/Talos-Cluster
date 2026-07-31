@@ -29,7 +29,14 @@ segments that were just deleted.** The harder a client works, the faster it brea
 itself. Output flags `-hls_list_size 0` + `append_list` + `omit_endlist` mean the
 on-disk playlist never forgets an entry, so nothing else corrects this.
 
-### Measurement (Tunarr v1.3.10, single node, 4s segments)
+### Measurement A - NO consumer (playlist polled, no segments fetched)
+
+**Caption corrected 2026-07-30.** This exhibit was originally presented as showing the
+served window "frozen". That reading was wrong and is retained, corrected, because the
+correction is the point: the window is NOT statically frozen - it is **pinned to the
+anchor**, and with no consumer fetching segments the anchor never leaves 0. An earlier
+probe that only polled playlists therefore produced a misleading picture of a permanent
+freeze. With a consumer the window advances normally (see Measurement B).
 
 Sampled from session start. `disk_first` = oldest segment surviving on disk;
 `advertised` = first entry in the SERVED media playlist; `->` = its HTTP status.
@@ -58,6 +65,51 @@ Two controls make the mechanism unambiguous:
 The defect is thus **activity-gated**: it cannot be reproduced by polling the playlist
 alone, which is likely why it has evaded notice. It requires a client that actually
 consumes segments — i.e. a real viewer.
+
+### The anchor is client-settable, and `segmentsToKeepBefore` is measurable from outside
+
+A **single, never-repeated** GET of one segment moves the served window. Controlled run
+on one session, no other consumer:
+
+```
+no segment fetches at all      -> SEQ=0,  window data000000..019, disk grew 16->31
+one-shot GET data000000.ts     -> SEQ=0,  window UNCHANGED for 60s+, disk grew to 46
+one-shot GET data000019.ts     -> SEQ=9,  window data000009..028
+```
+
+`19 - 9 = 10` recovers `segmentsToKeepBefore` exactly, from the outside.
+
+Two consequences:
+
+1. **Any consumer that probes the HEAD pins the served window to the head.** The window
+   then sits arbitrarily far behind the live edge (measured: window at data000000..019
+   while the encoder was writing data000046, i.e. ~100s stale) and a player joining that
+   window with `live_start_index=-3` is handed content ~100s old while believing it is
+   live. A readiness/validation probe that fetches `segments.first()` does exactly this.
+2. **It is not a minimum across concurrent consumers.** A later high fetch moves the
+   anchor back up despite an earlier low fetch. The anchor follows the most recent
+   request, so a probe that RE-FIRES (retry, re-tune, readiness re-check) drops the
+   anchor back down after a player had advanced it - producing a backward
+   `EXT-X-MEDIA-SEQUENCE` on demand.
+
+This makes the defect trivially reproducible without a media player: fetch a low
+segment, then observe the served window.
+
+
+### Measurement B - WITH a consumer fetching segments in order
+
+```
+t=12..72s  SEQ=0  consuming data000000..011
+t=84s      SEQ=1  consuming data000012,013
+t=96s      SEQ=3
+t=108s     SEQ=5
+t=120s     SEQ=7   (disk 42->39: segments being deleted below the anchor)
+```
+
+The window tracks the consumer, lagging by ~10 - i.e. `segmentsToKeepBefore`. Sessions
+therefore do NOT stall after 20 segments; they advance with the player. The failure is
+not a frozen window, it is the 10-segment offset between what the window advertises and
+what the janitor is willing to keep.
 
 ### Additional observable: served MEDIA-SEQUENCE walks BACKWARD
 
