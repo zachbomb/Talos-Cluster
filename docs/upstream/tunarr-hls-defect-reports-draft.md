@@ -111,6 +111,53 @@ therefore do NOT stall after 20 segments; they advance with the player. The fail
 not a frozen window, it is the 10-segment offset between what the window advertises and
 what the janitor is willing to keep.
 
+### ***MOST SEVERE***: all renditions of a session share ONE `minSegmentRequested`, and even a FAILING request moves it
+
+A request for a **subtitle** segment repositions the **video** playlist's window. The two
+renditions of a single session are not tracked independently.
+
+Controlled run, single session, no media player. `vtt` files on disk: **0** (the program
+had no subtitles at all, so every subtitle request below returned 500):
+
+```
+A  GET data000019.ts   -> 200   video EXT-X-MEDIA-SEQUENCE = 9
+B  GET sub000000.vtt   -> 500   video EXT-X-MEDIA-SEQUENCE = 0     <- reset to zero
+C  (re-raise to 9)
+   GET sub999999.vtt   -> 500   video EXT-X-MEDIA-SEQUENCE = 31    <- clamped to live edge - 10
+D  GET data0000NN.ts   -> 200   video EXT-X-MEDIA-SEQUENCE = 32
+```
+
+Three distinct problems:
+
+1. **Shared anchor across renditions.** A subtitle fetch moves the video window.
+2. **The index is parsed from the request PATH**, not from what was actually served.
+   `sub999999` clamped to the live edge rather than being rejected.
+3. **A request returning HTTP 500 still moves the anchor.** No `.vtt` existed; every
+   subtitle request failed; every one repositioned the video window regardless.
+
+**Why this destroys live sessions.** A subtitle rendition legitimately runs ahead of
+video (its input is not readrate-throttled, so it bursts until the mux queue blocks —
+measured ~3.5x realtime). With video at segment 15 and subtitles at 50, a subtitle fetch
+sets the shared anchor to 40 — **ahead of the video playhead**. `deleteOldSegments` then
+removes everything below 40, *including segments 15-39 the video player has not reached
+yet*. The player's next fetch 404s and the session dies.
+
+It also produces a continuous small oscillation of the served sequence (+-3-7 observed)
+with no other trigger: subtitle fetches drag the anchor up, video fetches pull it back
+down, forever.
+
+**This defect requires two renditions to express**, which is why it can appear as a
+regression introduced by *fixing* subtitles: before a client could open the subtitle
+rendition, nothing else was competing for the anchor. The subtitle support did not break
+video playback - it revealed this.
+
+**Suggested fix:** track `minSegmentRequested` per rendition (or, better, do not derive
+the serving window from client request history at all - serve a live-edge window, per
+Report 1). At minimum, a request that does not successfully serve a segment must not
+mutate session state, and an out-of-range index must be rejected rather than clamped.
+
+**Reproduction: three curl calls, no media player required.**
+
 ### Additional observable: served MEDIA-SEQUENCE walks BACKWARD
 
 Across consecutive fetches the served `EXT-X-MEDIA-SEQUENCE` was observed decreasing
