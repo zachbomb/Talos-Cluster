@@ -24,8 +24,25 @@ for a in "$@"; do
   prev="$a"
 done
 
+# pass 1b: which -i ordinal is the SUBTITLE input?
+# Do NOT assume "the second -i". Tunarr's pipeline commonly has THREE inputs:
+#   0 = the video file
+#   1 = the channel watermark image (with -loop 1)
+#   2 = the .srt subtitle sidecar
+# An earlier version of this wrapper inserted -readrate before the 2nd -i and so
+# throttled the WATERMARK, leaving the subtitle unthrottled - the mitigation did
+# nothing and rate-limited a looped overlay source instead. Match on the filename.
+srt_ord=0; ord=0; expect=0
+for a in "$@"; do
+  if [ "$expect" = 1 ]; then
+    expect=0
+    case "$a" in *.srt|*.ass|*.ssa|*.vtt) srt_ord=$ord ;; esac
+  fi
+  [ "$a" = "-i" ] && { ord=$((ord + 1)); expect=1; }
+done
+
 # pass 2: rotate positional params, dropping the first matching post-i "-ss preval"
-after=0; pend=0; dropped=0; rr_added=0
+after=0; pend=0; dropped=0; rr_added=0; iord=0
 set -- "$@" "///WRAPEND///"
 while [ "$1" != "///WRAPEND///" ]; do
   a="$1"; shift
@@ -57,7 +74,9 @@ while [ "$1" != "///WRAPEND///" ]; do
   # Remove this once upstream tracks the anchor per rendition.
   if [ "$a" = "-i" ]; then
     after=$((after + 1))
-    [ "$after" = 2 ] && [ "$rr_added" = 0 ] && { set -- "$@" "-readrate" "1"; rr_added=1; }
+    iord=$((iord + 1))
+    [ "$srt_ord" != 0 ] && [ "$iord" = "$srt_ord" ] && [ "$rr_added" = 0 ] && \
+      { set -- "$@" "-readrate" "1"; rr_added=1; }
   fi
   set -- "$@" "$a"
 done
