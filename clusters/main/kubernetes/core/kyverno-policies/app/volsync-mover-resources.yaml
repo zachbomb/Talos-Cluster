@@ -45,7 +45,19 @@ spec:
       mutate:
         patchStrategicMerge:
           spec:
+            # BOTH fields are required, and they must agree. The built-in Priority
+            # admission plugin runs BEFORE external webhooks, so it stamps
+            # `priority: 0` on the incoming pod; Kyverno then sets the class name,
+            # and the validating phase rejects the mismatch with:
+            #   "the integer value of priority (0) must not be provided in pod spec;
+            #    priority admission controller computed -100 from the given
+            #    PriorityClass name"
+            # Setting priorityClassName ALONE therefore makes every mover pod
+            # unadmittable - i.e. all backups silently stop. Caught by an admission
+            # probe before the 00:00 backup wave; keep these two values in lockstep
+            # with the PriorityClass value in priorityclass-volsync-mover.yaml.
             priorityClassName: volsync-mover-low
+            priority: -100
     - name: cap-volsync-mover-resources
       match:
         any:
