@@ -121,7 +121,29 @@ spec:
                     for d in /.transcode/stream_*/; do
                       [ -d "$$d" ] || continue
                       if [ -n "$$(find "$$d" -maxdepth 1 -name '*.ts' -mmin -2 2>/dev/null | head -1)" ]; then
-                        find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +2 -delete 2>/dev/null
+                        # 10 MINUTES, not 2. Upstream `trimPlaylist` pins the SERVED
+                        # video window to minSegmentRequested; when nothing advances
+                        # that anchor it stays at 0 and the served playlist is frozen
+                        # at data000000..019 forever - MEASURED: on-disk playlist grew
+                        # 21->42 entries while the served one never left 20 entries
+                        # starting at data000000. Meanwhile subs.m3u8 is served raw and
+                        # advances normally, which is why a live subtitle playlist sits
+                        # beside a corpse video playlist in the SAME directory.
+                        #
+                        # A frozen window is survivable on its own (it replays). This
+                        # purge is survivable on its own (a live window outruns it).
+                        # Together they kill the session: the frozen 20-entry window is
+                        # 80s of content created at t=0..80, and a 2-minute floor
+                        # deletes its head on the first tick after t=120 - so every
+                        # entry 404s and playback dies. Client measured deaths at 152s,
+                        # 187s, 188s; predicted window t=120..240s. That is the match.
+                        #
+                        # 10 min moves death to ~11 min and, more usefully, SEPARATES
+                        # the two failures: with segments retained, any remaining stall
+                        # is attributable to the frozen window alone. Cost ~1.5GB per
+                        # stream (8.8GB/hr); the 5Gi PVC holds 2-3 concurrent.
+                        # Retire this once upstream anchors to the live edge.
+                        find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +10 -delete 2>/dev/null
                       else
                         find "$$d" -maxdepth 1 -type f -mmin +2 -delete 2>/dev/null
                       fi
