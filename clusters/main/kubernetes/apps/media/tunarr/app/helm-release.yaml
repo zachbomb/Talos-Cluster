@@ -475,6 +475,27 @@ spec:
     addons:
       codeserver:
         enabled: true
+        # Right-sized 2026-07-30 after this addon made tunarr UNSCHEDULABLE.
+        # It was inheriting a 500m/2Gi default - 10-20x every other codeserver in
+        # the cluster (homepage 10m, notifiarr/recyclarr/tautulli 25m, sabnzbd 50m)
+        # and 2/3 of tunarr's entire 755m request, for a browser IDE that idles.
+        # With the node at 97% CPU requests, that surplus alone blocked scheduling:
+        # the old pod released its slot, the new one could never claim one, and
+        # Tunarr was hard-down until this was cut. Keep it modest - it is an
+        # occasional-use editor, and CPU requests are a GUARANTEED reservation
+        # held whether or not the process is doing anything.
+        # NOTE: must be under `container:` - the chart does
+        # `set podSpec.containers "codeserver" $codeSrv.container`
+        # (common/templates/addons/_codeserver.tpl:21), so `resources:` one level
+        # up is silently IGNORED. Verified by helm-render, not assumed.
+        container:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
         service:
           enabled: false # Don't create a separate service
         ingress:
