@@ -17,8 +17,18 @@
 # "right-size" it to reclaim headroom; it is doing real work while idle. This adds
 # an orthogonal axis instead: movers keep their reservation, but yield it to apps.
 #
-# preemptionPolicy: Never — movers may BE preempted, but must never preempt anything
-# themselves. Without this, a queued mover could evict another mover and thrash.
+# preemptionPolicy is deliberately LEFT AT THE DEFAULT (PreemptLowerPriority).
+# `Never` was the first instinct — movers should not evict anything — but it is both
+# unnecessary and actively harmful here:
+#   * Unnecessary: at value -100 nothing in the cluster sits lower, and equal-priority
+#     pods are never preemption targets, so a mover has nothing it *could* preempt.
+#   * Harmful: the built-in Priority admission plugin pre-stamps the DEFAULT
+#     preemptionPolicy on the incoming pod before webhooks run, so a class implying
+#     `Never` is rejected as a mismatch ("the string value of PreemptionPolicy
+#     (PreemptLowerPriority) must not be provided in pod spec"). Every mover pod would
+#     be unadmittable. Same failure class as the spec.priority mismatch below.
+# Rule of thumb: any field the Priority plugin derives from the class must either match
+# the pre-stamped default, or be mutated explicitly to agree.
 #
 # Value -100: below the default 0 that all app workloads use, and far below
 # longhorn-critical (1e9) / system-*-critical (2e9+), which stay untouchable.
@@ -38,7 +48,6 @@ metadata:
   name: volsync-mover-low
 value: -100
 globalDefault: false
-preemptionPolicy: Never
 description: >-
   VolSync restic backup movers. Preemptible by any default-priority (0) workload so
-  backups can never block a user-facing pod from scheduling. Never preempts others.
+  backups can never block a user-facing pod from scheduling.
