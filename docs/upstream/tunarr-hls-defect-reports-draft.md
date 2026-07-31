@@ -1,6 +1,6 @@
 # DRAFT — Upstream Tunarr defect reports (do not post without review)
 
-Evidence gathered 2026-07-29 on Tunarr v1.3.10 (ghcr digest a195c9d8), single-node
+Evidence gathered 2026-07-29/30 on Tunarr v1.3.10 (ghcr digest a195c9d8), single-node
 K8s, ~26 channels, PMP/mpv client (lavf 61.7.103) + in-pod ffprobe/curl repro.
 Source refs are against the v1.3.10 tag. Prepared by the cluster session; see
 `reference_tunarr_livetv_audio_subtitle_constraints` (memory) and SQ-185 (board)
@@ -8,65 +8,86 @@ for the full investigation trail.
 
 ---
 
-## Report 1 — Served HLS media playlist window is anchored to `minSegmentRequested` and goes stale for joining clients
+## Report 1+2 (MERGED) — `trimPlaylist` and `deleteOldSegments` share one anchor with a 10-segment offset, so client activity deterministically makes the served playlist advertise deleted segments
 
-**Where:** `server/src/stream/hls/HlsSession.ts` → `trimPlaylist()`:
+**Severity: this is the limiting factor on live-TV session lifetime.** It was previously
+filed as two separate defects; measurement shows they are one defect with two faces, and
+splitting them invites fixing each in a way that leaves the other in place.
 
-```ts
-filterOpts ??= {
-  type: 'before_segment_number',
-  segmentNumber: this.minSegmentRequested,
-  segmentsToKeepBefore: 10,
-};
-// mutator called with { maxSegmentsToKeep: 20, ... }
+**Where:** `server/src/stream/hls/HlsSession.ts`
+
+- `trimPlaylist()` serves a window anchored at `minSegmentRequested`, keeping
+  `segmentsToKeepBefore: 10` — i.e. it deliberately advertises up to **10 segments
+  BEHIND the anchor**.
+- `deleteOldSegments()` (30s cadence) deletes segments **below the trim sequence** —
+  i.e. below that same anchor.
+
+The two use the same anchor but disagree by 10 segments about what must exist. The
+serving window looks back further than the janitor is willing to keep, so **any client
+that advances the anchor by fetching segments guarantees the playlist will advertise
+segments that were just deleted.** The harder a client works, the faster it breaks
+itself. Output flags `-hls_list_size 0` + `append_list` + `omit_endlist` mean the
+on-disk playlist never forgets an entry, so nothing else corrects this.
+
+### Measurement (Tunarr v1.3.10, single node, 4s segments)
+
+Sampled from session start. `disk_first` = oldest segment surviving on disk;
+`advertised` = first entry in the SERVED media playlist; `->` = its HTTP status.
+
+```
+age=0    disk_first=data000008  oldest_age=62s  SEQ=11  advertised=data000011 -> 200
+age=21   disk_first=data000008  oldest_age=82s  SEQ=1   advertised=data000001 -> 404   <-- FAILURE
+age=41   disk_first=data000000  oldest_age=7s   SEQ=0   advertised=data000000 -> 200   (session restarted)
+age=61   disk_first=data000000  oldest_age=27s  SEQ=0   advertised=data000000 -> 200
+age=82   disk_first=data000000  oldest_age=48s  SEQ=0   advertised=data000000 -> 200
+age=102  disk_first=data000000  oldest_age=68s  SEQ=0   advertised=data000000 -> 200
+age=122  disk_first=data000000  oldest_age=88s  SEQ=0   advertised=data000000 -> 200
+age=143  disk_first=data000000  oldest_age=108s SEQ=0   advertised=data000000 -> 200
 ```
 
-`GET /stream/channels/:id/{sessionType}/stream.m3u8` (streamApi.ts ~313) serves
-the on-disk playlist trimmed to a window anchored at **the lowest segment number
-any client has requested**. The anchor only advances on *segment* fetches.
+Two controls make the mechanism unambiguous:
 
-**Failure mode:** a joining client's first request is the playlist, not a
-segment. If no client has been requesting segments (session started by a probe
-/ readiness gate; or the previous player disconnected), `minSegmentRequested`
-stays at 0 and the served window is permanently `data000000..data000019` — while
-ffmpeg's real playlist and segment files advance far past it. Measured: two GETs
-2 minutes apart returned byte-identical head-anchored 20-entry bodies while the
-on-disk playlist grew 61 entries; at session age 3.5 min the served window did
-not even contain the live edge, and 17 of its 20 entries referenced files that
-no longer existed (in our case removed by an external janitor; see Report 2 for
-why any file removal breaks this). lavf (mpv/ffprobe) probes the first listed
-segment at open → 404 → the whole open fails → client falls back or dies.
+1. **With a real client fetching segments** (rows at age=0/21): the anchor had advanced
+   to 11, `data000000..007` were already deleted, and the served playlist still
+   advertised `data000001` — **404**. Note the deletion happened when the session was
+   only ~62-98s old, so it was *Tunarr's own janitor*, not any external cleanup.
+2. **With NO client fetching segments** (rows from age=41 on, playlist-only polling):
+   `minSegmentRequested` never advanced, the janitor therefore never deleted, and
+   `data000000` survived monotonically to **108s and beyond, always 200**.
 
-**Net effect:** an HLS session is only reliably joinable while its head segments
-still exist. Under any segment-file cleanup, that is the first ~1-2 minutes of
-the session. Existing connected clients are unaffected (they never re-probe the
-head), which makes the defect look like random client-side tune flakiness.
+The defect is thus **activity-gated**: it cannot be reproduced by polling the playlist
+alone, which is likely why it has evaded notice. It requires a client that actually
+consumes segments — i.e. a real viewer.
 
-**Suggested fixes (either suffices):**
-- Anchor the joiner window to the **live edge** (e.g. serve the last N segments,
-  HLS-live-standard), not to `minSegmentRequested`; or
-- Advance/refresh the anchor on playlist fetches too, or floor it at
-  `highestDeletedSegment + 1` so the served window never references deleted files.
+### Additional observable: served MEDIA-SEQUENCE walks BACKWARD
 
----
+Across consecutive fetches the served `EXT-X-MEDIA-SEQUENCE` was observed decreasing
+(`11 -> 1`, and independently `35 -> 18 -> 8 -> 0` and `27 -> 0` from a second
+observer). RFC 8216 requires the media sequence number of a live playlist to be
+non-decreasing; a decrease invalidates every client-side assumption about continuity
+and causes conforming players to abort.
 
-## Report 2 — `append_list` + `hls_list_size 0` + segment deletion = playlist advertises unfetchable segments (HLS semantics violation)
+### Suggested fix (either alone is sufficient; the first is preferred)
 
-**Where:** HLS output args (ffmpeg invocation): `-hls_list_size 0` and
-`-hls_flags ...+append_list...+omit_endlist`, combined with
-`HlsSession.deleteOldSegments()` (30s cadence, deletes below the trim sequence).
+- Use ffmpeg's own `-hls_flags delete_segments` with a bounded `-hls_list_size`, so the
+  playlist and the on-disk segments stay consistent **by construction** and neither
+  `trimPlaylist` nor `deleteOldSegments` needs to guess.
+- Otherwise, make the two agree: `segmentsToKeepBefore` must never exceed what
+  `deleteOldSegments` retains below the anchor, and the served window should be floored
+  at `highestDeletedSegment + 1` so it can never reference a deleted file.
 
-The on-disk playlist retains every entry ever written while segment files are
-deleted from under it. Any consumer that reads the full playlist (or a stale
-window per Report 1) will attempt segments that 404. A live playlist must not
-advertise segments that are no longer retrievable (RFC 8216 §6.2.2 — the server
-must remove segment URIs from the playlist in the order they were added when it
-removes the media).
+Anchoring the joiner window to the **live edge** (standard HLS-live behaviour) rather
+than to `minSegmentRequested` would additionally fix the joinability problem, where a
+client joining an established session receives a head-anchored window whose entries are
+long gone.
 
-**Suggested fix:** use ffmpeg's own `-hls_flags delete_segments` with a bounded
-`hls_list_size` so the playlist and the disk stay in sync by construction; the
-serving window (Report 1) then cannot reference deleted files, and external
-janitors become unnecessary.
+### Related observation (may be the same root, filed separately)
+
+Sessions were seen restarting spontaneously ~40s in (segment numbering reset to
+`data000000`, count dropping to 6) with no client action and no server-side teardown
+request. If a failing segment fetch triggers a session rebuild, that would convert this
+defect into an unrecoverable loop and would explain reports of live channels dying at
+roughly the 3-minute mark.
 
 ---
 
@@ -88,9 +109,29 @@ session's fate.
 
 ## Report 4 — Subtitle rendition playlist (`subs.m3u8`) is served frozen: pre-populated then never updated, with no ENDLIST
 
-**Severity: this one silently breaks HLS playback for any standards-compliant player
-that deep-probes at open** (ffmpeg/libavformat, hence mpv, and anything embedding
-them). It is the highest-impact defect in this set.
+**SEVERITY DOWNGRADED 2026-07-30 — the original claim in this section was WRONG and is
+retained only so the correction is legible.**
+
+This was originally filed as "the highest-impact defect in this set", on the theory that
+a player attaches to `subs.m3u8`, drains its cues, and then blocks forever waiting for
+entries that never arrive — starving the video open.
+
+That theory is **refuted**. Live subtitles now render correctly on screen (verified: a
+predicted cue captured verbatim against matching picture) with this playlist behaviour
+UNCHANGED. What actually broke playback was **deletion**, not pacing — our own janitor
+was removing `.vtt` segments the player still needed. Once retention was fixed,
+subtitles worked immediately and no `-readrate` or pacing change was required.
+
+The observed non-advance is also explained benignly: the subtitle input is not
+readrate-throttled (`-readrate` binds to input 0 only, and the `.srt` sidecar is a
+second input), so it bursts ahead, fills ffmpeg's mux queue, and then **blocks** —
+normal backpressure, not a runaway. Measured: the subtitle edge sat at cue 08:16.797 at
+44s of session age and was still at exactly 08:16.797 at 160s. Because it blocks rather
+than running to completion, the playlist never actually exhausts.
+
+What remains genuinely worth reporting is only the **missing `#EXT-X-ENDLIST`**
+question below: a rendition that is complete should say so. That is a conformance nit,
+not a playback-breaking defect.
 
 **Observed (Tunarr v1.3.10, channel with `subtitlesEnabled` + webvtt sidecar):** on a
 freshly-started session, `GET /stream/channels/{id}/hls/subs.m3u8` returns a playlist
@@ -144,17 +185,31 @@ fixes it (verified standalone). Currently worked around here with an
 
 ---
 
-## Local mitigation decision (cluster-side, ours — not part of the upstream report)
+## Local mitigation notes (cluster-side, ours — NOT part of the upstream report)
 
-Our cache-purge sidecar deletes `stream_*/​*.ts` files older than 2 minutes
-(guards against the connected-but-idle-client disk leak: a held tuner keeps the
-session alive with `minSegmentRequested` never advancing → Tunarr's own janitor
-never deletes → ~8.8GB/hr growth). That mtime-based deletion is exactly what
-breaks Report 1's invariant for joiners.
+### CORRECTION (2026-07-30): our janitor is NOT the cause, and the earlier recommendation here was wrong
 
-**Recommendation:** raise the `.ts` threshold from 2min → 10min for `stream_*`
-dirs only (≈1.5GB per active stream; 5Gi PVC safely holds 2-3 concurrent):
-- joinability window ×5 (covers all human channel-surf/re-tune patterns),
-- disk still hard-bounded for the held-tuner leak,
-- pairs with the client gate fix (probe first *listed* segment → reap+re-kick),
-- retired entirely once upstream ships `delete_segments` (Report 2).
+An earlier revision of this document blamed our own `cache-purge` sidecar (which
+deletes `stream_*/*.ts` older than 2 minutes) for breaking the joiner invariant, and
+recommended raising that threshold 2min -> 10min.
+
+**Measurement refuted that.** In the failing session the oldest surviving segment was
+only 62s old when `data000000..007` had already been deleted — our purge cannot touch
+anything under 120s. The deletions were Tunarr's own `deleteOldSegments`. Raising our
+threshold would change nothing. The recommendation is withdrawn.
+
+Our sidecar still exists for a real reason — a client that holds a session open without
+advancing `minSegmentRequested` causes Tunarr's request-driven janitor to never run,
+and `/.transcode` then grows ~8.8GB/hr per stream — but it is not implicated in this
+defect.
+
+### Separate local bug we introduced and fixed (recorded so it is not confused with the above)
+
+Scoping our purge to `*.ts` (to stop it deleting `subs.m3u8` and `.vtt`, which was
+breaking live subtitles) left `stream.m3u8` behind permanently. Stream directories are
+keyed by CHANNEL UUID and therefore reused across sessions, so an orphaned playlist
+survived advertising `EXT-X-MEDIA-SEQUENCE:0` with zero entries, exactly where the next
+session for that channel would land. That produced the same *symptom* as the upstream
+defect (backward media sequence) by a different route. Fixed by keying the purge on
+session liveness: a directory still producing segments keeps its playlists and subtitle
+segments; a directory that has stopped producing is cleared entirely.
