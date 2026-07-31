@@ -96,7 +96,18 @@ spec:
                     # HLS transcode segments are the runaway growth vector (~8.8GB/hr per active
                     # stream, and streams linger after client disconnect). Purge tightly so
                     # /.transcode stays well under its 5Gi PVC even during heavy channel-surfing.
-                    find /.transcode -type f -mmin +2 -delete 2>/dev/null
+                    # SCOPED TO *.ts ONLY (was a blanket `-type f`, which also ate
+                    # subs.m3u8 and every .vtt and broke live subtitles mid-session).
+                    # Two bugs compose here: Tunarr's subtitle output is NOT
+                    # readrate-throttled (only input 0 is), so subtitle segments run
+                    # ~3.5x ahead of video - measured client-side. That means the .vtt
+                    # a player still needs is ALREADY older than 2 minutes, so a
+                    # blanket age purge deletes it before the video ever reaches it.
+                    # Symptom: 500 ENOENT on subs.m3u8, subtitles silently disappear
+                    # partway through a program, looks exactly like a client bug.
+                    # Subtitle segments are kilobytes - the 8.8GB/hr disk pressure is
+                    # entirely .ts, so there is no reason to purge them at all.
+                    find /.transcode -type f -name '*.ts' -mmin +2 -delete 2>/dev/null
                     # mtime guard is CRITICAL: Tunarr creates stream_<ch>/ then launches
                     # ffmpeg, leaving the dir empty for several seconds (HEVC-QSV encoder
                     # init is slow). An unguarded `-type d -empty -delete` deletes that
