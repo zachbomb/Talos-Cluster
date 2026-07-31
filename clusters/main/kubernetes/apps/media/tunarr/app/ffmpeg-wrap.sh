@@ -25,7 +25,7 @@ for a in "$@"; do
 done
 
 # pass 2: rotate positional params, dropping the first matching post-i "-ss preval"
-after=0; pend=0; dropped=0
+after=0; pend=0; dropped=0; rr_added=0
 set -- "$@" "///WRAPEND///"
 while [ "$1" != "///WRAPEND///" ]; do
   a="$1"; shift
@@ -39,7 +39,26 @@ while [ "$1" != "///WRAPEND///" ]; do
   if [ "$after" = 1 ] && [ -n "$preval" ] && [ "$dropped" = 0 ] && [ "$a" = "-ss" ]; then
     pend=1; continue
   fi
-  [ "$a" = "-i" ] && after=1
+  # Throttle the SECOND input (the subtitle sidecar). `-readrate` is an INPUT option,
+  # so it must be emitted immediately BEFORE the -i it applies to. Tunarr emits
+  # `-readrate 1 -readrate_initial_burst 60` before the FIRST -i only, so the .srt is
+  # read as fast as the disk allows: it bursts until ffmpeg's mux queue blocks, running
+  # ~2.4-3.5x ahead of video (measured).
+  #
+  # That divergence is what makes the upstream shared-anchor defect fatal. Tunarr keeps
+  # ONE minSegmentRequested for all renditions of a session, so a subtitle fetch far
+  # ahead of the playhead drags the anchor past live video; deleteOldSegments then
+  # removes segments the video player has not reached, and every video fetch 404s.
+  # Measured A/B on one channel: video-only 510s clean vs video+subtitles 5 backward
+  # steps and sustained 404 from t=216s.
+  #
+  # This MITIGATES only. The shared anchor stays broken upstream - any second consumer,
+  # or a client fetching out of order, reproduces it with no pacing divergence at all.
+  # Remove this once upstream tracks the anchor per rendition.
+  if [ "$a" = "-i" ]; then
+    after=$((after + 1))
+    [ "$after" = 2 ] && [ "$rr_added" = 0 ] && { set -- "$@" "-readrate" "1"; rr_added=1; }
+  fi
   set -- "$@" "$a"
 done
 shift  # drop the ///WRAPEND/// sentinel now at the front
