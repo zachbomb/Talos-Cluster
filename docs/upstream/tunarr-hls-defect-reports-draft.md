@@ -202,6 +202,77 @@ Independently reproduced with a real media player (libmpv) on a different channe
 auto-retune - i.e. a 28-segment backward jump under authentic sequential playback, not
 an artifact of a polling probe.
 
+### TWO-MECHANISM MODEL (measured): pacing governs the DRIFT, the origin offset governs the FLOOR
+
+Two independent quantities produce the backward drags. Neither explains the data alone;
+together they predict the magnitude for any program from a number readable off the
+source `.srt` **without tuning anything**.
+
+**Mechanism 1 - drift.** The subtitle input is not readrate-throttled (`-readrate` binds
+to input 0; the sidecar is a later input), so it bursts until the mux queue blocks and
+runs ~2.4-3.5x ahead. Throttling it collapses this component.
+
+**Mechanism 2 - origin offset.** The first subtitle segment spans from t=0 to the FIRST
+CUE, because a cue-driven segmenter has nothing to split on until dialogue starts.
+Measured: a first segment of 30.488s against a first cue at 27.53s in the source .srt -
+agreeing within one segment. Video is a uniform 4.000s. So the two index spaces are
+offset by `time_to_first_cue / 4` segments **before either stream advances**, and no
+amount of pacing can close a gap that exists at the origin.
+
+#### Measured, one variable (time-to-first-cue), same protocol, throttle verified active
+
+| channel | first cue | predicted offset | observed max drag |
+|---|---|---|---|
+| unthrottled control | - | - | **28 and 99 segments** |
+| ch3  | 2.2s  | ~0.6 segments | **0** (26 samples, 520s, zero 404s) |
+| ch16 | 19.3s | ~4.8 segments | (not run) |
+| ch18 | 27.5s | ~7.6 segments | **6, 6, 8** (plus one 31 outlier, see below) |
+
+A 14x reduction in predicted offset produced a collapse from 6-8 segments to zero.
+
+The ch3 trace is worth reproducing because the SHAPE is the evidence, not just the
+count - video and subtitle sequences advance in near-lockstep, crossing by a segment or
+two and never diverging:
+```
+vSEQ/sSEQ:  43/49  48/49  52/58  57/58  61/70  65/70  71/70  76/80  82/85  88/90
+```
+Contrast the unthrottled run on another channel, where the subtitle sequence climbed to
+115 while the video window collapsed to 0.
+
+#### The offset is NOT an edge case - it is present in most content
+
+Sampled 400 cached `.srt` files for time-to-first-cue:
+```
+min 0.0s   p25 3.1s   median 4.5s   p75 9.4s   max 125.5s   mean 9.4s
+  <5s   : 215  (54%)      15-30s:  37
+  5-15s : 128             30-60s:  12        >60s: 8
+```
+At a median of 4.5s the offset is ~1 segment for most programs - small enough never to
+be noticed, large enough to always be present. Only the tail (ch18 sits in the top 7%)
+fails visibly. That is the profile of a defect that generates "intermittent,
+unreproducible" reports for years.
+
+#### Caveats, stated plainly
+
+* **Every point above is n=1.** Three tidy rows imply more replication than exists.
+* **The 31-segment outlier on ch18** coincided with a retune and 404s in the same window
+  and may be a re-gate artifact rather than a clean drag.
+* **Zero is weaker than a small number.** ch3's null is consistent with ~0.6 segments but
+  cannot distinguish it from 0; the granularity floor is one segment. A mid-range program
+  (~10-15s first cue, ~3 segments) would test the SLOPE rather than only the endpoints.
+* **One observer covers only one direction.** The polling instrument that produced the
+  ch3 null has only ever reproduced UPWARD drags. A real sequential consumer (libmpv) has
+  produced downward drags (161 -> 62). A near-zero-offset run with a real player is
+  needed to close that axis; if it drags downward on a near-zero offset, this model needs
+  a third term.
+
+#### What this asks of the fix
+
+Both mechanisms trace to the same root - **one shared `minSegmentRequested` indexing two
+renditions whose segment durations are set by different clocks** (fixed 4s vs speech).
+Pacing narrows the drift but cannot make the index spaces commensurable. Track the anchor
+**per rendition**, or do not derive the serving window from client request history at all.
+
 ### Scope note: throttling the subtitle input MITIGATES but does NOT fix this
 
 The subtitle rendition runs ahead because its input is not readrate-throttled
