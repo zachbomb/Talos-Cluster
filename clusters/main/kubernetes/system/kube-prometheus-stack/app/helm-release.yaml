@@ -251,6 +251,37 @@ spec:
           limits:
             cpu: 200m
             memory: 256Mi
+    prometheusOperator:
+      # 2026-08-03: the operator had restarted 68 times (49 on Jul 30 → 68 on Aug 3,
+      # ~4.5/day and accelerating). It was NOT crashing — every termination was
+      # exitCode 0 / reason "Completed", and the final log line each time was
+      # "received SIGTERM, exiting gracefully". The kubelet was killing a healthy
+      # process:
+      #   1. the chart defaults prometheusOperator.resources to {} → BestEffort QoS,
+      #      so on a contended node (82% CPU requests, 1320% CPU limits) this
+      #      container is first in line to be starved of CPU, and
+      #   2. the chart defaults both probes to timeoutSeconds: 1 — a 1s budget for a
+      #      TLS handshake plus an HTTPS /healthz round trip. Under starvation the
+      #      probe client gave up ("context deadline exceeded ... while awaiting
+      #      headers"), 3 consecutive failures tripped the liveness threshold, and the
+      #      container was SIGTERM'd.
+      # This matters beyond the restart count: while the operator is down it does not
+      # reconcile ServiceMonitors or PrometheusRules, so a rule can be correctly
+      # committed to git and silently never reach Prometheus.
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+      # No cpu limit on purpose. CPU limits enforce CFS throttling even when the node
+      # has idle cores, which would make probe timeouts MORE likely — the opposite of
+      # the fix. Memory is not compressible, so capping memory is safe.
+      livenessProbe:
+        timeoutSeconds: 5
+        failureThreshold: 5
+      readinessProbe:
+        timeoutSeconds: 5
     kubeControllerManager:
       enabled: true
       service:
