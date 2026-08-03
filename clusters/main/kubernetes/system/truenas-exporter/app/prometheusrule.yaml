@@ -41,6 +41,35 @@ spec:
               transient I/O errors from a link or enclosure glitch look identical here
               and are cleared with `zpool clear`, not replacement.
 
+        # EARLIEST possible warning of an enclosure/link dropout. On 2026-08-03 the
+        # TL-R1200C JBOD's internal USB hub fell off the bus at 14:50:53 and took all
+        # six drives with it; the pool went SUSPENDED and NFS/MinIO/dockerd wedged in
+        # D-state. This signal caught it exactly - disk count fell 14 -> 8 - and it
+        # leads the TrueNAS-generated alert by ~13 minutes.
+        #
+        # Baseline is 14, NOT 16: eight internal WDC + six JBOD Seagate report
+        # temperature; the two QEMU_HARDDISK virtual boot disks do not. UPDATE THIS
+        # THRESHOLD when physical disks are added or removed.
+        #
+        # A partial drop (one or two disks) is the more valuable case - it means the
+        # link is flaking before it takes the whole vdev, which is the window where
+        # intervention is still cheap.
+        - alert: TrueNASDiskCountDrop
+          expr: count(truenas_disk_temperature_celsius) < 14
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS sees only {{ $value }} physical disks (expected 14)"
+            description: >-
+              Disks have disappeared from the OS entirely - this is a TRANSPORT
+              failure, not drive failure. Check `lsblk` and dmesg for `USB disconnect`
+              on the parent hub. Do NOT pull or reseat drives. Recovery is: power-cycle
+              the enclosure, and if the disks do not re-enumerate, `qm stop 100` on the
+              Proxmox host (graceful shutdown HANGS on the D-state tasks a suspended
+              pool creates) then power-cycle and `qm start 100`. `zpool clear` while
+              devices are absent does nothing. See board SQ-6.
+
         - alert: TrueNASVdevErrors
           expr: increase(truenas_vdev_errors_total[1h]) > 0
           for: 5m
