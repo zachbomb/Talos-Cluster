@@ -75,6 +75,20 @@ spec:
     metrics:
       serviceMonitor:
         enabled: true
+        # 2026-08-03: longhorn-backend was the WORST scrape target in the cluster —
+        # only 79.6% of scrapes succeeded over 7d (75.1% over 24h), every failure
+        # "context deadline exceeded" with lastScrapeDuration pinned at exactly the
+        # 10s timeout. Measured the endpoint directly: /metrics returns HTTP 200 but
+        # takes 6.0s and 26.8s on back-to-back samples. The endpoint is genuinely slow
+        # and highly variable (longhorn-manager exports per-volume series over ~113
+        # volumes), so roughly half of all scrapes simply ran out of time.
+        # That left ~20% blind spots in the metrics for the storage layer that has
+        # caused this cluster's repeated outages — precisely the data needed to
+        # investigate them. Prometheus requires scrapeTimeout <= interval, so the
+        # interval widens too; per-volume Longhorn metrics do not need 30s
+        # granularity.
+        interval: 60s
+        scrapeTimeout: 45s
     service:
       ui:
         type: LoadBalancer
