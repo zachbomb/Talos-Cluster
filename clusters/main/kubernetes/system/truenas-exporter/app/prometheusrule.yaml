@@ -70,6 +70,38 @@ spec:
               pool creates) then power-cycle and `qm start 100`. `zpool clear` while
               devices are absent does nothing. See board SQ-6.
 
+        # A scrub that stops advancing is what the 2026-08-03 link failure looked like
+        # from the metrics side: the scan froze at 1.488% the moment the JBOD hub
+        # dropped, and stayed frozen. It complements TrueNASDiskCountDrop - that one
+        # catches devices vanishing, this one catches the scan wedging for any reason
+        # (including a pool that has gone SUSPENDED, where I/O parks forever).
+        #
+        # The `state="SCANNING"` join is NOT optional: a FINISHED scrub also has
+        # delta==0, so without it the Apps pool (whose scrub completed) fires forever.
+        # Verified against live data with a negative control - the inverted expression
+        # matched exactly the one pool that was actively scrubbing.
+        #
+        # severity MUST be warning or critical. `severity: info` is routed to the
+        # "null" receiver in alertmanagerconfig.yaml ("Info - Loki/Grafana annotations
+        # only. No Discord, no Notifiarr.") - an info-level alert here would fire into
+        # a black hole and look like it was working.
+        - alert: TrueNASScrubStalled
+          expr: >-
+            (delta(truenas_pool_scan_percentage[20m]) < 0.01)
+            and on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1)
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TrueNAS scrub on {{ $labels.pool }} has not advanced in 20 minutes"
+            description: >-
+              The scan is still in SCANNING state but percentage is flat. On the JBOD
+              pool this is the signature of the enclosure link dropping - check
+              `count(truenas_disk_temperature_celsius)` (expect 14) and `zpool status`
+              before assuming ZFS is at fault. A scrub CAN legitimately pause during
+              metadata traversal, so treat a single firing as "go look", not "it broke".
+              Scrubs are resumable: `zpool scrub -p` pauses and keeps position.
+
         - alert: TrueNASVdevErrors
           expr: increase(truenas_vdev_errors_total[1h]) > 0
           for: 5m
