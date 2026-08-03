@@ -102,6 +102,68 @@ spec:
               metadata traversal, so treat a single firing as "go look", not "it broke".
               Scrubs are resumable: `zpool scrub -p` pauses and keeps position.
 
+        # Closes the gap that let the 2026-08-02 scheduled scrub skip silently.
+        # `pool.scrub.run(name, threshold)` defaults to threshold=35 DAYS and returns
+        # null - shaped exactly like success - when it declines to run. An INTERRUPTED
+        # scrub still stamps the last-scrub clock, so a scrub that dies at 0.01% buys
+        # 35 days of silence precisely when verification matters most.
+        #
+        # EXPECTED to fire for Pibbs-Horde around mid-September 2026: its scheduled
+        # scrub is deliberately disabled after the Aug 3 JBOD link collapse. That is
+        # the alert doing its job - the pool genuinely is not being verified. Silence
+        # it only by fixing the transport (SAS/HBA) or by running a throttled scrub.
+        - alert: TrueNASScrubOverdue
+          expr: >-
+            (time() - truenas_pool_scan_end_timestamp_seconds > 45 * 86400)
+            and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="FINISHED"} == 1)
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "TrueNAS pool {{ $labels.pool }} has not completed a scrub in over 45 days"
+            description: >-
+              Unverified data. ZFS only detects silent corruption during a scrub, so
+              every day past this is bit rot that could be accumulating undetected.
+              Scrubs are resumable (`zpool scrub -p` pauses and keeps position), so
+              this can be worked through in maintenance windows rather than one run.
+
+        # Status notifications. severity stays `info` (accurate - nothing is wrong),
+        # and delivery is driven by the `notify: discord` label instead, matched by a
+        # dedicated route in alertmanagerconfig.yaml placed BEFORE the `info -> null`
+        # route. Do NOT relabel these to warning to make them deliver: that erodes the
+        # meaning of warning and buries real alerts in routine chatter.
+        - alert: TrueNASScrubStarted
+          expr: >-
+            (time() - truenas_pool_scan_start_timestamp_seconds < 1800)
+            and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="SCANNING"} == 1)
+          for: 2m
+          labels:
+            severity: info
+            notify: discord
+          annotations:
+            summary: "TrueNAS scrub started on {{ $labels.pool }}"
+            description: >-
+              A scrub is underway. On the JBOD-backed pool this is the workload that
+              historically saturates the enclosure link - watch TrueNASDiskCountDrop
+              and TrueNASScrubStalled for the next few hours.
+
+        # Fires for ~1h after completion rather than continuously: a FINISHED scan
+        # stays FINISHED indefinitely, so a bare state match would alert forever.
+        - alert: TrueNASScrubFinished
+          expr: >-
+            (time() - truenas_pool_scan_end_timestamp_seconds < 3600)
+            and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="FINISHED"} == 1)
+          for: 2m
+          labels:
+            severity: info
+            notify: discord
+          annotations:
+            summary: "TrueNAS scrub COMPLETED on {{ $labels.pool }}"
+            description: >-
+              Scrub finished. Check truenas_pool_scan_errors for this pool - a clean
+              completion is 0. Note this is distinct from truenas_vdev_errors_total:
+              a scrub can surface data errors while every per-device counter reads zero.
+
         - alert: TrueNASVdevErrors
           expr: increase(truenas_vdev_errors_total[1h]) > 0
           for: 5m

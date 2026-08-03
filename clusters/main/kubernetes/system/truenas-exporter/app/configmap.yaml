@@ -130,6 +130,25 @@ data:
             pct = scan.get("percentage")
             if isinstance(pct, (int, float)):
                 out.append(f'truenas_pool_scan_percentage{{pool="{esc(name)}"}} {pct:.4f}')
+            # Scan start/end as unix timestamps. Needed to alert on a scrub that never
+            # RAN, which percentage alone cannot express: an interrupted scrub still
+            # stamps the last-scrub clock, and pool.scrub.run defaults to
+            # threshold=35 DAYS and returns null - indistinguishable from success -
+            # when it declines. That combination silently skipped the 2026-08-02
+            # scheduled run entirely, with nothing reporting it.
+            # API returns these as {"$date": <milliseconds>}.
+            for src, label in (("start_time", "start"), ("end_time", "end")):
+                tv = scan.get(src)
+                if isinstance(tv, dict) and isinstance(tv.get("$date"), (int, float)):
+                    out.append(f'truenas_pool_scan_{label}_timestamp_seconds'
+                               f'{{pool="{esc(name)}"}} {tv["$date"] / 1000:.0f}')
+            # Errors found by the scan itself. Distinct from truenas_vdev_errors_total,
+            # which is per-device read/write/checksum counters: a scrub can surface
+            # data errors while every vdev counter reads zero, and the 2026-08-03 link
+            # failure was the inverse - devices gone, zero scan errors. Both matter.
+            serr = scan.get("errors")
+            if isinstance(serr, (int, float)):
+                out.append(f'truenas_pool_scan_errors{{pool="{esc(name)}"}} {int(serr)}')
             for grp, nodes in (p.get("topology") or {}).items():
                 walk_vdevs(nodes, name, out)
     

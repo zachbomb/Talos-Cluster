@@ -92,6 +92,27 @@ spec:
         repeatInterval: 12h
         continue: false
 
+      # Opt-in status notifications: severity=info BUT carrying `notify: discord`.
+      # For alerts that are genuinely informational (a scrub started, a scrub
+      # completed) yet still worth surfacing to a human. Without this, the only way
+      # to get such a message delivered is to mislabel it `warning`, which erodes the
+      # meaning of warning and buries real alerts in routine chatter.
+      #
+      # ORDERING IS LOAD-BEARING. Routes are mutually exclusive (`continue: false`
+      # everywhere), so first match wins:
+      #   - placed AFTER the critical/warning routes, so a critical or warning alert
+      #     that happens to carry `notify` still takes its normal path (incl. HITL);
+      #   - placed BEFORE the bare `severity=info` route below, which sinks to "null"
+      #     — otherwise these would be swallowed and appear to work while delivering
+      #     nothing.
+      - receiver: notifiarr-default
+        matchers:
+          - name: notify
+            value: discord
+            matchType: "="
+        repeatInterval: 24h
+        continue: false
+
       # Info — Loki/Grafana annotations only. No Discord, no Notifiarr.
       - receiver: "null"
         matchers:
