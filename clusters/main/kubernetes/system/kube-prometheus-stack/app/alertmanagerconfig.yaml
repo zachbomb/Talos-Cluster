@@ -105,6 +105,32 @@ spec:
       #   - placed BEFORE the bare `severity=info` route below, which sinks to "null"
       #     — otherwise these would be swallowed and appear to work while delivering
       #     nothing.
+      # Scrub progress feed. MUST stay ABOVE the generic `notify: discord` route
+      # below — routing is first-match-wins with continue:false, so if the generic
+      # route matched first this alert would inherit its 24h interval and this block
+      # would silently do nothing.
+      #
+      # TrueNASScrubProgress fires continuously for the whole duration of a scrub, so
+      # `repeatInterval` IS the report cadence — 30m gives ~48 messages/day at roughly
+      # 0.8% movement each. Each repeat carries the CURRENT percentage, not a stale
+      # copy: Prometheus re-sends firing alerts with freshly-rendered annotations and
+      # Alertmanager notifies from the latest version it holds.
+      #
+      # This is the ONLY knob for cadence. Do not try to speed it up by lowering the
+      # rule's `for:` — that controls when it first fires, not re-notification. Note
+      # Alertmanager requires repeatInterval >= groupInterval (5m here).
+      #
+      # If this becomes noise, raise it rather than deleting the route: the reason it
+      # exists is that the 2026-08-03/04 scrub crawled and silently corrupted 13
+      # blocks, and the only way to see it was querying Prometheus by hand.
+      - receiver: notifiarr-default
+        matchers:
+          - name: alertname
+            value: TrueNASScrubProgress
+            matchType: "="
+        repeatInterval: 30m
+        continue: false
+
       - receiver: notifiarr-default
         matchers:
           - name: notify
