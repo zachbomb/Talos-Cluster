@@ -157,4 +157,36 @@ while [ "$1" != "///WRAPEND///" ]; do
 done
 shift  # drop the ///WRAPEND/// sentinel now at the front
 
+# Decision trace. Added 2026-08-04 after the subtitle-timeline fix measured as having
+# NO effect in production while every offline check passed: emission verified against
+# the real captured argv (119/119 tokens in order, 8 injected at the correct
+# positions), ffmpeg honouring those same args in a two-output reproduction, and
+# `ffmpegExecutablePath` confirmed pointing here. Emission being right while
+# production is unchanged leaves exactly one untested link — whether this wrapper is
+# invoked at all for streaming transcodes — and that cannot be read after the fact:
+# `exec` replaces the process, so argv0 becomes /usr/bin/ffmpeg either way and a
+# finished session leaves no trace.
+#
+# One line per invocation, so the next session answers it definitively instead of
+# being re-litigated from playlists. Records the DECISION, not just the fact of
+# running: a line with inject=no and srt=0 means "correctly skipped, no subtitle
+# input", which is a different answer from no line at all ("never invoked").
+#
+# Best-effort and unconditionally non-fatal: `|| true` on every write, and a size cap
+# so it can never fill the PVC and take Tunarr down. A diagnostic that can break the
+# thing it observes is worse than no diagnostic.
+_log=/var/logs/ffmpeg-wrap.log
+if [ -w "$(dirname "$_log")" ] 2>/dev/null; then
+  # cap at ~256KB, keep the tail
+  if [ -f "$_log" ] && [ "$(wc -c < "$_log" 2>/dev/null || echo 0)" -gt 262144 ] 2>/dev/null; then
+    tail -c 131072 "$_log" > "$_log.tmp" 2>/dev/null && mv -f "$_log.tmp" "$_log" 2>/dev/null || true
+  fi
+  {
+    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s args=%s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)" \
+      "${srt_ord:-0}" "${preval:-none}" "${sub_off:-none}" "${sub_burst:-none}" \
+      "$([ -n "$sub_off" ] && echo yes || echo no)" "$#"
+  } >> "$_log" 2>/dev/null || true
+fi
+
 exec /usr/bin/ffmpeg "$@"
