@@ -34,3 +34,52 @@ spec:
       enabled: true
       servicemonitor:
         enabled: true
+    # 2026-08-03: all three cert-manager pods ran BestEffort (chart defaults every
+    # `resources` block to {}). Found by sweeping for the specific combination that
+    # made cloudnative-pg dangerous: a BestEffort pod backing a Fail-closed webhook.
+    # cert-manager-webhook was the LAST such pair in the cluster -- Kyverno (25m/100m),
+    # intel device plugins (10m) and CNPG (fixed same day) are all already Burstable.
+    #
+    # The blast radius is slower and quieter than CNPG's. cert-manager's own RENEWAL
+    # path creates CertificateRequest resources, and `cert-manager-webhook` is
+    # failurePolicy: Fail for those. Starve the webhook and renewals are REJECTED --
+    # nothing breaks that day, certificates simply stop renewing, and every HTTPS
+    # ingress fails when they expire weeks later. A cert-manager outage does not look
+    # like an outage until it is one.
+    #
+    # The webhook's probes defaulted to timeoutSeconds: 1 (chart values 949/960) --
+    # a 1s budget for a TLS handshake plus an HTTPS health round trip, identical to
+    # what was killing prometheus-operator and cloudnative-pg. It had 4 restarts.
+    # Verified by `helm template` that v1.21.1 honours BOTH the resources and the
+    # probe overrides here (unlike the cloudnative-pg chart, which silently drops
+    # probe timeouts and needed a postRenderer). Re-verify on chart upgrade.
+    #
+    # No CPU limits, deliberately: CFS throttling would recreate the starvation this
+    # is meant to prevent. Memory is not compressible, so caps there are safe.
+    # cainjector gets more memory -- it caches CA bundles for every injected webhook.
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+    webhook:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+      livenessProbe:
+        timeoutSeconds: 5
+        failureThreshold: 5
+      readinessProbe:
+        timeoutSeconds: 5
+        failureThreshold: 5
+    cainjector:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
