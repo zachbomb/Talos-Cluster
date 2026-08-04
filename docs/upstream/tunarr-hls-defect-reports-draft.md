@@ -1,10 +1,17 @@
 # DRAFT — Upstream Tunarr defect reports (do not post without review)
 
-Evidence gathered 2026-07-29/30 on Tunarr v1.3.10 (ghcr digest a195c9d8), single-node
-K8s, ~26 channels, PMP/mpv client (lavf 61.7.103) + in-pod ffprobe/curl repro.
+Evidence gathered 2026-07-29/30 and 2026-08-04 on Tunarr v1.3.10 (ghcr digest a195c9d8),
+single-node K8s, ~26 channels, PMP/mpv client (lavf 61.7.103) + in-pod ffprobe/curl repro.
 Source refs are against the v1.3.10 tag. Prepared by the cluster session; see
-`reference_tunarr_livetv_audio_subtitle_constraints` (memory) and SQ-185 (board)
+`reference_tunarr_livetv_audio_subtitle_constraints` and
+`reference_tunarr_shared_anchor_two_mechanism` (memory), and SQ-185 / SQ-222 (board),
 for the full investigation trail.
+
+**2026-08-04 addition:** the shared-anchor defect was reproduced on demand against a
+*live production session with a real viewer* — a single failing subtitle GET rewound that
+viewer's video window by 42 segments. See "On-demand reproduction" under Report 1+2. That
+run also pins down the index mapping (`window_start = requested_index - 10`, clamped at
+0), which the earlier exhibits could not distinguish from a reset.
 
 ---
 
@@ -157,6 +164,50 @@ Report 1). At minimum, a request that does not successfully serve a segment must
 mutate session state, and an out-of-range index must be rejected rather than clamped.
 
 **Reproduction: three curl calls, no media player required.**
+
+#### On-demand reproduction against a LIVE session with a real viewer (2026-08-04)
+
+The exhibit above was produced on an idle probe session with no media player and a
+shallow window. This one was fired deliberately at a **production session with a real
+`libmpv` client streaming continuously**, at a moment when the window had grown deep.
+It is the single cleanest statement of the defect in this document.
+
+```
+precondition   video EXT-X-MEDIA-SEQUENCE = 42   (real client streaming, window deep)
+single request GET sub000006.vtt  -> 500          (one call, never repeated)
+result         video EXT-X-MEDIA-SEQUENCE = 0     *** 42-segment backward jump ***
+```
+
+**One failing subtitle GET rewound the video window by 42 segments** — roughly 2.8
+minutes of content at 4s/segment — for a viewer who was watching normally and who never
+requested a subtitle segment at all.
+
+Three things this establishes that the earlier exhibit could not:
+
+1. **The anchor MAPS, then CLAMPS — it does not "reset".** `window_start = requested_index
+   - segmentsToKeepBefore`, with `segmentsToKeepBefore = 10`, gives `max(0, 6 - 10) = 0`.
+   The earlier `sub000000 -> SEQ 0` row is consistent with both "reset to zero" and
+   "map then clamp" and cannot distinguish them; a non-zero request index can. This
+   matters for the fix: clamping a computed index at 0 is a different bug from
+   discarding the index.
+2. **It is a denial of service against other consumers, not self-inflicted.** The client
+   that suffered the rewind issued no subtitle request. Any second consumer on the
+   channel — another player, a readiness probe, a bandwidth estimator — can do this to
+   every other viewer of that channel at will.
+3. **A 500 is sufficient.** No segment was served. The request failed, and still moved
+   the anchor.
+
+**Methodological caveat, stated because it cost a cycle here.** A version of this test
+fired at `SEQ = 0` proved nothing and looked like a negative result: the anchor cannot
+move *backward* from zero, so the experiment was structurally incapable of detecting the
+effect it was designed to detect. A valid run needs **a deep window and a low requested
+index** — the gap between them is the signal. Anyone attempting to confirm this on a
+fresh session will get a false negative.
+
+**Still n=1.** One firing, one channel, one session. The magnitude is a function of how
+deep the window had grown, so it is not a fixed "42" — it is bounded by
+`current_sequence - max(0, requested_index - 10)`, i.e. by how long the viewer had been
+watching.
 
 ### Controlled A/B, single channel, single variable = whether subtitles are consumed
 
@@ -431,6 +482,25 @@ Our sidecar still exists for a real reason — a client that holds a session ope
 advancing `minSegmentRequested` causes Tunarr's request-driven janitor to never run,
 and `/.transcode` then grows ~8.8GB/hr per stream — but it is not implicated in this
 defect.
+
+### Client-side guard (2026-08-04) — protects ONE client, does not fix the defect
+
+A guard was added to our own client's HLS layer (`hls.c`, ffmpeg 7.1.5 tree): segment
+names are treated as valid only for the playlist generation they came from, and any
+4xx/5xx triggers a playlist re-read rather than a retry of the stale name. The intent is
+that our client never emits the request that moves the anchor.
+
+**This is worth recording in the upstream context precisely because of what it does not
+do.** It removes our appliance as a *trigger*; it does nothing about our appliance as a
+*victim*. The 2026-08-04 reproduction above makes that concrete: the client that suffered
+the 42-segment rewind had issued no subtitle request. Any other consumer on the channel —
+a second player, Tunarr's own concat pipeline (see Report 3, which consumes the same HLS
+master), a readiness probe — still drags the shared anchor and rewinds video for every
+viewer.
+
+So a client-side fix is available to any individual integrator and none of them
+compose: each one protects only itself, and a single unguarded consumer re-breaks the
+channel for all of them. That is the argument for fixing the anchor server-side.
 
 ### Separate local bug we introduced and fixed (recorded so it is not confused with the above)
 
