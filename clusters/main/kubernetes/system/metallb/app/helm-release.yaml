@@ -42,6 +42,23 @@ spec:
     # 1-3 in docs/runbooks/metallb-to-cilium-migration-assessment.md.
     controller:
       enabled: true
+      # 2026-08-04 (SQ-5): the controller ran BestEffort (chart default
+      # `controller.resources: {}`) and had 13 restarts. With speaker and frrk8s
+      # both disabled above, this single pod IS MetalLB — it is the sole allocator
+      # of LoadBalancer IPs from the IPAddressPools. Starving it means new/changed
+      # LoadBalancer services never get an address, and every ingress path in the
+      # cluster terminates on a MetalLB-assigned IP.
+      #
+      # Sized from measurement: observed 3m CPU / 85Mi. The request is a scheduling
+      # guarantee, not a capacity reservation. No CPU limit — CFS throttling would
+      # recreate the starvation this prevents. See
+      # [[besteffort-control-plane-starvation]].
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
     speaker:
       enabled: false
     frrk8s:

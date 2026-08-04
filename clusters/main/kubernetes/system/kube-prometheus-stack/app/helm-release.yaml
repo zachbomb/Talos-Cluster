@@ -214,6 +214,21 @@ spec:
               targetLabel: kubernetes_node
     kube-state-metrics:
       fullnameOverride: kube-state-metrics
+      # 2026-08-04 (SQ-5), Tier 2 — observability that fails SILENTLY.
+      # kube-state-metrics is the sole source of kube_pod_*, kube_deployment_* and
+      # kube_persistentvolumeclaim_* series, so nearly every alert in this cluster
+      # depends on it. When it is starved it does not crash loudly — the scrape just
+      # stops answering and every dependent alert evaluates against no data, which
+      # reads as "nothing is wrong". node-exporter did exactly this on 2026-08-03:
+      # `up=0` while still reporting 1/1 Running, and `kubectl top` returned EMPTY at
+      # the moment load was highest. A blank metric is worse than a crash because it
+      # looks like health. Observed usage 9m CPU / 50Mi.
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi
+        limits:
+          memory: 384Mi
       # metricLabelsAllowlist:
       #   - pods=[*]
       #   - deployments=[*]
@@ -233,6 +248,26 @@ spec:
         - persistentvolumeclaims=[*]
     grafana:
       enabled: true
+      # 2026-08-04 (SQ-5), Tier 2. Grafana ran BestEffort along with both of its
+      # sidecars. Memory is sized from measurement, not convention: it is actually
+      # using 371Mi, so a 256Mi limit (the value that "looks reasonable") would OOM
+      # it on the next dashboard load. 512Mi gives real headroom.
+      # The sc-dashboard/sc-datasources sidecars are tiny but share the pod, and QoS
+      # is computed PER POD — leaving them at zero would let them be share-starved
+      # inside an otherwise-Burstable pod.
+      resources:
+        requests:
+          cpu: 25m
+          memory: 384Mi
+        limits:
+          memory: 768Mi
+      sidecar:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
       forceDeployDashboards: true
       defaultDashboardsEnabled: true
       forceDeployDatasources: true

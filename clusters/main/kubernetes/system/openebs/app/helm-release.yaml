@@ -24,6 +24,26 @@ spec:
     remediation:
       retries: 3
   values:
+    # 2026-08-04 (SQ-5): openebs-localpv-provisioner ran BestEffort (chart default).
+    # It is the only provisioner for the openebs-hostpath StorageClass, so starving
+    # it stalls PVC binding for anything not on Longhorn — new pods stay Pending with
+    # no obvious cause. Observed usage 4m CPU / 23Mi.
+    #
+    # Path verified by rendering openebs 4.4.0: `localpv-provisioner` is a SUBCHART
+    # (dynamic-localpv-provisioner) and its resources live at
+    # `localpv-provisioner.localpv.resources`, not at a top-level `resources:` key.
+    # Setting it in the wrong place renders silently with no resources at all.
+    #
+    # No CPU limit — CFS throttling would recreate the starvation this prevents.
+    # See [[besteffort-control-plane-starvation]].
+    localpv-provisioner:
+      localpv:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
     openebs-crds:
       csi:
         volumeSnapshots:
