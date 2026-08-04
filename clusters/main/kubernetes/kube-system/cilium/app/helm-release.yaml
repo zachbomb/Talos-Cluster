@@ -88,6 +88,34 @@ spec:
         enabled: true
         serviceMonitor:
           enabled: true
+      # 2026-08-04 (SQ-5): cilium-operator ran BestEffort (chart default
+      # `operator.resources: {}`). It is the CNI control plane — it allocates
+      # security identities, manages the IPAM pool and garbage-collects endpoints.
+      # With replicas: 1 there is no second copy, so starving it stalls networking
+      # for every NEW pod cluster-wide, which is precisely the condition present
+      # during a recovery.
+      #
+      # Sized from measurement, not guesswork: observed usage is 5m CPU / 83Mi.
+      # The request is a scheduling guarantee that moves it out of the first-to-starve
+      # tier, not a capacity reservation — a request does NOT consume CPU it does
+      # not use. No CPU limit, deliberately: CFS throttling would recreate the
+      # starvation this prevents. See [[besteffort-control-plane-starvation]].
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+    # cilium-envoy is the L7 proxy datapath and had accumulated 21 restarts while
+    # BestEffort. Observed usage 4m CPU / 18Mi. cilium-agent already carries a
+    # request (Burstable) — envoy was the gap in the same DaemonSet family.
+    envoy:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
     rollOutCiliumPods: true
     bgpControlPlane:
       # Disabled: the Cilium↔UDM eBGP peering was redundant — L2 announcements

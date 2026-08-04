@@ -2,7 +2,23 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - nginx-external/ks.yaml
-  - nginx-internal/ks.yaml
+  # 2026-08-04: DECOMMISSIONED. nginx-internal served ZERO ingresses — IngressClass
+  # `internal` had no consumers at all, because every app's TrueCharts values carry
+  # `nginx: {enabled: false, ingressClassName: internal}` alongside an ACTIVE
+  # `traefik: {enabled: true}`. The `internal` references scattered through the
+  # helm-releases are dormant fields, not live routes; all 50 unclassed Ingresses
+  # fall through to Traefik as the default class.
+  #
+  # It was not free to keep. It held 200m CPU + 512Mi memory of REQUESTS while using
+  # ~14m — and this node sits at 88.9% CPU requests against a 97% ceiling that has
+  # already caused one rollback deadlock (2026-07-30: unschedulable → helm timeout →
+  # Flux rollback to a spec that also would not fit). That 200m is a quarter of the
+  # remaining budget, and it funds the CPU requests that stop BestEffort control-plane
+  # pods from being starved — see [[besteffort-control-plane-starvation]] and SQ-5.
+  #
+  # nginx-external is deliberately KEPT: it still serves exactly one Ingress,
+  # flux-system/flux-webhook. Migrating that to Traefik is a separate change.
+  #- nginx-internal/ks.yaml # Decommissioned — 0 consumers, freed 200m CPU / 512Mi
   - namespace.yaml
   - homeassistant/ks.yaml
   - homebridge/ks.yaml
