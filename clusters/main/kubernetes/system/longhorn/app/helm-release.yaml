@@ -39,6 +39,28 @@ spec:
       # 1.11.2→1.12.0 auto-upgrade (#4177, June 2) — Renovate is supposed to be
       # disabled for this chart but the automerge-action bypassed it; re-block.
       instanceManagerPodLivenessProbeTimeout: "30"
+      # Same fix, one layer down — applied 2026-08-03 after the engine-image
+      # DaemonSet crash-looped 57/40/28 times and froze the ENTIRE attach pipeline:
+      # 29 volumes stuck `attaching`, 41 pods not-ready, and `attached` pinned at
+      # exactly 70 for minutes while nothing progressed.
+      #
+      # Identical mechanism to the June IM outage. engine-image pods run BestEffort
+      # (the chart sets no resources for them) behind a FOUR SECOND liveness timeout.
+      # At 93-95% node CPU the probe command
+      #     sh -c "/data/longhorn version --client-only"
+      # could not complete in 4s, so kubelet SIGKILLed them (exit 137), repeatedly.
+      # With no engine-image pod there is NO engine binary, so no volume can attach
+      # at all — storage stops cluster-wide from a CPU spike.
+      #
+      # The control experiment was already present: instance-manager is the only
+      # Longhorn pod with a CPU request (636m via guaranteedInstanceManagerCPU
+      # above) and logged ZERO restarts through the same event.
+      #
+      # 30s matches the IM value. This probe only checks a version string; if that
+      # needs >30s the node is in far worse trouble than a probe can express, and
+      # killing the pod that gates all volume attachment is never the right response
+      # to CPU pressure.
+      engineImagePodLivenessProbeTimeout: "30"
       # Enable the revision counter. With it DISABLED (Longhorn's default since
       # 1.2), a single-replica volume that faults on an unclean node reboot will
       # NOT auto-salvage — Longhorn can't confirm the lone replica is consistent,
@@ -70,6 +92,26 @@ spec:
       provisionerReplicaCount: 2
       resizerReplicaCount: 2
       snapshotterReplicaCount: 2
+    longhornManager:
+      # 2026-08-03: longhorn-manager ran BestEffort (chart default is `resources: ~`)
+      # and had accumulated 37 restarts. It is the control plane for every volume
+      # operation — attach, detach, replica scheduling, snapshot orchestration — so
+      # when CPU pressure starves it, volume operations stall cluster-wide even
+      # though the instance-manager itself is healthy.
+      #
+      # A request does NOT reserve capacity it will not use; it buys a scheduling
+      # guarantee and moves the pod out of the first-to-starve tier. The same
+      # reasoning already applies to instance-manager via guaranteedInstanceManagerCPU,
+      # and that pod rode out tonight's event with zero restarts.
+      #
+      # No CPU limit, deliberately: CFS throttling would recreate the starvation this
+      # is meant to prevent. Memory is not compressible, so a cap there is safe.
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
     longhornUI:
       replicas: 1
     metrics:
