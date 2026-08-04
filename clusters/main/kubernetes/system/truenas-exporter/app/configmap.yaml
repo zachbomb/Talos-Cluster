@@ -149,6 +149,13 @@ data:
             serr = scan.get("errors")
             if isinstance(serr, (int, float)):
                 out.append(f'truenas_pool_scan_errors{{pool="{esc(name)}"}} {int(serr)}')
+            # A PAUSED scrub still reports state=SCANNING with a frozen percentage,
+            # which is indistinguishable from a wedged one unless pause is exposed.
+            # TrueNASScrubStalled false-fired on exactly this within an hour of being
+            # deployed, when the Aug 3 scrub was paused to restore the media stack.
+            # `pause` is null when running and a {"$date": ...} object when paused.
+            out.append(f'truenas_pool_scan_paused{{pool="{esc(name)}"}} '
+                       f'{1 if scan.get("pause") else 0}')
             for grp, nodes in (p.get("topology") or {}).items():
                 walk_vdevs(nodes, name, out)
     
