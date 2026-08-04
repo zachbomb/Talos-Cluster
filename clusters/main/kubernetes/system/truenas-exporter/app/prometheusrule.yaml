@@ -85,10 +85,17 @@ spec:
         # "null" receiver in alertmanagerconfig.yaml ("Info - Loki/Grafana annotations
         # only. No Discord, no Notifiarr.") - an info-level alert here would fire into
         # a black hole and look like it was working.
+        # The `scan_paused == 0` guard is not optional. A PAUSED scrub still reports
+        # state=SCANNING with a frozen percentage - identical to a wedged one from
+        # the outside. Without this guard the alert false-fired within an hour of
+        # deployment, when the 2026-08-03 scrub was deliberately paused to restore
+        # the media stack. A noisy alert is worse than no alert: this cluster already
+        # had 23 firing instances (11 of them KubeJobFailed) drowning out real signal.
         - alert: TrueNASScrubStalled
           expr: >-
             (delta(truenas_pool_scan_percentage[20m]) < 0.01)
             and on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1)
+            and on(pool) (truenas_pool_scan_paused == 0)
           for: 10m
           labels:
             severity: warning
