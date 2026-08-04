@@ -25,56 +25,11 @@ data:
   # Registry of playbooks the receiver knows about. The receiver matches
   # alerts' `remediation: <name>` label against entries here. New playbooks
   # add a YAML manifest under this directory + a registry entry.
+  #
+  # The bgp-recovery playbook was retired 2026-07 alongside the Cilium BGP
+  # removal (see #187): it SSH'd the UDM to re-run 15-cluster-bgp.sh in
+  # response to BGPSessionDown, an alert that no longer exists. The
+  # udm-ssh-secret + udm-known-hosts remain available for any future
+  # UDM playbook.
   playbook-registry.yaml: |
-    playbooks:
-      - name: bgp-recovery
-        matches:
-          remediation: bgp-recovery
-        serviceAccountName: hitl-playbook-bgp-recovery
-        rateLimitSeconds: 300
-        jobSpec:
-          activeDeadlineSeconds: 240
-          backoffLimit: 0
-          template:
-            spec:
-              restartPolicy: Never
-              serviceAccountName: hitl-playbook-bgp-recovery
-              containers:
-                - name: ssh-runner
-                  image: alpine:3.20
-                  command: ["/bin/sh", "-c"]
-                  args:
-                    - |
-                      set -euo pipefail
-                      apk add --no-cache openssh-client
-                      ssh -o ConnectTimeout=10 \
-                          -o ServerAliveInterval=15 \
-                          -o ServerAliveCountMax=4 \
-                          -o BatchMode=yes \
-                          -o StrictHostKeyChecking=yes \
-                          -o UserKnownHostsFile=/etc/ssh/known_hosts \
-                          -i /etc/ssh/key/udm \
-                          root@192.168.10.1 \
-                          "bash /data/on_boot.d/15-cluster-bgp.sh"
-                  volumeMounts:
-                    - name: ssh-key
-                      mountPath: /etc/ssh/key
-                      readOnly: true
-                    - name: known-hosts
-                      mountPath: /etc/ssh/known_hosts
-                      subPath: udm-known-hosts
-                      readOnly: true
-              volumes:
-                - name: ssh-key
-                  secret:
-                    secretName: udm-ssh-secret
-                    defaultMode: 256  # octal 0400 — K8s requires int32, not a YAML octal-string
-                    items:
-                      - key: udm-ssh-private-key
-                        path: udm
-                - name: known-hosts
-                  configMap:
-                    name: alert-remediation-config
-                    items:
-                      - key: udm-known-hosts
-                        path: udm-known-hosts
+    playbooks: []

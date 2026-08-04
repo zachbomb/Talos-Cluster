@@ -7,7 +7,6 @@ resources:
   - alert-remediation-secrets.secret.yaml
   - udm-ssh-secret.secret.yaml
   - rbac.yaml
-  - playbook-rbac-bgp-recovery.yaml
   - networkpolicy.yaml
   - pvc.yaml
   - service.yaml

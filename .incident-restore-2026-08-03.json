@@ -1,0 +1,222 @@
+{
+ "captured": "2026-08-03T22:0?Z",
+ "incident": "Pibbs-Horde JBOD link loss",
+ "items": [
+  {
+   "kind": "Deployment",
+   "name": "bazarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "bazarr-exportarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "calibre",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "cwa-app-template",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "deluge",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "deluge-exporter",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "emby",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "flaresolverr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "immich",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "immich-machinelearning",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "immich-microservices",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "kapowarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "kometa",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "lidarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "lidarr-flac",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "lidarr-liz",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "mylar",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "nzbget",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "nzbget-exporter",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "overseerr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "plex",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "plex-exporter",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "radarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "readarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "recyclarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "sabnzbd",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "sabnzbd-exportarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "shelfmark-app-template",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "sonarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "tautulli",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "tautulli-exporter",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "tdarr",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "tinymediamanager",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "Deployment",
+   "name": "tunarr-app-template",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "StatefulSet",
+   "name": "immich-redis",
+   "ns": "media",
+   "replicas": 1
+  },
+  {
+   "kind": "StatefulSet",
+   "name": "notifiarr",
+   "ns": "media",
+   "replicas": 1
+  }
+ ]
+}

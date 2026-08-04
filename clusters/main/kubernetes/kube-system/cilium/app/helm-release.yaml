@@ -90,7 +90,12 @@ spec:
           enabled: true
     rollOutCiliumPods: true
     bgpControlPlane:
-      enabled: true
+      # Disabled: the Cilium↔UDM eBGP peering was redundant — L2 announcements
+      # (default-l2-policy, loadBalancerIPs: true) already answer ARP for every
+      # LB IP in 192.168.10.192/26, which is entirely on-subnet. The UDM lost its
+      # FRR config on a firmware update, leaving the session permanently down and
+      # generating false BGPSessionDown alerts. Removed 2026-07 (see #187).
+      enabled: false
     l2announcements:
       enabled: true
       leaseDuration: 15s
