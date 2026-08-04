@@ -180,6 +180,29 @@ spec:
                   storage: 100Gi
     prometheus-node-exporter:
       fullnameOverride: node-exporter
+      # 2026-08-03: node-exporter ran BestEffort (chart default leaves resources
+      # unset), so it was starved first whenever the node came under pressure. At
+      # 22 restarts it went to `up=0` while still reporting 1/1 Running -- the pod
+      # looks healthy, the scrape endpoint simply stops answering. metrics-server
+      # (0/1) went with it, so `node_load1` and `kubectl top` both returned EMPTY
+      # during the media restore, exactly when load was highest and visibility
+      # mattered most.
+      #
+      # Same failure as prometheus-operator earlier the same day: no CPU request ->
+      # BestEffort -> starved -> observability dies precisely when it is needed.
+      # A blank metric reads as "fine" unless you notice it is blank, which makes
+      # this worse than an outright crash.
+      #
+      # No CPU limit, deliberately: CFS throttling would reintroduce the same
+      # starvation it is meant to prevent. Memory is not compressible, so a cap
+      # there is safe. Requests are small -- node-exporter is genuinely cheap; the
+      # point is a scheduling guarantee, not capacity.
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 192Mi
       prometheus:
         monitor:
           enabled: true
