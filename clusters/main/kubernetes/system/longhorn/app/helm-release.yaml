@@ -83,6 +83,56 @@ spec:
       # [[longhorn-mass-salvage-im-deathspiral-2026-07]].
       concurrentReplicaRebuildPerNodeLimit: "2"
       snapshotHeavyTaskConcurrentLimit: "2"
+      # 2026-08-03: the LAST unfixed instance of the BestEffort starvation class
+      # (SQ-14). longhorn-csi-plugin ran BestEffort behind a FOUR SECOND liveness
+      # probe, and unlike engine-image and instance-manager that probe has NO chart
+      # setting -- there is no `csiPluginPodLivenessProbeTimeout`. Verified against
+      # `helm show values longhorn/longhorn --version 1.12.0`: only
+      # engineImagePodLivenessProbeTimeout and instanceManagerPodLivenessProbeTimeout
+      # exist. The 4s is hardcoded in the DaemonSet, so a CPU request is the ONLY
+      # available lever.
+      #
+      # Blast radius is the reason this matters more than its restart count suggests.
+      # longhorn-csi-plugin serves /csi/csi.sock. When it dies, that socket vanishes
+      # and ALL EIGHT CSI sidecars exit 1 by design:
+      #     E connection.go:116] "Lost connection to CSI driver, exiting"
+      # So attach, detach, provision, resize and snapshot stop cluster-wide from one
+      # pod being starved. The sidecars' own restart counts (attacher 14/10,
+      # snapshotter 9/8, provisioner 7/5) are DOWNSTREAM SYMPTOMS -- they have no
+      # liveness probes at all. Do not try to fix them in isolation.
+      #
+      # Two triggers were observed. A Cilium eBPF drop killed it fatally at startup
+      # ("connect: operation not permitted" to longhorn-backend:9500, believed
+      # transient endpoint regeneration during the cascade), and separately the probe
+      # itself began failing under load -- "context deadline exceeded" and "HTTP probe
+      # failed with statuscode: 500" -- at 94-97% node CPU. The probe never hit its
+      # failureThreshold of 3, so it did not kill; it came close.
+      #
+      # QoS is computed PER POD, so all three containers in the DaemonSet are listed:
+      # longhorn-csi-plugin owns :9808/healthz and answers the probe (it is the
+      # longhorn-manager binary in csi mode, NOT the livenessprobe sidecar), and the
+      # other two get small requests so they are not share-starved inside the pod.
+      #
+      # ~150m total across every component listed (8 vCPU node = 1.9%). No CPU limits,
+      # same reasoning as longhornManager below: CFS throttling would recreate the
+      # starvation this is meant to prevent. Memory is not compressible, so caps there
+      # are safe. Renders to the `system-managed-csi-components-resource-limits`
+      # setting; verified via `helm template` that this JSON string serializes intact.
+      #
+      # WARNING, per the chart's own docs: changing this RESTARTS the CSI components
+      # and temporarily interrupts provisioning and attach/detach. Never apply it
+      # during the VolSync window (staggered 00:00-04:32 UTC) -- interrupting the
+      # snapshot pipeline mid-flight is precisely how plex/bazarr/homepage ended up
+      # wedged for 4-8 days on 2026-08-03 (Jobs stuck holding job-tracking
+      # finalizers). See [[besteffort-control-plane-starvation]].
+      systemManagedCSIComponentsResourceLimits: >-
+        {"longhorn-csi-plugin":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"memory":"256Mi"}},
+        "node-driver-registrar":{"requests":{"cpu":"10m","memory":"16Mi"},"limits":{"memory":"64Mi"}},
+        "longhorn-liveness-probe":{"requests":{"cpu":"10m","memory":"16Mi"},"limits":{"memory":"64Mi"}},
+        "csi-attacher":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "csi-provisioner":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "csi-resizer":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "csi-snapshotter":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"memory":"128Mi"}}}
       # v2DataEngine: true
     persistence:
       defaultClass: true
