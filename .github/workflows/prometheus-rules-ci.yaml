@@ -22,6 +22,11 @@ on:
     paths:
       - "clusters/main/kubernetes/system/kube-prometheus-stack/app/**"
       - "clusters/main/kubernetes/system/alert-remediation/app/**"
+      # 2026-08-04: truenas-exporter carries 13 alert rules and was NEVER covered
+      # here — it is outside the kube-prometheus-stack directory AND its file is
+      # named `prometheusrule.yaml`, which does not match the `prometheusrule-*`
+      # glob below. Five rules shipped 2026-08-03 without ever passing promtool.
+      - "clusters/main/kubernetes/system/truenas-exporter/app/**"
       - ".github/workflows/prometheus-rules-ci.yaml"
       - ".github/ci-fixtures/**"
   push:
@@ -30,6 +35,11 @@ on:
     paths:
       - "clusters/main/kubernetes/system/kube-prometheus-stack/app/**"
       - "clusters/main/kubernetes/system/alert-remediation/app/**"
+      # 2026-08-04: truenas-exporter carries 13 alert rules and was NEVER covered
+      # here — it is outside the kube-prometheus-stack directory AND its file is
+      # named `prometheusrule.yaml`, which does not match the `prometheusrule-*`
+      # glob below. Five rules shipped 2026-08-03 without ever passing promtool.
+      - "clusters/main/kubernetes/system/truenas-exporter/app/**"
 
 jobs:
   validate:
@@ -79,6 +89,18 @@ jobs:
             yq eval '.spec' "$f" > "/tmp/rules/${name}.yaml"
             # Promtool test fixtures resolve rule_files relative to the fixture's
             # directory. Stage extracted rules under names the fixtures reference.
+            cp "/tmp/rules/${name}.yaml" "${PROMTOOL_TESTS_DIR}/${name}-extracted.yaml"
+          done
+          # PrometheusRules that live OUTSIDE kube-prometheus-stack/app. These were
+          # unguarded until 2026-08-04 — truenas-exporter carries 13 rules and is in
+          # its own component directory, so the glob above never saw it. Staged under
+          # an explicit name because the source file is just `prometheusrule.yaml`
+          # and would otherwise collide with any other component using that name.
+          for spec in \
+            "clusters/main/kubernetes/system/truenas-exporter/app/prometheusrule.yaml:prometheusrule-truenas"; do
+            src="${spec%%:*}"; name="${spec##*:}"
+            [ -f "$src" ] || continue
+            yq eval '.spec' "$src" > "/tmp/rules/${name}.yaml"
             cp "/tmp/rules/${name}.yaml" "${PROMTOOL_TESTS_DIR}/${name}-extracted.yaml"
           done
           # Compatibility alias: flap-test.yaml expects bgp-rules-extracted.yaml.

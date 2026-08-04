@@ -91,16 +91,24 @@ spec:
         # deployment, when the 2026-08-03 scrub was deliberately paused to restore
         # the media stack. A noisy alert is worse than no alert: this cluster already
         # had 23 firing instances (11 of them KubeJobFailed) drowning out real signal.
+        # NOTE on expression shape: `truenas_pool_scan_percentage` is deliberately the
+        # LEFT-hand operand. In PromQL, `and` returns the left side's VALUE, so this
+        # makes `{{ $value }}` the scrub percentage rather than the delta — the alert
+        # can then say WHERE it stalled without needing the `query` template function
+        # (which is fragile to quote correctly and runs an extra query at notify time).
+        # The filter set is identical to the previous form; only the reported value
+        # changed. Verified against live data 2026-08-04: returns 20.6341.
         - alert: TrueNASScrubStalled
           expr: >-
-            (delta(truenas_pool_scan_percentage[20m]) < 0.01)
+            truenas_pool_scan_percentage
+            and on(pool) (delta(truenas_pool_scan_percentage[20m]) < 0.01)
             and on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1)
             and on(pool) (truenas_pool_scan_paused == 0)
           for: 10m
           labels:
             severity: warning
           annotations:
-            summary: "TrueNAS scrub on {{ $labels.pool }} has not advanced in 20 minutes"
+            summary: "TrueNAS scrub on {{ $labels.pool }} stuck at {{ $value | printf \"%.2f\" }}% — no progress in 20 minutes"
             description: >-
               The scan is still in SCANNING state but percentage is flat. On the JBOD
               pool this is the signature of the enclosure link dropping - check
@@ -139,6 +147,42 @@ spec:
         # dedicated route in alertmanagerconfig.yaml placed BEFORE the `info -> null`
         # route. Do NOT relabel these to warning to make them deliver: that erodes the
         # meaning of warning and buries real alerts in routine chatter.
+        # Periodic progress report while a scrub runs. This is NOT a fault alert — it
+        # is a status feed, which is why severity stays `info` and delivery rides the
+        # `notify: discord` label. Because the alert stays continuously firing for the
+        # duration of the scrub, Alertmanager's `repeatInterval: 24h` on the
+        # notify=discord route turns it into roughly one progress message per day
+        # rather than a stream. Raise or lower that interval to change the cadence;
+        # do NOT add a shorter `for:` here expecting more frequent messages — `for`
+        # controls when it starts firing, not how often it re-notifies.
+        #
+        # `truenas_pool_scan_percentage` is the LEFT operand so `{{ $value }}` is the
+        # percentage (PromQL `and` returns the left side's value). Verified live
+        # 2026-08-04: returns 20.6341 for the in-flight Pibbs-Horde scrub.
+        #
+        # The 2026-08-03/04 scrub is why this exists: it ran for ~17 hours, silently
+        # corrupted 13 blocks, then crawled — and the only way to see any of that was
+        # to query Prometheus by hand. A number in Discord once a day would have
+        # surfaced the slowdown without anyone going looking.
+        - alert: TrueNASScrubProgress
+          expr: >-
+            truenas_pool_scan_percentage
+            and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="SCANNING"} == 1)
+          for: 5m
+          labels:
+            severity: info
+            notify: discord
+          annotations:
+            summary: "TrueNAS scrub on {{ $labels.pool }}: {{ $value | printf \"%.2f\" }}% complete"
+            description: >-
+              Daily progress report for an in-flight scrub. If this number is barely
+              moving between reports, the scrub is degraded rather than merely slow —
+              check `truenas_pool_scan_errors` and compare `scanned` vs `issued` in
+              `zpool status` (scanned climbing while issued is flat means ZFS is
+              queueing work it cannot complete). A paused scrub still reports
+              state=SCANNING, so this keeps reporting while paused; that is intended,
+              since a scrub silently left paused is its own failure mode.
+
         - alert: TrueNASScrubStarted
           expr: >-
             (time() - truenas_pool_scan_start_timestamp_seconds < 1800)
@@ -167,9 +211,12 @@ spec:
           annotations:
             summary: "TrueNAS scrub COMPLETED on {{ $labels.pool }}"
             description: >-
-              Scrub finished. Check truenas_pool_scan_errors for this pool - a clean
-              completion is 0. Note this is distinct from truenas_vdev_errors_total:
-              a scrub can surface data errors while every per-device counter reads zero.
+              Scrub finished. A clean completion is 0 errors. Note this is distinct
+              from truenas_vdev_errors_total: a scrub can surface data errors while
+              every per-device counter reads zero, and the inverse also happens — the
+              2026-08-03 link failure produced device errors with zero scan errors.
+              Non-zero here means run `zpool status -v` for the affected file list
+              BEFORE `zpool clear`, since clearing erases that record.
 
         - alert: TrueNASVdevErrors
           expr: increase(truenas_vdev_errors_total[1h]) > 0

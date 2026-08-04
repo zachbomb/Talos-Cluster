@@ -1,0 +1,104 @@
+# Unit tests for the scrub rules in truenas-exporter/app/prometheusrule.yaml.
+# CI extracts that file's .spec to prometheusrule-truenas-extracted.yaml.
+#
+# These cases pin the two behaviours that were learned the hard way:
+#   1. A PAUSED scrub must NOT fire TrueNASScrubStalled. A paused scrub still
+#      reports state=SCANNING with a frozen percentage, so without the
+#      `scan_paused == 0` guard it is indistinguishable from a wedged one. The
+#      alert false-fired on exactly this within an hour of first deployment.
+#   2. TrueNASScrubStalled's $value must be the PERCENTAGE, not the delta —
+#      truenas_pool_scan_percentage is the left operand precisely so the alert
+#      can report WHERE it stalled. A refactor that reorders the `and` chain
+#      would silently change the message; this test catches that.
+rule_files:
+  - prometheusrule-truenas-extracted.yaml
+evaluation_interval: 1m
+tests:
+  # A running scrub that has not advanced in 20m → Stalled fires, reporting the
+  # percentage it is stuck at. Progress also fires (it always does while scanning).
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_scan_percentage{pool="Pibbs-Horde"}'
+        values: "20.6341x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="SCANNING"}'
+        values: "1x40"
+      - series: 'truenas_pool_scan_paused{pool="Pibbs-Horde"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: TrueNASScrubStalled
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS scrub on Pibbs-Horde stuck at 20.63% — no progress in 20 minutes"
+              description: "The scan is still in SCANNING state but percentage is flat. On the JBOD pool this is the signature of the enclosure link dropping - check `count(truenas_disk_temperature_celsius)` (expect 14) and `zpool status` before assuming ZFS is at fault. A scrub CAN legitimately pause during metadata traversal, so treat a single firing as \"go look\", not \"it broke\". Scrubs are resumable: `zpool scrub -p` pauses and keeps position."
+
+  # THE REGRESSION GUARD: identical frozen percentage, but paused=1.
+  # Stalled must stay silent; Progress must still report.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_scan_percentage{pool="Pibbs-Horde"}'
+        values: "20.6341x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="SCANNING"}'
+        values: "1x40"
+      - series: 'truenas_pool_scan_paused{pool="Pibbs-Horde"}'
+        values: "1x40"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: TrueNASScrubStalled
+        exp_alerts: []
+      - eval_time: 35m
+        alertname: TrueNASScrubProgress
+        exp_alerts:
+          - exp_labels:
+              severity: info
+              notify: discord
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS scrub on Pibbs-Horde: 20.63% complete"
+              description: "Daily progress report for an in-flight scrub. If this number is barely moving between reports, the scrub is degraded rather than merely slow — check `truenas_pool_scan_errors` and compare `scanned` vs `issued` in `zpool status` (scanned climbing while issued is flat means ZFS is queueing work it cannot complete). A paused scrub still reports state=SCANNING, so this keeps reporting while paused; that is intended, since a scrub silently left paused is its own failure mode."
+
+  # A healthily advancing scrub: neither Stalled nor Overdue. Progress reports
+  # the CURRENT value, confirming $value tracks the percentage over time.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_scan_percentage{pool="Pibbs-Horde"}'
+        values: "10+1x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="SCANNING"}'
+        values: "1x40"
+      - series: 'truenas_pool_scan_paused{pool="Pibbs-Horde"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: TrueNASScrubStalled
+        exp_alerts: []
+      - eval_time: 35m
+        alertname: TrueNASScrubProgress
+        exp_alerts:
+          - exp_labels:
+              severity: info
+              notify: discord
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS scrub on Pibbs-Horde: 45.00% complete"
+              description: "Daily progress report for an in-flight scrub. If this number is barely moving between reports, the scrub is degraded rather than merely slow — check `truenas_pool_scan_errors` and compare `scanned` vs `issued` in `zpool status` (scanned climbing while issued is flat means ZFS is queueing work it cannot complete). A paused scrub still reports state=SCANNING, so this keeps reporting while paused; that is intended, since a scrub silently left paused is its own failure mode."
+
+  # No scrub running → nothing fires. Guards against a rule that matches on the
+  # bare percentage metric without the state join.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_scan_percentage{pool="Pibbs-Horde"}'
+        values: "100x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="FINISHED"}'
+        values: "1x40"
+      - series: 'truenas_pool_scan_paused{pool="Pibbs-Horde"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: TrueNASScrubStalled
+        exp_alerts: []
+      - eval_time: 35m
+        alertname: TrueNASScrubProgress
+        exp_alerts: []
