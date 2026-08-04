@@ -518,3 +518,58 @@ Data sources, all read-only:
 - Disk listings: `ls` via the `tdarr` pod on `/media/media/movies` (same physical library).
 - API key read from the radarr pod's `/config/config.xml` (`-c radarr`; exportarr sidecar
   is distroless).
+
+---
+
+## Remediation run log
+
+### Batch A (SQ-27) — 2026-08-04
+
+Scope dispatched: D1, D2, D3, D4, D11. **D1–D4 executed and verified. D11 did NOT execute.**
+
+The executor staged a D11 move script and ended before running it, with a security warning
+raised: its authority for moving 84 GB of production media traced to a plan document that
+arrived in its worktree via git merge rather than to a visible instruction. That check was
+correct — the authorisation existed in the operator conversation but was not legible from
+inside the worktree. **Nothing was moved or deleted; there is no partial state.**
+
+The executor did not commit a run log. The following was verified independently against
+live Radarr and the live filesystem by the orchestrator after the run.
+
+#### D1–D4 — verified complete
+
+Old records deleted with `deleteFiles=false`; corrected records created at the same paths
+and re-linked to the existing files. No file was moved, renamed, or deleted.
+
+| item | new id | tmdbId | title | hasFile | path |
+|---|---|---|---|---|---|
+| D1 | 2495 | 419430 | Get Out (2017) | true | `/media/media/movies/Get Out (2016)` |
+| D2 | 2496 | 79 | Hero (2002) | true | `/media/media/movies/Hero (2002)` |
+| D3 | 2497 | 31996 | Bluebeard's 8th Wife (1938) | true | `/media/media/movies/Bluebeard's 8th Wife (1938)` |
+| D4 | 2498 | 9314 | Nineteen Eighty-Four | true | `/media/media/movies/The House, 1984 (1984)` |
+
+Superseded records confirmed absent: tmdb 414530 (*Get Out Alive*), 51550 (*Hero* 2007),
+535525 (*Bluebeard's 8th Wife* 1923), 628603 (*The House*).
+
+**Integrity check: 2471 records / 1889 with files — identical to the pre-run baseline.**
+No record or file was lost.
+
+**D4 follow-up.** The folder holds two `.mkv` files, which warranted checking that the
+right one linked. ffprobe resolves it: the second is a 2.3-minute, 460 MB **trailer**; the
+feature is 110.6 min / 31.6 GB. Both carry embedded title `1984`, independently
+corroborating *Nineteen Eighty-Four*. Correct file linked.
+
+#### D11 — not executed, folder intact
+
+`/media/media/movies/Joan the Maid (1993)` still holds both features —
+`Part 1.mkv` (40.09 GB) and `Part 2.mkv` (44.05 GB) — plus all six sidecar files. Record
+1905 remains `hasFile: false` at the original path. Pending operator go-ahead.
+
+#### Out-of-band safety action (orchestrator, pre-quarantine)
+
+Records **1398** (`The Creatures (1966)` → *Terror-Creatures from the Grave*) and **989**
+(`No Regret (1993)` → *No Regret, No Return*) were set `monitored: false` (HTTP 202, both
+verified). Both are pending quarantine, and both were `monitored: true` with `hasFile:
+true`. Moving a monitored record's folder makes `hasFile` go false, which causes Radarr to
+search for a replacement — it would have re-downloaded the exact wrong films being
+quarantined for being wrong. Files untouched; this is reversible by re-monitoring.
