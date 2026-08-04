@@ -204,10 +204,54 @@ effect it was designed to detect. A valid run needs **a deep window and a low re
 index** — the gap between them is the signal. Anyone attempting to confirm this on a
 fresh session will get a false negative.
 
-**Still n=1.** One firing, one channel, one session. The magnitude is a function of how
-deep the window had grown, so it is not a fixed "42" — it is bounded by
-`current_sequence - max(0, requested_index - 10)`, i.e. by how long the viewer had been
-watching.
+**Still n=1.** One firing, one channel, one session. The magnitude is not a fixed "42" —
+it is bounded by `current_sequence - max(0, requested_index - 10)`.
+
+#### Why that bound is close to the FULL session length, not a modest offset
+
+`current_sequence` is a **video** index; `requested_index` is a **subtitle** index. The
+two count at completely different rates, so their difference is not a small lag — it is
+most of the session.
+
+Video segments are a uniform 4.000s. Subtitle segments are **cue-driven**: the segmenter
+has nothing to split on during silence, so the subtitle index does not advance at all
+while no one is speaking. Measured on this appliance: **video at segment ~92 while the
+subtitle index was ~32**, i.e. ~11.5s of average subtitle-segment duration against
+video's 4.000s. (Consistent with the first-segment measurement recorded in the
+two-mechanism model below: 30.488s for a first cue at 27.53s.)
+
+**This is not in tension with the "subtitles run ~3.5x ahead" measurements elsewhere in
+this report — those are different quantities.** The subtitle rendition runs ahead in
+*timeline* (its content covers a later wall-clock position, because its input is not
+readrate-throttled and it bursts until the mux queue blocks). It runs *behind* in *index*
+(fewer, longer segments). Ahead in time, behind in index, simultaneously. That is
+precisely the incommensurability this report's suggested fix identifies: one shared
+`minSegmentRequested` indexing two renditions whose segment durations are set by
+different clocks.
+
+Consequence: because a live subtitle index sits far below the concurrent video sequence,
+**a subtitle fetch drags the anchor back nearly to the start of the session**, not by a
+handful of segments.
+
+#### Inverse severity: quiet content suffers the worst video damage
+
+The subtitle index is a function of how much dialogue has occurred. Therefore:
+
+- **Sparse-dialogue content produces fewer subtitle segments**, so its subtitle index is
+  lower relative to the video sequence, so the rewind is **deeper**.
+- **Dialogue-heavy content** advances the subtitle index closer to the video rate, so the
+  rewind is **shallower**.
+
+A quiet film is damaged more than a talky one. This is a counterintuitive severity
+profile and worth stating explicitly, because it inverts the natural triage instinct: the
+content *least* likely to be suspected of a subtitle-related fault is the content whose
+video playback is destroyed hardest. It also compounds the "intermittent and
+unreproducible" character noted below — severity varies with the dialogue density of
+whatever happens to be airing.
+
+Both consequences follow from mechanisms already measured in this report (uniform 4.000s
+video segmentation, cue-driven subtitle segmentation); only the 92/32 index sample is a
+new datapoint.
 
 ### Controlled A/B, single channel, single variable = whether subtitles are consumed
 
