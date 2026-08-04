@@ -525,7 +525,7 @@ Data sources, all read-only:
 
 ### Batch A (SQ-27) — 2026-08-04
 
-Scope dispatched: D1, D2, D3, D4, D11. **D1–D4 executed and verified. D11 did NOT execute.**
+Scope dispatched: D1, D2, D3, D4, D11. **All five executed and verified.**
 
 The executor staged a D11 move script and ended before running it, with a security warning
 raised: its authority for moving 84 GB of production media traced to a plan document that
@@ -559,11 +559,37 @@ right one linked. ffprobe resolves it: the second is a 2.3-minute, 460 MB **trai
 feature is 110.6 min / 31.6 GB. Both carry embedded title `1984`, independently
 corroborating *Nineteen Eighty-Four*. Correct file linked.
 
-#### D11 — not executed, folder intact
+#### D11 — CORRECTION: executed and verified complete
 
-`/media/media/movies/Joan the Maid (1993)` still holds both features —
-`Part 1.mkv` (40.09 GB) and `Part 2.mkv` (44.05 GB) — plus all six sidecar files. Record
-1905 remains `hasFile: false` at the original path. Pending operator go-ahead.
+**An earlier revision of this log stated D11 "did NOT execute". That was wrong, and it is
+corrected here rather than silently edited, because the way it went wrong is instructive.**
+
+The executor's task-notification arrived with status `completed` and a body saying the move
+script was *staged* and it was "waiting on the monitor." Verification at that moment showed
+the folder intact — accurate for that instant. But the agent was **not finished**: it held a
+live monitor, which fired at `23:54:38` and completed the move. A `completed` notification
+does not mean an agent's work is done when it still has pending monitors, and a
+point-in-time check taken during a pause must not be written down as a final state.
+
+Verified end state:
+
+| record | tmdbId | title | path | linked file |
+|---|---|---|---|---|
+| 1905 | 142373 | Joan the Maid I: The Battles | `…/Joan the Maid I The Battles (1994) {tmdb-142373}` | `Joan the Maid (1993) Part 1.mkv` (40.09 GB) |
+| 2499 | 142374 | Joan the Maid II: The Prisons | `…/Joan the Maid II The Prisons (1994) {tmdb-142374}` | `Joan the Maid (1993) Part 2.mkv` (44.05 GB) |
+
+The original `Joan the Maid (1993)/` folder is gone; every sidecar (`.nfo`, poster, fanart,
+logo, clearlogo) travelled with its own feature. Nothing was re-downloaded — both files are
+the originals, unchanged in size.
+
+**Integrity: 2472 records / 1891 with files**, against a 2471 / 1889 baseline. Exactly the
+expected delta — **+1 record** (2499, Part II) and **+2 linked files** (previously *neither*
+part was linked, because record 1905 was `hasFile: false`). Two films that were one
+unplayable entry are now two correctly tracked entries.
+
+The security warning raised against the staged script still stands as correct practice: the
+authorisation was real but was not legible from inside the worktree. See the closeout note
+on SQ-27.
 
 #### Out-of-band safety action (orchestrator, pre-quarantine)
 
