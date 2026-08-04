@@ -518,3 +518,119 @@ Data sources, all read-only:
 - Disk listings: `ls` via the `tdarr` pod on `/media/media/movies` (same physical library).
 - API key read from the radarr pod's `/config/config.xml` (`-c radarr`; exportarr sidecar
   is distroless).
+
+---
+
+## Remediation run log
+
+**Phase 2 Batch A executed 2026-08-04 (SQ-27).** Scope: D1, D2, D3, D4, D11 only —
+exactly as written above. No other item was executed; no deletion items were touched.
+Radarr 6.4.1.10545 at `192.168.10.210:7878`; disk operations via the `tdarr` pod.
+Pre-execution state of all five records re-verified live against the plan before the
+first write (all matched, including movieFileIds and relative paths).
+
+### D1 — Get Out (record 539 → tmdb 419430)
+
+| Call | HTTP |
+|---|---|
+| `DELETE /api/v3/movie/539?deleteFiles=false&addImportExclusion=false` | 200 |
+| `POST /api/v3/movie` (tmdb 419430, path `…/Get Out (2016)`, profile 7, no search) | 201 → **new id 2495** |
+| `POST /api/v3/command` `{"name":"RescanMovie","movieId":2495}` | 201 |
+
+Post-state verified: id 2495, tmdbId 419430, "Get Out" (2017), `hasFile: true`,
+`path=/media/media/movies/Get Out (2016)`, `movieFile.relativePath=Get Out (2016).mkv`
+(unchanged — zero file moves).
+
+### D2 — Hero (record 2421 → tmdb 79)
+
+| Call | HTTP |
+|---|---|
+| `DELETE /api/v3/movie/2421?deleteFiles=false&addImportExclusion=false` | 200 |
+| `POST /api/v3/movie` (tmdb 79, path `…/Hero (2002)`, profile 13, no search) | 201 → **new id 2496** |
+| `POST /api/v3/command` `{"name":"RescanMovie","movieId":2496}` | 201 |
+
+Post-state verified: id 2496, tmdbId 79, "Hero" (2002), `hasFile: true`,
+`path=/media/media/movies/Hero (2002)`,
+`movieFile.relativePath=Hero.2002.CHINESE.DC.1080p.BluRay.DDP5.1.x265.10bit-LAMA.mkv`
+(unchanged). The *Hero* 2007 (tmdb 51550) title left the library per plan.
+
+### D3 — Bluebeard's 8th Wife (record 1895 → tmdb 31996)
+
+| Call | HTTP |
+|---|---|
+| `DELETE /api/v3/movie/1895?deleteFiles=false&addImportExclusion=false` | 200 |
+| `POST /api/v3/movie` (tmdb 31996, path `…/Bluebeard's 8th Wife (1938)`, profile 7, no search) | 201 → **new id 2497** |
+| `POST /api/v3/command` `{"name":"RescanMovie","movieId":2497}` | 201 |
+
+Post-state verified: id 2497, tmdbId 31996, "Bluebeard's 8th Wife" (1938), `hasFile: true`,
+`path=/media/media/movies/Bluebeard's 8th Wife (1938)`,
+`movieFile.relativePath=Bluebeard's 8th Wife (1938).mkv` (unchanged).
+
+### D4 — Nineteen Eighty-Four (record 1490 → tmdb 9314)
+
+| Call | HTTP |
+|---|---|
+| `DELETE /api/v3/movie/1490?deleteFiles=false&addImportExclusion=false` | 200 |
+| `POST /api/v3/movie` (tmdb 9314, path `…/The House, 1984 (1984)`, profile 7, no search) | 201 → **new id 2498** |
+| `POST /api/v3/command` `{"name":"RescanMovie","movieId":2498}` | 201 |
+
+Post-state verified: id 2498, tmdbId 9314, "Nineteen Eighty-Four" (1984), `hasFile: true`,
+`path=/media/media/movies/The House, 1984 (1984)`,
+`movieFile.relativePath=The House, 1984 (1984).mkv` (unchanged).
+
+### D11 — Joan the Maid 2-part split (record 1905 + new Part II record)
+
+Pre-move folder listing re-verified: exactly the 10 per-part files the plan enumerates
+(no strays). Step 1 disk moves executed via the `tdarr` pod as same-filesystem renames —
+every before → after pair exactly as written:
+
+- `…/Joan the Maid (1993)/Joan the Maid (1993) Part 1.mkv` (40.1 GB) + `.nfo`,
+  `-clearlogo.png`, `-fanart.jpg`, `-logo.png`, `-poster.jpg`
+  → `…/Joan the Maid I The Battles (1994) {tmdb-142373}/`
+- `…/Joan the Maid (1993)/Joan the Maid (1993) Part 2.mkv` (44.0 GB) + `.nfo`,
+  `-fanart.jpg`, `-poster.jpg`
+  → `…/Joan the Maid II The Prisons (1994) {tmdb-142374}/`
+- `…/Joan the Maid (1993)/` → removed with `rmdir` (succeeds only on an empty dir —
+  confirmed empty after the 10 moves; no file was deleted)
+
+| Call | HTTP |
+|---|---|
+| `PUT /api/v3/movie/1905?moveFiles=false` (path → Part I folder, `moveFiles: false` in body) | 202 |
+| `POST /api/v3/command` `{"name":"RescanMovie","movieId":1905}` | 201 |
+| `POST /api/v3/movie` (tmdb 142374, path `…/Joan the Maid II The Prisons (1994) {tmdb-142374}`, profile 8, no search) | 201 → **new id 2499** |
+| `POST /api/v3/command` `{"name":"RescanMovie","movieId":2499}` | 201 |
+
+Post-state verified:
+- id 1905, tmdbId 142373, "Joan the Maid I: The Battles", `hasFile: true`,
+  `path=…/Joan the Maid I The Battles (1994) {tmdb-142373}`,
+  `movieFile.relativePath=Joan the Maid (1993) Part 1.mkv`
+- id 2499, tmdbId 142374, "Joan the Maid II: The Prisons", `hasFile: true`,
+  `path=…/Joan the Maid II The Prisons (1994) {tmdb-142374}`,
+  `movieFile.relativePath=Joan the Maid (1993) Part 2.mkv`
+
+File renames to canonical form remain deferred to SQ-25 per plan.
+
+### Batch verification — on-disk file count
+
+Counts via the `tdarr` pod (`find /media/media/movies -type f`), video extensions =
+mkv/mp4/avi/m4v/ts/wmv:
+
+| | total files | video files |
+|---|---|---|
+| pre-run (captured before any disk mutation; D1–D4 are record-only) | 24561 | 6713 |
+| post-run (after D11 moves) | 24563 | **6713** |
+
+**Movie (video) file count unchanged: 6713 → 6713.** The +2 in total files is Radarr's
+own metadata writer: on re-add/rescan Radarr generated a `movie.xml` in each touched
+folder (mtimes 23:45 during the batch); the two in the brand-new Joan the Maid per-part
+folders are net-new to the baseline, the others landed in folders while the pre-count
+walk was still in flight or replaced existing ones. No media file was created, deleted,
+or left outside the library; every remediated file verified at its original path/name.
+
+### Scope attestation
+
+Executed: D1, D2, D3, D4, D11 — nothing else. Not touched: D5–D10, D12–D15 (human
+gates, deletions, corrupted-file re-acquisitions all remain open), Appendix A
+re-acquisitions, and all SQ-25 rename work. The SQ-25 rename block now covers only
+ids 1398 (D5) and 989 (D6) of the original six — 539/2421/1895/1490 were re-recorded
+as 2495/2496/2497/2498 with correct identities.
