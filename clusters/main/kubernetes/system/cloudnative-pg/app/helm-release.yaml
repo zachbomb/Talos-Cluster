@@ -27,7 +27,65 @@ spec:
     crds:
       create: true
     replicaCount: 2
+    # 2026-08-03: the operator ran BestEffort (chart default `resources: {}`) and had
+    # accumulated 49 and 45 restarts across the two replicas. Every termination was
+    # `exitCode 0` / `reason: Completed` -- these were NOT crashes. The chart's probes
+    # carry no timeoutSeconds, so Kubernetes defaults them to ONE SECOND, and a
+    # 1s budget for a TLS handshake plus an HTTPS /readyz round trip does not survive
+    # a contended node. Three consecutive misses and the kubelet SIGTERMs a healthy
+    # operator. Same mechanism as prometheus-operator, node-exporter, longhorn
+    # engine-image, longhorn-manager and longhorn-csi-plugin -- all fixed the same day.
+    #
+    # This one has the widest blast radius of the six. All NINE cnpg webhooks are
+    # `failurePolicy: Fail`:
+    #   mcluster/mbackup/mdatabase/mscheduledbackup + vcluster/vbackup/vdatabase/
+    #   vscheduledbackup/vpooler
+    # so with BOTH replicas down the API server REJECTS every create/update to any
+    # CNPG Cluster, Backup, ScheduledBackup, Database or Pooler. Six databases sit
+    # behind it (goodmem, immich, openwebui, sonarqube, paperless-ngx, triparr-bot).
+    # replicaCount: 2 buys nothing here -- both replicas were BestEffort, so a
+    # node-wide CPU event starves them together. That is a latent deadlock that bites
+    # exactly during a recovery, when you need to modify a Cluster to get out of it.
+    # Same shape as the Kyverno cold-start deadlock and the CrowdSec LAPI 403.
+    #
+    # No CPU limit, deliberately: CFS throttling would recreate the starvation this is
+    # meant to prevent. Memory is not compressible, so a cap there is safe.
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
     # monitoring:
     #   podMonitorEnabled: false
     #   grafanaDashboard:
     #     create: true
+  # The chart accepts `webhook.livenessProbe.*` but its template only passes
+  # initialDelaySeconds through -- timeoutSeconds and failureThreshold are SILENTLY
+  # DROPPED. Verified by rendering chart 0.29.0 with both set: the output probe still
+  # carried only `initialDelaySeconds: 3`. Setting them in `values` therefore looks
+  # correct and does nothing, so the probe is widened here with a post-render patch
+  # instead. Strategic merge keyed on the container name, NOT a JSON-patch `replace`
+  # on /timeoutSeconds -- that path does not exist in the rendered probe and the patch
+  # would fail. Re-verify this block if the chart is ever upgraded past 0.29.0.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: cloudnative-pg
+            patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: cloudnative-pg
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: manager
+                        livenessProbe:
+                          timeoutSeconds: 5
+                          failureThreshold: 5
+                        readinessProbe:
+                          timeoutSeconds: 5
