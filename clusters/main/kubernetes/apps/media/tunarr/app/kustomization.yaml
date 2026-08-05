@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - helm-release.yaml
   - cronjob-token-heal.yaml
+  - exporter.yaml

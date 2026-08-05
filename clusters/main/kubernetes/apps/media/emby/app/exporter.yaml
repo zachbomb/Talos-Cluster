@@ -1,0 +1,167 @@
+---
+# Standalone Emby metrics exporter — decoupled from the emby pod (see
+# reference_exportarr_metrics_gotchas: a crashing sidecar takes the app down via
+# pod-readiness, so exporters live in their own Deployment). No maintained
+# dedicated Emby exporter exists (dr1s deprecated, TOomaAh semi-abandoned,
+# :latest-only images), so this uses the prometheus-community json_exporter
+# (maintained, multi-arch) against Emby's JSON API. Auth via X-Emby-Token header
+# from ${EMBY_API}. Config + JSONPath validated locally with json_exporter
+# v0.7.0 against the live Emby API (2026-08-05): counts and sessions modules
+# both return series with zero exporter errors.
+#
+# The ServiceMonitor scrapes /probe twice (counts + sessions). Both endpoints
+# share port+path, so each gets a distinct `probe` target label via relabelings
+# — without it the two scrape pools would emit identical `up` label sets.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: emby-exporter-config
+  namespace: media
+  labels:
+    app.kubernetes.io/name: emby-exporter
+data:
+  config.yml: |
+    ---
+    modules:
+      counts:
+        headers:
+          X-Emby-Token: ${EMBY_API}
+        metrics:
+          - name: emby_movie_count
+            path: '{ .MovieCount }'
+            help: Movies in the Emby library
+          - name: emby_series_count
+            path: '{ .SeriesCount }'
+            help: Series in the Emby library
+          - name: emby_episode_count
+            path: '{ .EpisodeCount }'
+            help: Episodes in the Emby library
+      sessions:
+        headers:
+          X-Emby-Token: ${EMBY_API}
+        metrics:
+          # One series per connected session; count(emby_session_active) =
+          # connected clients. No `user` label: service sessions (e.g. the
+          # Homepage widget) carry no UserName and a missing JSONPath field
+          # logs an ERROR on every scrape.
+          - name: emby_session
+            type: object
+            help: Connected Emby sessions (one series per session)
+            path: '{ [*] }'
+            labels:
+              client: '{ .Client }'
+              device: '{ .DeviceName }'
+            values:
+              active: 1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emby-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: emby-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emby-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emby-exporter
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          # renovate: datasource=docker depName=quay.io/prometheuscommunity/json-exporter
+          image: quay.io/prometheuscommunity/json-exporter:v0.7.0@sha256:3a777171d39ad435cb39519e84e0a8b5c63c7e716cc06011f8140cfaabfc1baf
+          args:
+            - --config.file=/etc/json_exporter/config.yml
+            - --web.listen-address=:7979
+          ports:
+            - name: metrics
+              containerPort: 7979
+          volumeMounts:
+            - name: config
+              mountPath: /etc/json_exporter
+              readOnly: true
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: config
+          configMap:
+            name: emby-exporter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emby-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: emby-exporter
+spec:
+  selector:
+    app.kubernetes.io/name: emby-exporter
+  ports:
+    - name: metrics
+      port: 7979
+      targetPort: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: emby-exporter
+  namespace: media
+  labels:
+    app.kubernetes.io/name: emby-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emby-exporter
+  endpoints:
+    - port: metrics
+      path: /probe
+      interval: 60s
+      scrapeTimeout: 30s
+      params:
+        module: [counts]
+        target: ["http://emby:10079/emby/Items/Counts"]
+      relabelings:
+        - targetLabel: probe
+          replacement: counts
+    - port: metrics
+      path: /probe
+      interval: 60s
+      scrapeTimeout: 30s
+      params:
+        module: [sessions]
+        target: ["http://emby:10079/emby/Sessions"]
+      relabelings:
+        - targetLabel: probe
+          replacement: sessions
