@@ -425,7 +425,7 @@ answered with the recommended option.
 | **D5** `The Creatures (1966)` | Identified as Varda's *Les Créatures* (tmdb 53026). Re-add via the D1–D4 zero-move pattern. **Spot-check first.** | BLOCKED on viewing |
 | **D6** `No Regret (1993)` | Move the file to `Non Je Ne Regrette Rien (No Regret) (1993)/`, rescan 993 and 989. **Spot-check first.** | BLOCKED on viewing |
 | **D9** `Monster Mash` / M\*A\*S\*H | **Swap to the Blu-ray.** Manual-import the 4.03 GB Blu-ray/commentary encode onto record 870 replacing the WEBDL, then remove the superseded WEBDL. SQ-8 preservation-manifest check runs before any delete. | READY |
-| **D10** `JOUR DE FÊTE` pair | Not decidable yet. Run the frame-hash comparison at matching chapter marks + catalogue research first. | RESEARCH |
+| **D10** `JOUR DE FÊTE` pair | **CORRECTED — two different CUTS, not duplicates.** Neither is deleted. Consolidate into one folder with `{edition-}` tags per SQ-26. See the correction section below. | KEEP BOTH |
 | **D12** `First Cow (2020)` | **Salvage then delete.** Extract the Spanish PGS track from the orphan to a sidecar beside the tracked 2160p file, then delete the orphan folder (~9.6 GB). | READY |
 | **D13** `Curious George 2` | Delete the dashless orphan. MD5-identical; formality. | READY |
 | **D15** `Samson and Delilah (1996)` | **Remove the empty folder. Skip re-acquisition** — metadata is low-confidence and nobody specifically wants this title. | READY |
@@ -456,3 +456,71 @@ The deeper `ffprobe` pass (chapters, per-stream languages, all format tags) is w
 D5, D9 and D12. Two of those three would otherwise have destroyed content: the M\*A\*S\*H
 "duplicate" carries a commentary track the keeper lacks, and the First Cow "duplicate"
 carries a Spanish subtitle track the keeper lacks. Both were queued for plain deletion.
+
+---
+
+## CORRECTION — D10 is NOT a duplicate pair. It is two different cuts.
+
+**Raised by the operator, confirmed by measurement 2026-08-04.** The D10 analysis above is
+wrong and its recommendation is withdrawn. Deleting either copy would have destroyed a
+version, in direct violation of the standing library guardrail.
+
+### The error
+
+The analysis compared **total runtimes** (16.6 s / 0.34% apart) and **technical
+configuration** (identical codec, channel layout, subtitle config, chapter count, rip
+session) and concluded "two encodes of the same content." It also described the chapter
+boundary offsets as "proportionally consistent across all 11 chapters." They are not — the
+two boundaries it quoted already diverge in **opposite directions** (ch1: 1995 later by
+21.2 s; ch9: 1995 earlier by 41.3 s), which the write-up did not reconcile.
+
+### The measurement that settles it — per-chapter LENGTHS, not boundaries
+
+| ch | length 1964 | length 1995 | delta |
+|---|---|---|---|
+| 1 | 464.09 | 485.28 | **+21.19** |
+| 2 | 654.11 | 617.74 | **−36.37** |
+| 3 | 406.70 | 407.24 | +0.54 |
+| 4 | 693.57 | 645.56 | **−48.01** |
+| 5 | 201.78 | 214.51 | +12.72 |
+| 6 | 371.83 | 377.21 | +5.38 |
+| 7 | 404.11 | 408.41 | +4.30 |
+| 8 | 378.59 | 367.08 | −11.51 |
+| 9 | 643.64 | 654.15 | +10.51 |
+| 10 | 364.82 | 364.95 | +0.13 |
+| 11 | 248.62 | 273.15 | **+24.52** |
+
+Boundary deltas span **−62.6 s to +21.2 s with a sign change**. Aggregate absolute
+difference is **~175 s — nearly three minutes of differing content** — netting to 16.6 s
+only because gains and losses cancel.
+
+Chapter 4 is 48 s shorter in the 1995 version; chapter 1 is 21 s longer. **No re-rip of one
+disc redistributes content between chapters.** This is one work in two edits.
+
+The identical technical fingerprint and shared rip session are consistent with this, not
+against it: two titles pulled off the same physical disc 8 minutes apart — plausibly an
+original and a later restoration, which is precisely what folders labelled 1964 and 1995
+assert.
+
+### Revised disposition
+
+**Neither copy is deleted.** Per the guardrail carried from the 2026-07-30 version work:
+multiple editions are intentional and must stay independently selectable; only a *redundant
+duplicate* may be removed, never a *version*.
+
+Correct treatment is the additive one from SQ-26: consolidate both into **one movie folder**
+with consistent `{edition-}` tags so Plex groups them as selectable versions — e.g.
+`{edition-1964}` and `{edition-1995}` pending better labels once the film is identified.
+Both files stay; nothing is consolidated away.
+
+The title itself remains unidentified (no TMDB entry, no catalogue hit; both folders' NFOs
+are a tinyMediaManager fuzzy-match error pointing at Tati's unrelated 1949 *Jour de Fête*).
+Identification is still open — but it is now a *cataloguing* question, not a
+keep-or-delete one.
+
+### Method note worth keeping
+
+**Compare per-chapter lengths, not total runtime, when testing whether two files are the
+same cut.** A re-edit that adds in one place and trims in another nets to almost nothing at
+the total level while differing substantially throughout. Total runtime agreement is
+necessary but nowhere near sufficient evidence of identical content.
