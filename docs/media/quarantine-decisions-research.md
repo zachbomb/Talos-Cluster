@@ -524,3 +524,44 @@ keep-or-delete one.
 same cut.** A re-edit that adds in one place and trims in another nets to almost nothing at
 the total level while differing substantially throughout. Total runtime agreement is
 necessary but nowhere near sufficient evidence of identical content.
+
+### D10 refined — a 1995 recut of a 1964 film (operator reading, supported by the deltas)
+
+Splitting the per-chapter deltas by position, rather than treating them as scatter, gives a
+coherent editorial signature:
+
+| position | chapters | delta |
+|---|---|---|
+| front | ch1 | **+21.19 s** |
+| back | ch11 | **+24.52 s** |
+| body | ch2–ch10 | **−62.31 s** |
+| | | net **−16.60 s** |
+
+**~46 seconds ADDED at the two ends; ~62 seconds TRIMMED out of the middle.**
+
+That is what a recut looks like: new front matter (titles, re-release or restoration
+credits) and new end matter, with the body tightened. It is *not* what a restoration looks
+like — restorations preserve or restore runtime and reinstate lost footage; they do not cut
+48 s from chapter 4 and 36 s from chapter 2 while padding the bookends. Editorial trimming
+of the body on a later release is commonly driven by rights or clearance issues (music cues
+especially) or by a director/distributor re-edit.
+
+Combined with the folder labels, the reading is: **`(1964)` is the original; `(1995)` is a
+later recut of it.** Both are legitimate versions of one work and both stay.
+
+**Edition labels** for the SQ-26 consolidation — both files tagged, per the rule that a
+folder must never have some features tagged and others bare:
+
+```
+JOUR DE FÊTE DANS LES MONTS NAGA (1964)/
+  … (1964) {edition-1964 Original}.mkv
+  … (1964) {edition-1995 Recut}.mkv
+```
+
+Folder year follows the original release (1964); the recut is carried as an edition inside
+it, which is how Plex expects a later cut of an earlier film to be modelled. Labels can be
+refined once the film is identified — the structure does not depend on knowing the title.
+
+**Do not "pick the better copy."** The earlier size-and-runtime comparison implicitly framed
+this as choosing a winner (1995 larger, 1964 longer). Once they are understood as two cuts,
+that question dissolves: they are different works to preserve, not competing encodes of one.
