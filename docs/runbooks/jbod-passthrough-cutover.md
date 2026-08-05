@@ -800,6 +800,68 @@ Only declare complete when the operator confirms.
 
 ---
 
+## Post-soak experiment: can the UAS quirk come OFF?
+
+**Do not attempt until Phase 6 has passed.** This is the payoff, not part of the cutover.
+
+### Why this is worth testing
+
+Confirmed on the live guest 2026-08-05:
+
+```
+# cat /proc/cmdline | tr ' ' '\n' | grep -i quirks
+usb-storage.quirks=174c:55aa:u
+```
+
+The `u` flag is **IGNORE_UAS** — those six drives are excluded from the UAS driver and fall back to `usb-storage` **bulk-only transport (BOT)**: one command outstanding at a time, no queuing. That is a large throughput penalty, and it is why the 2026-08-05 resilver ran at ~495 MB/s rather than saturating the link.
+
+**The cutover does not change this.** Task 3.3 applies the same quirk on the host, so BOT and its penalty carry over. Do not read a slow post-cutover scrub as a regression — it is the same handbrake, in a new place.
+
+### The hypothesis
+
+The quirk mitigates **Layer 1** (the ASMedia UAS firmware defect). The cutover fixes **Layer 2** (the passthrough amplifier). Those are independent.
+
+With Layer 2 removed, the host's mature USB stack owns error recovery. A UAS timeout that currently escalates to controller-wide `HC died` should instead be a per-device reset the host absorbs — exactly what `uas_eh_device_reset_handler` exists to do, and what the ATA drives' equivalent path does routinely without anyone noticing.
+
+**If that holds, the quirk becomes unnecessary and UAS queuing can come back** — materially faster scrubs and resilvers, with the reliability the cutover bought.
+
+### How to test it, safely
+
+**Preconditions:** Phase 6 passed. Pool ONLINE, no errors. Media stack shed again for the duration.
+
+**Step 1: Remove the quirk and reboot the host**
+
+Reverse Task 5.2 — restore `/root/cmdline.pre-quirk-2026-08-05` (or the grub backup), refresh, reboot. Verify:
+
+```bash
+cat /proc/cmdline | tr ' ' '\n' | grep -i quirks     # expect: nothing
+lsmod | grep -E '^uas'                                # expect: uas loaded
+ls /sys/bus/usb/drivers/uas/                          # expect: the six devices bound
+```
+
+**Step 2: Run a full scrub with dmesg under watch**
+
+```bash
+zpool scrub Pibbs-Horde
+watch -n 60 'dmesg | grep -icE "xhci|uas|HC died|reset"'
+```
+
+**Step 3: Read the result**
+
+| outcome | verdict |
+|---|---|
+| Scrub completes, no resets, throughput materially higher | **Quirk removable.** Keep it off. Record the new baseline throughput. |
+| Scrub completes, some `uas_eh_device_reset` lines, no `HC died`, pool stays ONLINE | **The interesting case.** Layer 1 fires and the host absorbs it — exactly as predicted. Judgement call on whether the speed is worth the resets; record the reset rate either way. |
+| Any `HC died`, or the vdev drops | **Quirk stays.** Layer 1 is severe enough to need it even with host-owned recovery. Restore the quirk immediately and record the result — it is a meaningful finding about the ASMedia firmware. |
+
+**Rollback:** restore the cmdline backup, refresh, reboot. Identical to Task 5.2 in reverse.
+
+### Why this is deliberately AFTER the soak
+
+Removing the quirk during or before the soak would confound the test. Phase 6 answers "did fixing Layer 2 work?" — it must run with Layer 1 mitigation unchanged, so the only variable is the passthrough. This experiment then answers a second, separate question with the first one already settled.
+
+---
+
 ## Available lever: I/O throttling (not used, deliberately)
 
 The research ranks scrub/resilver I/O throttling as a free, reversible mitigation:
