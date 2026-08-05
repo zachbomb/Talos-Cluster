@@ -36,3 +36,6 @@ current-ip-assignments.txt
 offline-devices-audit.csv
 .rootcause/
 clustertool-new
+
+# Sidequest/agent worktrees — never commit
+.claude/worktrees/
