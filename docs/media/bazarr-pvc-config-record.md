@@ -58,3 +58,67 @@ analysis refers to.
 Pre-flip config preserved in the pod at
 `/config/config/config.yaml.bak-preflip-2026-08-05`. Revert = restore that file and
 restart the deployment.
+
+## Post-flip verification, 2026-08-05 (~2.5h after the flip)
+
+| metric | pre-flip | +2.5h | verdict |
+|---|---|---|---|
+| movies wanting subs | 77 | **147** (+70) | flip working |
+| episodes wanting subs | 1112 | **1112** (no change) | index stale — see below |
+
+**Codec normalization is CONFIRMED WORKING.** The +70 movies are previously-hidden
+bitmap-only titles surfacing, which means Bazarr's `hdmv_pgs_subtitle → pgs` and
+`dvd_subtitle → vobsub` mapping is functional. That was the open caveat on SQ-221 and it is
+now closed by observation rather than by a source read.
+
+### But TV did not move, and it should have
+
+ffprobe sample of 60 TV episodes:
+
+```
+bitmap-ONLY (PGS, no text track) : 15   (25%)
+text track present               : 38
+both text and bitmap             :  7
+no subtitle streams              :  0
+```
+
+At ~25% of 8109 episode files, roughly **2000 episodes should have surfaced** as wanted.
+Zero did.
+
+Confirmed on a specific title: `Out 1` (Rivette, 8 episode files, every one
+`hdmv_pgs_subtitle` only) still reports `episodeMissingCount: 0` in Bazarr.
+
+**Cause: the subtitle index is not re-evaluated on the `series_sync` cycle.** Bazarr has
+dedicated tasks for it:
+
+```
+series_full_scan_subtitles   "Index All Existing Episodes Subtitles"
+movies_full_scan_subtitles   "Index All Existing Movies Subtitles"
+```
+
+The movies index evidently got re-evaluated; the series index did not. **The post-scrub
+sweep must therefore explicitly run `series_full_scan_subtitles`** — a flag change alone
+does not reach existing TV items, and waiting longer will not fix it.
+
+This re-index is an ffprobe pass over ~8109 episodes on NFS
+(`embedded_subtitles_parser: ffprobe`), so it is genuinely I/O-heavy and belongs in the
+post-scrub window alongside the sweep, not before it.
+
+### Why this check was worth running
+
+Without it, the post-sweep census would have shown TV unchanged and the natural suspicion
+would have been the codec normalization mapping — the exact caveat already flagged. The
+mapping is fine. The real gap is a stale index needing an explicit re-scan. One is a
+config/compatibility bug; the other is a missing step in the runbook.
+
+### Instrument errors made and corrected during this check
+
+1. **Task `lastExecution` read as `None` for every task** — read five minutes after
+   restarting Bazarr. Post-restart scheduler state is not evidence about historical
+   execution. The durable instrument was the *download history* (`/api/episodes/history`),
+   which showed `embeddedsubtitles` had delivered 59 times starting ~2026-07-31.
+2. **First ffprobe sample reported "577 episodes, 0 subtitle streams"** from a `head -40`.
+   TV filenames contain spaces and an unquoted `$(find …)` in a `for` loop word-split each
+   path into fragments; every fragment failed ffprobe and was counted as "no subtitles".
+   A complete false negative. Corrected with `find | while IFS= read -r`. **A sample count
+   that does not match the requested limit is the tell.**
