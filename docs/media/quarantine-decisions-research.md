@@ -412,3 +412,47 @@ filesystem cleanup with no ambiguity.
 - Web search: Criterion Varda box-set disc contents, Criterion Marlon Riggs box-set disc 2
   contents, and Comité du Film Ethnographique / Naga-hills context (no result for the JOUR DE
   FÊTE title itself).
+
+---
+
+## Operator decisions — 2026-08-04
+
+Recorded after reading the research above. All four questions put to the operator were
+answered with the recommended option.
+
+| item | decision | status |
+|---|---|---|
+| **D5** `The Creatures (1966)` | Identified as Varda's *Les Créatures* (tmdb 53026). Re-add via the D1–D4 zero-move pattern. **Spot-check first.** | BLOCKED on viewing |
+| **D6** `No Regret (1993)` | Move the file to `Non Je Ne Regrette Rien (No Regret) (1993)/`, rescan 993 and 989. **Spot-check first.** | BLOCKED on viewing |
+| **D9** `Monster Mash` / M\*A\*S\*H | **Swap to the Blu-ray.** Manual-import the 4.03 GB Blu-ray/commentary encode onto record 870 replacing the WEBDL, then remove the superseded WEBDL. SQ-8 preservation-manifest check runs before any delete. | READY |
+| **D10** `JOUR DE FÊTE` pair | Not decidable yet. Run the frame-hash comparison at matching chapter marks + catalogue research first. | RESEARCH |
+| **D12** `First Cow (2020)` | **Salvage then delete.** Extract the Spanish PGS track from the orphan to a sidecar beside the tracked 2160p file, then delete the orphan folder (~9.6 GB). | READY |
+| **D13** `Curious George 2` | Delete the dashless orphan. MD5-identical; formality. | READY |
+| **D15** `Samson and Delilah (1996)` | **Remove the empty folder. Skip re-acquisition** — metadata is low-confidence and nobody specifically wants this title. | READY |
+
+### What the operator needs to spot-check (D5, D6)
+
+Two files, roughly a minute total. Both identifications are strong but inferential, and both
+write a permanent identity into a filename at SQ-25, so the check is cheap insurance —
+today already demonstrated that confident inference from metadata can point the wrong way.
+
+- `/media/media/movies/The Creatures (1966)/…` — expect **Agnès Varda's *Les Créatures***
+  (1966): French dialogue, island setting, Catherine Deneuve and Michel Piccoli, a
+  colour/black-and-white mix. If it is instead an Italian gothic horror, it is
+  *Terror-Creatures from the Grave* and the original Radarr record was right.
+- `/media/media/movies/No Regret (1993)/No Regret (1993).mkv` — expect **Marlon Riggs'
+  *No Regret*** (1993): a 38-minute poetic first-person documentary with five Black gay men
+  living with HIV. If it is a Korean action film, it is *No Regret, No Return* and record
+  989 was correct.
+
+### Note on how the framing changed
+
+This was originally scoped as "quarantine all seven, then decide." The research dissolved
+most of that: D5 is a record correction rather than a mispull, D9/D12/D13 are swaps or
+deletions with known keepers, and D15 is an empty directory. **Only D10 remains genuinely
+unidentified**, and it is the one item where parking the content is the right move.
+
+The deeper `ffprobe` pass (chapters, per-stream languages, all format tags) is what changed
+D5, D9 and D12. Two of those three would otherwise have destroyed content: the M\*A\*S\*H
+"duplicate" carries a commentary track the keeper lacks, and the First Cow "duplicate"
+carries a Spanish subtitle track the keeper lacks. Both were queued for plain deletion.
