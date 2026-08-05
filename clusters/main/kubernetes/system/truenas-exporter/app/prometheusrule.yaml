@@ -98,6 +98,13 @@ spec:
         # (which is fragile to quote correctly and runs an extra query at notify time).
         # The filter set is identical to the previous form; only the reported value
         # changed. Verified against live data 2026-08-04: returns 20.6341.
+        #
+        # TIER DECISION (2026-08-05): this DELIBERATELY stays `warning` even though
+        # it had 12h of lead time before the 2026-08-04 collapse. A stall alone has
+        # a documented benign mode (metadata traversal; "treat a single firing as
+        # go look") and paging critical on it would erode critical's meaning. The
+        # escalation lives in TrueNASScrubStalledWithVdevErrors below — stall PLUS
+        # climbing errors is the actual collapse signature and pages at critical.
         - alert: TrueNASScrubStalled
           expr: >-
             truenas_pool_scan_percentage
@@ -116,6 +123,38 @@ spec:
               before assuming ZFS is at fault. A scrub CAN legitimately pause during
               metadata traversal, so treat a single firing as "go look", not "it broke".
               Scrubs are resumable: `zpool scrub -p` pauses and keeps position.
+
+        # THE COLLAPSE SIGNATURE. Both incidents (2026-08-03 and 2026-08-04)
+        # followed the same shape: a scrub wedges under load, then vdev error
+        # counters start climbing — enclosure link failing while ZFS keeps issuing
+        # scrub I/O at it. Either half alone is ambiguous (a stall can be benign,
+        # errors can be a one-off glitch); together they are the specific condition
+        # that has preceded controller death twice, and this rule would have fired
+        # hours before operator awareness in both. Filter chain is identical to
+        # TrueNASScrubStalled (same left-operand-is-percentage trick, same
+        # non-optional paused guard) plus the per-pool error-increase join.
+        # Fires ALONGSIDE TrueNASScrubStalled and TrueNASVdevErrors, not instead
+        # of them — the layering is intended.
+        - alert: TrueNASScrubStalledWithVdevErrors
+          expr: >-
+            truenas_pool_scan_percentage
+            and on(pool) (delta(truenas_pool_scan_percentage[20m]) < 0.01)
+            and on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1)
+            and on(pool) (truenas_pool_scan_paused == 0)
+            and on(pool) (sum by (pool) (increase(truenas_vdev_errors_total[1h])) > 0)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS collapse signature on {{ $labels.pool }}: scrub stalled at {{ $value | printf \"%.2f\" }}% AND vdev errors climbing"
+            description: >-
+              A stalled scrub with error counters rising is the exact signature
+              that preceded both the 2026-08-03 and 2026-08-04 pool collapses -
+              the transport is failing while ZFS keeps issuing scrub I/O at it.
+              Act now: pause the scrub (`zpool scrub -p` keeps position), then
+              check `count(truenas_disk_temperature_celsius)` (expect 14) and
+              `zpool status`. Do NOT wait for TrueNASDiskCountDrop - by then the
+              devices are already gone.
 
         # Closes the gap that let the 2026-08-02 scheduled scrub skip silently.
         # `pool.scrub.run(name, threshold)` defaults to threshold=35 DAYS and returns
@@ -218,17 +257,76 @@ spec:
               Non-zero here means run `zpool status -v` for the affected file list
               BEFORE `zpool clear`, since clearing erases that record.
 
+        # PROMOTED warning -> critical after the 2026-08-04 collapse. This was the
+        # FIRST escalation signal — it fired at 20:44, ~84 minutes before the
+        # operator saw anything. A disk accumulating errors under sustained load is
+        # the precursor to the whole cascade: errors -> ZFS marks the disk DEGRADED
+        # -> hot-spare auto-attach -> resilver -> controller death. On this hardware
+        # it is the leading indicator of total pool loss, not "look at it
+        # eventually"; at warning it rode the 12h repeat path alongside
+        # TrueNASPoolFillingUp. Tier pinned by promtool test — do not demote.
+        #
+        # CAUTION: this expression SELF-CANCELS at total failure. When the devices
+        # vanish entirely there are no error counters left to increase, so the
+        # alert resolves exactly when things are at their worst (observed 22:04 on
+        # 2026-08-04 — silence read as recovery). TrueNASVdevVanished below is the
+        # floor under it; do not remove or rework one without the other.
         - alert: TrueNASVdevErrors
           expr: increase(truenas_vdev_errors_total[1h]) > 0
           for: 5m
           labels:
-            severity: warning
+            severity: critical
           annotations:
             summary: "TrueNAS {{ $labels.vdev }}: {{ $labels.kind }} errors increasing"
             description: >-
               vdev {{ $labels.vdev }} in pool {{ $labels.pool }} accumulated
               {{ $labels.kind }} errors in the last hour. Recurring errors after a
               `zpool clear` mean real hardware, not a transient glitch.
+
+        # The floor under TrueNASVdevErrors. Any alert whose expression can
+        # evaluate to "no data" during the failure it watches needs a companion
+        # that fires on the absence — on 2026-08-04 the vdev error counters
+        # stopped existing at 22:04 because the devices themselves were gone, and
+        # the error alert cleared while the pool was dying.
+        #
+        # Shape: series present 1h ago `unless` present now, collapsed to one
+        # alert per vdev. The `truenas_scrape_success == 1` guard is NOT optional:
+        # the exporter serves last-known values while the TrueNAS API is
+        # unreachable, but a fresh exporter pod that starts while the API is down
+        # has no last-known values — every truenas_* series except
+        # truenas_scrape_success would be absent, and without the guard a routine
+        # pod restart during an API outage would page as "all vdevs vanished".
+        # That state is TrueNASExporterDown's job, not this alert's.
+        #
+        # KNOWN PROPERTY: this self-resolves ~1h after the disappearance (the
+        # offset window slides past). Resolution is NOT evidence of recovery —
+        # the page is the point. A deliberate vdev removal/rename also fires it
+        # for up to that hour; expected, a device leaving the pool is exactly
+        # what it watches.
+        - alert: TrueNASVdevVanished
+          expr: >-
+            (
+              count by (pool, vdev) (truenas_vdev_errors_total offset 1h)
+              unless
+              count by (pool, vdev) (truenas_vdev_errors_total)
+            )
+            and on() (max(truenas_scrape_success) == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TrueNAS vdev {{ $labels.vdev }} in {{ $labels.pool }} has VANISHED from metrics"
+            description: >-
+              Error counters for this vdev existed an hour ago and no longer exist,
+              while the exporter is still scraping TrueNAS successfully - the
+              devices have disappeared from ZFS's view entirely. This is WORSE than
+              errors climbing: it is the state in which error-based alerts go
+              silent and silence reads as recovery. Check `zpool status` and the
+              enclosure/transport (dmesg for `USB disconnect`) - see
+              TrueNASDiskCountDrop for the recovery procedure. This alert
+              self-resolves about an hour after the disappearance; treat its
+              resolution as the comparison window expiring, never as the vdev
+              coming back.
 
         - alert: TrueNASPoolFillingUp
           expr: truenas_pool_used_ratio > 0.80

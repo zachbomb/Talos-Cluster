@@ -1,7 +1,7 @@
-# Unit tests for the scrub rules in truenas-exporter/app/prometheusrule.yaml.
+# Unit tests for the TrueNAS rules in truenas-exporter/app/prometheusrule.yaml.
 # CI extracts that file's .spec to prometheusrule-truenas-extracted.yaml.
 #
-# These cases pin the two behaviours that were learned the hard way:
+# These cases pin the behaviours that were learned the hard way:
 #   1. A PAUSED scrub must NOT fire TrueNASScrubStalled. A paused scrub still
 #      reports state=SCANNING with a frozen percentage, so without the
 #      `scan_paused == 0` guard it is indistinguishable from a wedged one. The
@@ -10,6 +10,18 @@
 #      truenas_pool_scan_percentage is the left operand precisely so the alert
 #      can report WHERE it stalled. A refactor that reorders the `and` chain
 #      would silently change the message; this test catches that.
+#   3. TrueNASVdevErrors is severity=critical (2026-08-04: it was the FIRST
+#      escalation signal, 84 minutes before operator awareness). The tier is
+#      pinned; a demotion to warning is a regression, not a style choice.
+#   4. TrueNASVdevVanished MUST fire when the vdev error series goes ABSENT
+#      while the exporter still scrapes successfully. This is the entire point
+#      of the rule: on 2026-08-04 the error alert self-cancelled at 22:04
+#      because the devices ceased to exist, and silence read as recovery. It
+#      must stay SILENT when the exporter itself dies (scrape_success absent)
+#      or the disappearance would false-page on every exporter outage.
+#   5. TrueNASScrubStalledWithVdevErrors (the collapse signature) fires only on
+#      the CONJUNCTION: scrub stalled AND errors climbing. Either half alone
+#      must not fire it — that is what distinguishes it from its parents.
 rule_files:
   - prometheusrule-truenas-extracted.yaml
 evaluation_interval: 1m
@@ -34,6 +46,11 @@ tests:
             exp_annotations:
               summary: "TrueNAS scrub on Pibbs-Horde stuck at 20.63% — no progress in 20 minutes"
               description: "The scan is still in SCANNING state but percentage is flat. On the JBOD pool this is the signature of the enclosure link dropping - check `count(truenas_disk_temperature_celsius)` (expect 14) and `zpool status` before assuming ZFS is at fault. A scrub CAN legitimately pause during metadata traversal, so treat a single firing as \"go look\", not \"it broke\". Scrubs are resumable: `zpool scrub -p` pauses and keeps position."
+      # Stall WITHOUT climbing errors: the collapse-signature compound stays
+      # silent. A stalled scrub alone is the warning-tier parent's job.
+      - eval_time: 35m
+        alertname: TrueNASScrubStalledWithVdevErrors
+        exp_alerts: []
 
   # THE REGRESSION GUARD: identical frozen percentage, but paused=1.
   # Stalled must stay silent; Progress must still report.
@@ -101,4 +118,127 @@ tests:
         exp_alerts: []
       - eval_time: 35m
         alertname: TrueNASScrubProgress
+        exp_alerts: []
+
+  # Pinned behaviour 3: climbing vdev errors page at CRITICAL. This was the
+  # first escalation signal of the 2026-08-04 collapse (fired 20:44, operator
+  # aware ~22:08).
+  - interval: 1m
+    input_series:
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="read"}'
+        values: "0+1x40"
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: TrueNASVdevErrors
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              pool: Pibbs-Horde
+              vdev: raidz2-0
+              kind: read
+            exp_annotations:
+              summary: "TrueNAS raidz2-0: read errors increasing"
+              description: "vdev raidz2-0 in pool Pibbs-Horde accumulated read errors in the last hour. Recurring errors after a `zpool clear` mean real hardware, not a transient glitch."
+
+  # Pinned behaviour 4, positive half — THE POINT OF THE RULE: error series for
+  # a vdev exist, then cease to exist at t=70m while the exporter keeps scraping
+  # (this is what total device disappearance looks like — no devices, no
+  # counters). TrueNASVdevVanished must fire; TrueNASVdevErrors must be silent
+  # at the same instant, demonstrating the self-cancel this rule floors.
+  # Timing: last sample 70m + 5m staleness lookback -> condition true from 76m,
+  # `for: 5m` -> firing from 81m.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="read"}'
+        values: "0x70"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="write"}'
+        values: "0x70"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="checksum"}'
+        values: "0x70"
+      - series: 'truenas_scrape_success'
+        values: "1x100"
+    alert_rule_test:
+      # While the series still exist: silent.
+      - eval_time: 70m
+        alertname: TrueNASVdevVanished
+        exp_alerts: []
+      # After the disappearance: fires, collapsed to ONE alert per vdev.
+      - eval_time: 85m
+        alertname: TrueNASVdevVanished
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              pool: Pibbs-Horde
+              vdev: raidz2-0
+            exp_annotations:
+              summary: "TrueNAS vdev raidz2-0 in Pibbs-Horde has VANISHED from metrics"
+              description: "Error counters for this vdev existed an hour ago and no longer exist, while the exporter is still scraping TrueNAS successfully - the devices have disappeared from ZFS's view entirely. This is WORSE than errors climbing: it is the state in which error-based alerts go silent and silence reads as recovery. Check `zpool status` and the enclosure/transport (dmesg for `USB disconnect`) - see TrueNASDiskCountDrop for the recovery procedure. This alert self-resolves about an hour after the disappearance; treat its resolution as the comparison window expiring, never as the vdev coming back."
+      # The self-cancel, demonstrated: the error-increase alert is SILENT at the
+      # exact moment the devices are gone. Without Vanished, this is total
+      # failure with zero firing alerts.
+      - eval_time: 85m
+        alertname: TrueNASVdevErrors
+        exp_alerts: []
+
+  # Pinned behaviour 4, negative half: the exporter itself dies at t=70m, taking
+  # ALL its series down including truenas_scrape_success. The vdev series are
+  # just as absent as in the positive case, but Vanished must stay silent — an
+  # exporter outage is TrueNASExporterDown's territory, and without the
+  # scrape_success guard every exporter restart during a TrueNAS API outage
+  # would page as "all vdevs vanished".
+  - interval: 1m
+    input_series:
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="read"}'
+        values: "0x70"
+      - series: 'truenas_scrape_success'
+        values: "1x70"
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: TrueNASVdevVanished
+        exp_alerts: []
+
+  # Pinned behaviour 5, positive half: scrub frozen AND vdev errors climbing —
+  # the collapse signature — pages critical, reporting WHERE the scrub stalled
+  # ($value is the percentage, same left-operand contract as ScrubStalled).
+  # TrueNASScrubStalled (warning) and TrueNASVdevErrors (critical) fire
+  # alongside on their own labels; the layering is intended and not asserted
+  # again here.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_scan_percentage{pool="Pibbs-Horde"}'
+        values: "20.6341x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="SCANNING"}'
+        values: "1x40"
+      - series: 'truenas_pool_scan_paused{pool="Pibbs-Horde"}'
+        values: "0x40"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="read"}'
+        values: "0+2x40"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: TrueNASScrubStalledWithVdevErrors
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS collapse signature on Pibbs-Horde: scrub stalled at 20.63% AND vdev errors climbing"
+              description: "A stalled scrub with error counters rising is the exact signature that preceded both the 2026-08-03 and 2026-08-04 pool collapses - the transport is failing while ZFS keeps issuing scrub I/O at it. Act now: pause the scrub (`zpool scrub -p` keeps position), then check `count(truenas_disk_temperature_celsius)` (expect 14) and `zpool status`. Do NOT wait for TrueNASDiskCountDrop - by then the devices are already gone."
+
+  # Pinned behaviour 5, negative half: errors climbing but the scrub is
+  # ADVANCING — the compound stays silent (TrueNASVdevErrors alone covers it).
+  # Together with the stall-without-errors assertion in the first test case,
+  # this pins the rule to the conjunction.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_scan_percentage{pool="Pibbs-Horde"}'
+        values: "10+1x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="SCANNING"}'
+        values: "1x40"
+      - series: 'truenas_pool_scan_paused{pool="Pibbs-Horde"}'
+        values: "0x40"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="read"}'
+        values: "0+2x40"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: TrueNASScrubStalledWithVdevErrors
         exp_alerts: []
