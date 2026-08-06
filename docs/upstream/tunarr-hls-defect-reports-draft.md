@@ -489,6 +489,67 @@ succeeds. Fresh sessions fail; established ones work.
 
 ---
 
+## Report 5 — ROOT CAUSE: video and subtitles are written by two different muxers, and nothing signals between them
+
+**Added 2026-08-06.** This is not a fourth independent defect. It is the structural
+choice that produces Reports 1–4 and both open client-side issues. Stating it separately
+because fixing it addresses several symptoms at once, and because each symptom read as
+its own bug for weeks.
+
+### The split
+
+Both outputs come from a single ffmpeg invocation, but different muxers:
+
+```
+-f hls       -hls_flags program_date_time+append_list+independent_segments+omit_endlist+discont_start
+             -> stream.m3u8      (video)
+
+-f segment   -segment_list subs.m3u8  -segment_list_type hls  -segment_list_flags live
+             -segment_list_size 20    -segment_format webvtt
+             -> subs.m3u8 + sub%06d.vtt   (subtitles)
+```
+
+The client is handed two playlists in two HLS dialects and expected to reconcile them,
+with no cross-signalling.
+
+### Measured consequences
+
+| observation | cause |
+|---|---|
+| `subs.m3u8` finalizes mid-session with `#EXT-X-ENDLIST`; `stream.m3u8` never does | `omit_endlist` is an **hls-muxer** flag. It does not reach `-f segment`, whose `seg_write_trailer()` appends ENDLIST on clean exit. Confirmed live: 338 consecutive polls with ENDLIST present on a subtitle playlist while video ran normally. |
+| Subtitle cue timeline resets at program transitions with **no marker** | `stream.m3u8` carried `EXT-X-DISCONTINUITY: 3` at an in-process program change. `subs.m3u8` carried **0**. Its complete tag set is `VERSION`, `TARGETDURATION`, `MEDIA-SEQUENCE`, `ALLOW-CACHE` — no discontinuity support at all. Zero subtitle playlists on this deployment have ever carried one. |
+| Video playlist index space is unbounded; subtitle window is 20 | `-hls_list_size 0` vs `-segment_list_size 20`. A mature video generation reaches index ~300 while subtitles cycle in a 20-entry window, so a deep join sees a ~300-segment backward jump at a relaunch while a fresh join sees none. |
+| The two renditions share one `minSegmentRequested` anchor | see Report 1+2. Independent index spaces, one anchor. |
+
+### Two transition shapes, only one of which is externally visible
+
+Program changes occur in **two** forms, which must not be conflated when analysing logs:
+
+- **Relaunch** — a new ffmpeg process. `MEDIA-SEQUENCE` resets; a new wrapper-log entry appears.
+- **In-process** — same ffmpeg, next input. Emits `EXT-X-DISCONTINUITY` on video, **no wrapper-log entry**, no renumber.
+
+Any analysis keyed on wrapper-log presence is blind to the second kind. Classify by
+`EXT-X-DISCONTINUITY` count instead.
+
+### Suggested fixes, in order of tractability
+
+1. **Emit `EXT-X-DISCONTINUITY` on the subtitle playlist at program transitions.** A missing
+   tag, not architectural state. This alone lets a conforming client reset its expectations
+   correctly, and it is standard HLS rather than a Tunarr-specific heuristic.
+2. **Suppress the subtitle trailer's ENDLIST for live channels**, matching the intent of
+   `omit_endlist` on the video side.
+3. **Bound the video playlist** (`-hls_list_size` with `delete_segments`) so both renditions
+   share a comparable index space and playlist/disk stay consistent by construction.
+
+### Why this was hard to see
+
+Every symptom is individually plausible as its own bug, and no single vantage shows the
+split: the client sees two playlists behaving inconsistently, the server sees one process
+behaving normally. It took the ffmpeg argv — which neither seat routinely reads — to make
+the two-muxer structure visible at all.
+
+---
+
 ## Appendix — two additional reproducible defects (from earlier in this investigation)
 
 **A. Channel-number master URL returns 500 during cold-start (while starting the
