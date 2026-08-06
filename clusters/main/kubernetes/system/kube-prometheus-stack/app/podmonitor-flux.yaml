@@ -1,0 +1,45 @@
+---
+# Flux controller metrics.
+#
+# WHY A PodMonitor RATHER THAN ServiceMonitor: only 4 of the 7 controllers have a
+# Service at all (notification-controller, source-controller, source-watcher,
+# webhook-receiver), and those expose :80 — not the metrics port. helm-controller,
+# kustomize-controller, image-automation-controller and image-reflector-controller
+# have no Service whatsoever. A PodMonitor selects pods directly, so no Service
+# plumbing is needed and no controller is silently skipped.
+#
+# WHY IT LIVES HERE AND NOT IN flux-system/: that layer bootstraps before the
+# Prometheus Operator CRDs exist, so a PodMonitor there would fail to apply on a
+# cold cluster. Keeping it beside the other monitoring manifests avoids the
+# ordering problem entirely.
+#
+# All 7 controllers carry app.kubernetes.io/part-of: flux and expose a container
+# port named http-prom on 8080. Verified 2026-08-06: source-controller's /metrics
+# returns 1643 gotk_/controller_ series.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: flux-controllers
+  namespace: kube-prometheus-stack
+  labels:
+    app.kubernetes.io/part-of: flux
+spec:
+  namespaceSelector:
+    matchNames:
+      - flux-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: flux
+  podMetricsEndpoints:
+    - port: http-prom
+      path: /metrics
+      interval: 60s
+      # Flux emits one series per reconciled object across ~104 Kustomizations,
+      # ~70 HelmReleases and their sources. 60s rather than the 30s default keeps
+      # the cardinality cost proportionate — these are reconcile-loop gauges, not
+      # latency-sensitive counters.
+      relabelings:
+        # Surface which controller a series came from without parsing pod names.
+        - sourceLabels: [__meta_kubernetes_pod_label_app]
+          targetLabel: controller
+          action: replace

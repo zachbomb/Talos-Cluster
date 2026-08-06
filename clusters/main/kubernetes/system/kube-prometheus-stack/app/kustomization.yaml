@@ -12,6 +12,7 @@ resources:
   - prometheusrule-storage.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
+  - podmonitor-flux.yaml
   - grafana-dashboard-dcgm-gpu.yaml
   - grafana-dashboard-proxmox.yaml
   - grafana-dashboard-unpoller.yaml
