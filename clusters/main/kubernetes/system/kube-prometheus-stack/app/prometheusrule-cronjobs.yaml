@@ -1,0 +1,122 @@
+---
+# CronJob health. The cluster ran 12 scheduled jobs with ZERO alerting on any of
+# them until 2026-08-06.
+#
+# WHY THIS EXISTS: talos-backup (etcd snapshots) failed every run for an unknown
+# period — the MinIO bucket it uploaded to did not exist — and nothing noticed.
+# It was found by accident during unrelated post-cutover triage. See SQ-38.
+#
+# WHY STALENESS, NOT FAILURE COUNT: kube_job_status_failed lingers on completed
+# Job objects long after the fact (8 such series were present when this was
+# written, some days old), so `> 0` would fire permanently and be ignored within
+# a week. Time-since-last-success cannot rot that way and is exactly the signal
+# that was missing.
+#
+# WHY THRESHOLDS KEY OFF THE SCHEDULE LABEL: kube_cronjob_info carries the cron
+# expression. Matching its shape rather than a hardcoded job list means a new
+# CronJob is covered the moment it is created, with no rule edit. Character
+# classes ([*]) are used instead of backslash escapes so the regex survives YAML
+# and Flux substitution unmangled.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cronjobs
+  namespace: kube-prometheus-stack
+  labels:
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  groups:
+    - name: cronjob-health
+      rules:
+        # The strongest signal, and the one that would have caught talos-backup at
+        # its worst: the CronJob exists but has NO successful run on record at all.
+        - alert: CronJobNeverSucceeded
+          expr: >-
+            kube_cronjob_info
+            unless on (namespace, cronjob)
+            kube_cronjob_status_last_successful_time
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} has NEVER succeeded"
+            description: >-
+              No successful completion is recorded for this CronJob (schedule
+              {{ $labels.schedule }}). This is the talos-backup failure mode: the job
+              runs on time, fails every time, and looks scheduled-and-healthy from the
+              outside. Check `kubectl logs -n {{ $labels.namespace }} -l job-name=...`
+              for the most recent attempt.
+
+        # Sub-hourly: */N * * * *  — cloudflare-ddns, udm-memory-guard, tunarr-token-heal.
+        # These run at least every 15 minutes, so an hour of silence is several misses.
+        - alert: CronJobStaleFrequent
+          expr: >-
+            (
+              (time() - kube_cronjob_status_last_successful_time) > 3600
+            )
+            and on (namespace, cronjob)
+            kube_cronjob_info{schedule=~"^[*]/.*"}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} has not succeeded in over an hour"
+            description: >-
+              Scheduled {{ $labels.schedule }} but last succeeded
+              {{ $value | humanizeDuration }} ago. cloudflare-ddns failing silently
+              breaks remote access; tunarr-token-heal failing lets Plex tokens expire.
+
+        # N-hourly: e.g. 0 */6 * * * — talos-backup. 13h is two missed runs.
+        - alert: CronJobStaleHourly
+          expr: >-
+            (
+              (time() - kube_cronjob_status_last_successful_time) > 46800
+            )
+            and on (namespace, cronjob)
+            kube_cronjob_info{schedule=~"^[0-9]+ [*]/.*"}
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} has missed multiple runs"
+            description: >-
+              Scheduled {{ $labels.schedule }} but last succeeded
+              {{ $value | humanizeDuration }} ago — at least two consecutive misses.
+              For talos-backup this means the cluster has no fresh etcd snapshot.
+
+        # Daily: e.g. 40 2 * * * — longhorn snapshot/trim family, node-fstrim,
+        # unifi-reconcile. 26h allows one late run without crying wolf.
+        - alert: CronJobStaleDaily
+          expr: >-
+            (
+              (time() - kube_cronjob_status_last_successful_time) > 93600
+            )
+            and on (namespace, cronjob)
+            kube_cronjob_info{schedule=~"^[0-9]+ [0-9]+ [*] [*] [*]$"}
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Daily CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} has not succeeded in over a day"
+            description: >-
+              Scheduled {{ $labels.schedule }} but last succeeded
+              {{ $value | humanizeDuration }} ago. The longhorn snapshot jobs failing
+              means volume snapshots are silently not being taken.
+
+        # Weekly: e.g. 0 4 * * 0 — node-image-prune, instance-manager-rotation.
+        # 8 days allows a full missed window plus slack.
+        - alert: CronJobStaleWeekly
+          expr: >-
+            (
+              (time() - kube_cronjob_status_last_successful_time) > 691200
+            )
+            and on (namespace, cronjob)
+            kube_cronjob_info{schedule=~"^[0-9]+ [0-9]+ [*] [*] [0-9]"}
+          for: 2h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Weekly CronJob {{ $labels.namespace }}/{{ $labels.cronjob }} has skipped a week"
+            description: >-
+              Scheduled {{ $labels.schedule }} but last succeeded
+              {{ $value | humanizeDuration }} ago.

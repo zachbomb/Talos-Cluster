@@ -10,6 +10,7 @@ resources:
   - prometheusrule-solidigm-pool.yaml
   - prometheusrule-crowdsec.yaml
   - prometheusrule-storage.yaml
+  - prometheusrule-cronjobs.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
   - podmonitor-flux.yaml
