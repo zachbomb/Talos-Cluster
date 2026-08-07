@@ -62,7 +62,7 @@ data:
             "uid": "prometheus"
           },
           "gridPos": {
-            "h": 4,
+            "h": 8,
             "w": 4,
             "x": 0,
             "y": 1
@@ -124,7 +124,7 @@ data:
             "uid": "prometheus"
           },
           "gridPos": {
-            "h": 4,
+            "h": 8,
             "w": 4,
             "x": 4,
             "y": 1
@@ -178,68 +178,6 @@ data:
           ]
         },
         {
-          "type": "stat",
-          "title": "Scrape targets down",
-          "description": "",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 8,
-            "y": 1
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "decimals": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
-                  }
-                ]
-              },
-              "color": {
-                "mode": "thresholds"
-              }
-            },
-            "overrides": []
-          },
-          "options": {
-            "colorMode": "background",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "textMode": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "count(up{namespace=\"media\"} == 0) or vector(0)",
-              "refId": "A",
-              "instant": true
-            }
-          ]
-        },
-        {
           "type": "table",
           "title": "Firing in media",
           "description": "",
@@ -249,8 +187,8 @@ data:
           },
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 12,
+            "w": 16,
+            "x": 8,
             "y": 1
           },
           "fieldConfig": {
@@ -359,6 +297,85 @@ data:
           ]
         },
         {
+          "type": "state-timeline",
+          "title": "Media exporters - up/down history",
+          "description": "Replaces the scrape-targets-down count tile: same guard, per target, with overnight history.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "lineWidth": 0,
+                "fillOpacity": 70,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "down",
+                      "color": "red",
+                      "index": 0
+                    },
+                    "1": {
+                      "text": "up",
+                      "color": "green",
+                      "index": 1
+                    }
+                  }
+                }
+              ],
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showValue": "never",
+            "alignValue": "center",
+            "mergeValues": true,
+            "rowHeight": 0.85,
+            "legend": {
+              "showLegend": false
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "up{namespace=\"media\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}} {{probe}}"
+            }
+          ]
+        },
+        {
           "type": "row",
           "title": "2 - Is it doing its job?",
           "collapsed": false,
@@ -366,7 +383,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 9
+            "y": 17
           },
           "panels": []
         },
@@ -382,7 +399,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 0,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -409,7 +426,7 @@ data:
           },
           "options": {
             "colorMode": "background",
-            "graphMode": "none",
+            "graphMode": "area",
             "justifyMode": "auto",
             "textMode": "auto",
             "reduceOptions": {
@@ -427,8 +444,7 @@ data:
                 "uid": "prometheus"
               },
               "expr": "sabnzbd_queue_length",
-              "refId": "A",
-              "instant": true
+              "refId": "A"
             }
           ]
         },
@@ -444,7 +460,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 4,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -502,7 +518,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -560,7 +576,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -618,7 +634,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -676,7 +692,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 22
           },
           "fieldConfig": {
             "defaults": {
@@ -760,7 +776,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 22
           },
           "fieldConfig": {
             "defaults": {
@@ -831,7 +847,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 22
+            "y": 30
           },
           "panels": []
         },
@@ -847,7 +863,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 0,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -905,7 +921,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 4,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -967,7 +983,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1025,7 +1041,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1087,7 +1103,7 @@ data:
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1149,7 +1165,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 31
+            "y": 39
           },
           "panels": []
         },
@@ -1165,7 +1181,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 0,
-            "y": 32
+            "y": 40
           },
           "fieldConfig": {
             "defaults": {
@@ -1231,7 +1247,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 4,
-            "y": 32
+            "y": 40
           },
           "fieldConfig": {
             "defaults": {
@@ -1289,7 +1305,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 32
+            "y": 40
           },
           "fieldConfig": {
             "defaults": {
@@ -1347,7 +1363,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 40
           },
           "fieldConfig": {
             "defaults": {
@@ -1424,5 +1440,6 @@ data:
           "targetBlank": false,
           "icon": "external link"
         }
-      ]
+      ],
+      "description": "Moving the bytes, whatever the content: SABnzbd, NZBGet, Deluge. Live playback and transport cannot be attributed to a content domain with current metrics (no media-type or library label on session or queue series); the per-domain view of this stage lives on the Media - Movies/TV/Music/Books boards."
     }

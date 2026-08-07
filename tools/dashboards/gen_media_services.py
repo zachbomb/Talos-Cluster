@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Per-service drilldowns hanging off Media - Environment.
+"""Shared-stage drilldowns hanging off Media - Environment.
 
-Three boards, one per functional stage of the media pipeline:
+Two boards, one per CONTENT-AGNOSTIC stage of the media pipeline:
 
     Streaming     Plex, Emby, Tunarr        - delivery to a human
-    Acquisition   Sonarr/Radarr/Lidarr/     - deciding what is missing and
-                  Readarr, Bazarr             getting it
     Downloaders   SABnzbd, NZBGet, Deluge   - moving the bytes
 
-Split this way rather than one-board-per-app because these are the stages you
-actually reason about. "Nothing is downloading" is a Downloaders question no
-matter which of the three clients is at fault; "the library has holes" is an
-Acquisition question across all five *arrs at once.
+These stay shared-stage boards because their metrics carry no content
+identity: plex/emby session metrics have no media-type or library label, and
+transport queues are content-blind. A content-domain split of streaming
+CANNOT be built with current metrics - that is stated on the boards, not
+papered over. The domain-visible face of these stages (each *arr's queue and
+grab rate) lives on the four domain boards in gen_media_domains.py, which
+replaced the old Media - Acquisition board: acquisition metrics DO carry
+content identity by construction (each *arr is single-domain), so that is
+where the domain cut has teeth.
 
 All exprs validated against live Prometheus before commit.
 
@@ -25,8 +28,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dashlib import (  # noqa: E402
-    Q1, Q2, Q3, Q4, alert_table, bargauge, dashboard, emit_configmap, gauge,
-    row, stat, stat_floor, timeseries)
+    Q1, Q2, Q3, Q4, alert_table, dashboard, emit_configmap, gauge,
+    row, stat, state_timeline, stat_floor, timeseries)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "../../clusters/main/kubernetes/system/"
@@ -46,15 +49,15 @@ STREAM = [
     row(Q1, 0),
     # An exporter that stops answering leaves every number below frozen at its
     # last value, which looks exactly like "quiet evening, nobody watching".
-    stat_floor("Plex exporter", "count(plex_active_streams_total) or vector(0)",
-               0, 1, crit_below=1, warn_below=1,
-               desc="1 = reporting. If this goes to 0 every stream count "
-                    "below is stale, and stale zeros are indistinguishable "
-                    "from a quiet night."),
-    stat_floor("Emby exporter", "count(emby_session_active) or vector(0)",
-               4, 1, crit_below=1, warn_below=1),
-    stat_floor("Tunarr exporter", "count(tunarr_channel_info) or vector(0)",
-               8, 1, crit_below=1, warn_below=1),
+    # One up-strip replaces the three per-exporter stat_floor tiles this board
+    # used to carry: same guard, every target, plus the overnight flap history
+    # a stat tile cannot show.
+    state_timeline("Media exporters - up/down history",
+                   'up{namespace="media"}', 0, 1, w=12,
+                   legend="{{pod}} {{probe}}",
+                   desc="If an exporter strip goes red or gappy, every one of "
+                        "its numbers below is stale - and a stale stream "
+                        "count is indistinguishable from a quiet night."),
     alert_table("Firing in media", 'ALERTS{alertstate="firing",namespace="media"}',
                 12, 1, w=12),
 
@@ -99,143 +102,82 @@ STREAM = [
         desc="Read against transcode count above: CPU climbing WITHOUT "
              "transcodes climbing means something other than playback."),
 
+    # Q4 is deliberately short. The Emby library counts that used to pad this
+    # row were inventory, not capacity - they moved to the domain boards' Q2
+    # where they are reconciliation signals. `avg(tunarr_channel_duration_ms)`
+    # is gone too: an average over 26 channels hides one collapsed lineup
+    # (moves the mean ~4%); the TV board carries the honest shape, a
+    # count-below-threshold stat. A shorter honest row beats a padded one.
     row(Q4, 31),
-    stat("Emby movies", "emby_movie_count", 0, 32),
-    stat("Emby series", "emby_series_count", 4, 32),
-    stat("Emby episodes", "emby_episode_count", 8, 32),
-    stat("Tunarr avg channel length", "avg(tunarr_channel_duration_ms)", 12, 32,
-         unit="ms",
-         desc="Short average length on a perpetual-flex channel is a hint the "
-              "lineup failed to rebuild rather than that programming is short."),
     gauge("Fullest media PVC",
           'max(kubelet_volume_stats_used_bytes{namespace="media"} / kubelet_volume_stats_capacity_bytes{namespace="media"})',
-          17, 32, w=7, warn=0.85, crit=0.92),
+          0, 32, w=7, warn=0.85, crit=0.92),
 ]
 
-# ==================================================  ACQUISITION  ===========
-ACQ = [
-    row(Q1, 0),
-    stat("Lidarr health issues", "sum(lidarr_system_health_issues)", 0, 1,
-         bad_above=0,
-         desc="Lidarr is the only *arr here exporting its own health-check "
-              "count. Non-zero means it is telling you something in its UI."),
-    stat("Scrape targets down", 'count(up{namespace="media"} == 0) or vector(0)',
-         4, 1, bad_above=0),
-    alert_table("Firing in media", 'ALERTS{alertstate="firing",namespace="media"}',
-                8, 1, w=16),
-
-    row(Q2, 9),
-    bargauge("Library gaps", [
-        ("sonarr_episode_cutoff_unmet_total", "Sonarr eps below cutoff"),
-        ("sonarr_episode_missing_total", "Sonarr eps missing"),
-        ("radarr_movie_cutoff_unmet_total", "Radarr films below cutoff"),
-        ("radarr_movie_missing_total", "Radarr films missing"),
-        ("sum(lidarr_albums_missing_total)", "Lidarr albums missing"),
-        ("readarr_book_missing_total", "Readarr books missing"),
-        ("bazarr_subtitles_missing_total", "Bazarr subtitles missing"),
-    ], 0, 10, w=12, warn=500, crit=3000,
-        desc="Cutoff-unmet is not cosmetic: cutoff drives storage growth, so "
-             "a large number here is also a capacity forecast."),
-    bargauge("Library size", [
-        ("sonarr_series_total", "Sonarr series"),
-        ("sonarr_episode_total", "Sonarr episodes"),
-        ("radarr_movie_total", "Radarr films"),
-        ("sum(lidarr_artists_total)", "Lidarr artists"),
-        ("readarr_book_total", "Readarr books"),
-    ], 12, 10, w=12,
-        desc="Read the two side by side. Readarr's missing count against its "
-             "total is the standout - a small library that is mostly holes is "
-             "a different problem from a large one with a few."),
-
-    row(Q3, 18),
-    stat("Queued across *arrs",
-         'sum({__name__=~"(sonarr|radarr|lidarr|readarr)_queue_total"})',
-         0, 19, warn_above=250),
-    stat("Sonarr monitored seasons", "sonarr_season_monitored_total", 4, 19),
-    stat("Radarr monitored", "radarr_movie_monitored_total", 8, 19),
-    stat("Grabs recorded", 'sum({__name__=~"(sonarr|radarr)_history_total"})',
-         12, 19,
-         desc="Lifetime history rows, not a rate - useful as a sanity check "
-              "that the pipeline has ever worked, not as a health signal."),
-    timeseries("Queue depth by service", [
-        ("sonarr_queue_total", "sonarr"),
-        ("radarr_queue_total", "radarr"),
-        ("lidarr_queue_total", "lidarr"),
-        ("readarr_queue_total", "readarr"),
-    ], 16, 19, w=8),
-
-    row(Q4, 27),
-    stat_floor("Sonarr root free", "max(sonarr_rootfolder_freespace_bytes)",
-               0, 28, unit="bytes", crit_below=200e9, warn_below=1e12,
-               desc="Root folder free space is what actually stops imports - "
-                    "the NFS share, not a PVC."),
-    stat_floor("Radarr root free", "max(radarr_rootfolder_freespace_bytes)",
-               4, 28, unit="bytes", crit_below=200e9, warn_below=1e12),
-    stat("Radarr library size", "radarr_movie_filesize_total", 8, 28,
-         unit="bytes"),
-    stat("Bazarr subtitle store", "bazarr_subtitles_filesize_total", 12, 28,
-         unit="bytes"),
-    timeseries("Root folder free space", [
-        ("max(sonarr_rootfolder_freespace_bytes)", "sonarr"),
-        ("max(radarr_rootfolder_freespace_bytes)", "radarr"),
-        ("max(lidarr_rootfolder_freespace_bytes)", "lidarr"),
-    ], 16, 28, w=8, unit="bytes",
-        desc="The slope is the useful part - it turns 'how full' into 'how "
-             "long until full'. This is why retention went to 60d."),
-]
+# The Acquisition board that used to live here is RETIRED: its contents were
+# redistributed to the four content-domain boards (gen_media_domains.py),
+# which is where acquisition metrics' per-domain identity belongs. Its two
+# constraint-3 violations (max() over sonarr/radarr/lidarr rootfolder free
+# space - lidarr had THREE folders, so the aggregate was reporting the
+# emptiest and hiding the full one) died with it; emit_configmap now refuses
+# the shape outright.
 
 # ==================================================  DOWNLOADERS  ==========
 DL = [
     row(Q1, 0),
-    stat("SABnzbd paused", "sabnzbd_paused", 0, 1, bad_above=0,
+    stat("SABnzbd paused", "sabnzbd_paused", 0, 1, h=8, bad_above=0,
          desc="A paused downloader looks identical to an idle one on every "
               "throughput graph. This is the difference."),
-    stat("NZBGet paused", "nzbget_download_paused", 4, 1, bad_above=0),
-    stat("Scrape targets down", 'count(up{namespace="media"} == 0) or vector(0)',
-         8, 1, bad_above=0),
+    stat("NZBGet paused", "nzbget_download_paused", 4, 1, h=8, bad_above=0),
     alert_table("Firing in media", 'ALERTS{alertstate="firing",namespace="media"}',
-                12, 1, w=12),
+                8, 1, w=16),
+    state_timeline("Media exporters - up/down history",
+                   'up{namespace="media"}', 0, 9, w=24,
+                   legend="{{pod}} {{probe}}",
+                   desc="Replaces the scrape-targets-down count tile: same "
+                        "guard, per target, with overnight history."),
 
-    row(Q2, 9),
-    stat("SABnzbd queue", "sabnzbd_queue_length", 0, 10, warn_above=40),
-    stat("SABnzbd remaining", "sabnzbd_remaining_bytes", 4, 10, unit="bytes"),
-    stat("Deluge torrents", "sum(deluge_torrent_state_count)", 8, 10),
-    stat("Deluge peers", "deluge_num_connections", 12, 10),
-    stat("DHT nodes", "deluge_dht_nodes", 16, 10,
+    row(Q2, 17),
+    stat("SABnzbd queue", "sabnzbd_queue_length", 0, 18, warn_above=40,
+         graph_mode="area"),
+    stat("SABnzbd remaining", "sabnzbd_remaining_bytes", 4, 18, unit="bytes"),
+    stat("Deluge torrents", "sum(deluge_torrent_state_count)", 8, 18),
+    stat("Deluge peers", "deluge_num_connections", 12, 18),
+    stat("DHT nodes", "deluge_dht_nodes", 16, 18,
          desc="A collapsed DHT node count explains 'torrents stalled' when "
               "everything else looks healthy."),
     timeseries("Throughput", [
         ("deluge_download_rate", "deluge down"),
         ("deluge_upload_rate", "deluge up"),
         ("rate(nzbget_downloaded_total_bytes[5m])", "nzbget"),
-    ], 0, 14, w=12, unit="Bps"),
+    ], 0, 22, w=12, unit="Bps"),
     timeseries("Queue depth", [
         ("sabnzbd_queue_length", "sabnzbd queue"),
         ("sum(deluge_torrent_state_count)", "deluge torrents"),
-    ], 12, 14, w=12),
+    ], 12, 22, w=12),
 
-    row(Q3, 22),
-    stat("NZBGet articles OK", "nzbget_history_article_success_count", 0, 23),
-    stat("NZBGet articles failed", "nzbget_history_article_failed_count", 4, 23,
+    row(Q3, 30),
+    stat("NZBGet articles OK", "nzbget_history_article_success_count", 0, 31),
+    stat("NZBGet articles failed", "nzbget_history_article_failed_count", 4, 31,
          warn_above=50,
          desc="Failed articles are the usenet equivalent of a bad sector - a "
               "few are normal, a rising share means bad providers or "
               "retention gaps."),
-    stat("SABnzbd article cache", "sabnzbd_article_cache_bytes", 8, 23,
+    stat("SABnzbd article cache", "sabnzbd_article_cache_bytes", 8, 31,
          unit="bytes"),
-    stat("SABnzbd warnings", "sabnzbd_queue_warnings", 12, 23, warn_above=0),
+    stat("SABnzbd warnings", "sabnzbd_queue_warnings", 12, 31, warn_above=0),
     timeseries("Deluge torrent states", [
         ("deluge_torrent_state_count", "{{state}}"),
-    ], 16, 23, w=8,
+    ], 16, 31, w=8,
         desc="Seeding vs downloading vs stalled. A growing stalled band is "
              "the signal; total count is not."),
 
-    row(Q4, 31),
-    stat_floor("NZBGet disk free", "nzbget_disk_free_bytes", 0, 32,
+    row(Q4, 39),
+    stat_floor("NZBGet disk free", "nzbget_disk_free_bytes", 0, 40,
                unit="bytes", crit_below=50e9, warn_below=200e9),
-    stat("SABnzbd disk used", "sum(sabnzbd_disk_used_bytes)", 4, 32,
+    stat("SABnzbd disk used", "sum(sabnzbd_disk_used_bytes)", 4, 40,
          unit="bytes"),
-    stat("SABnzbd disk total", "sum(sabnzbd_disk_total_bytes)", 8, 32,
+    stat("SABnzbd disk total", "sum(sabnzbd_disk_total_bytes)", 8, 40,
          unit="bytes"),
     # NO DELUGE FREE-SPACE PANEL, deliberately. deluge_free_space returns -1,
     # a sentinel meaning "Deluge cannot determine this", not a byte count.
@@ -247,10 +189,15 @@ DL = [
     timeseries("Downloader disk headroom", [
         ("nzbget_disk_free_bytes", "nzbget free"),
         ("sum(sabnzbd_disk_total_bytes) - sum(sabnzbd_disk_used_bytes)", "sabnzbd free"),
-    ], 12, 32, w=12, unit="bytes",
+    ], 12, 40, w=12, unit="bytes",
         desc="Deluge is absent here on purpose - it reports -1 for free "
              "space, which is a sentinel, not a measurement."),
 ]
+
+SEAM = ("Live playback and transport cannot be attributed to a content "
+        "domain with current metrics (no media-type or library label on "
+        "session or queue series); the per-domain view of this stage lives "
+        "on the Media - Movies/TV/Music/Books boards.")
 
 BOARDS = [
     ("Media - Streaming", "media-streaming", STREAM,
@@ -258,27 +205,28 @@ BOARDS = [
      "media-streaming.json",
      "Delivery to a human: Plex, Emby, Tunarr. The purpose metric here is "
      "streams and how many are transcoding - a Plex at 3% CPU with every\n"
-     "# stream failing looks perfectly healthy on an infrastructure board."),
-    ("Media - Acquisition", "media-acquisition", ACQ,
-     ["media", "service"], "grafana-dashboard-media-acquisition",
-     "media-acquisition.json",
-     "Deciding what is missing and getting it: Sonarr, Radarr, Lidarr,\n"
-     "# Readarr, Bazarr. These metrics existed in Prometheus for months while\n"
-     "# thousands of missing episodes and cutoff-unmet films went unshown."),
+     "# stream failing looks perfectly healthy on an infrastructure board.",
+     "Delivery to a human, whatever the content: Plex, Emby, Tunarr. " + SEAM),
     ("Media - Downloaders", "media-downloaders", DL,
      ["media", "service"], "grafana-dashboard-media-downloaders",
      "media-downloaders.json",
      "Moving the bytes: SABnzbd, NZBGet, Deluge. Paused state gets its own\n"
      "# tile because a paused downloader is indistinguishable from an idle\n"
-     "# one on every throughput graph."),
+     "# one on every throughput graph.",
+     "Moving the bytes, whatever the content: SABnzbd, NZBGet, Deluge. "
+     + SEAM),
 ]
 
 if __name__ == "__main__":
     total = 0
-    for title, uid, panels, tags, cm, key, why in BOARDS:
-        d = dashboard(title, uid, panels, tags=tags)
+    for title, uid, panels, tags, cm, key, why, desc in BOARDS:
+        d = dashboard(title, uid, panels, tags=tags, desc=desc)
         path = os.path.abspath(os.path.join(OUT, cm + ".yaml"))
-        open(path, "w").write(emit_configmap(d, cm, key, hdr(title, why)))
+        # Render before open(): open() truncates immediately, and a lint
+        # failure inside emit_configmap must not delete the previous good
+        # artifact.
+        text = emit_configmap(d, cm, key, hdr(title, why))
+        open(path, "w").write(text)
         n = len([p for p in panels if p["type"] != "row"])
         q = sum(len(p.get("targets") or []) for p in panels)
         total += q

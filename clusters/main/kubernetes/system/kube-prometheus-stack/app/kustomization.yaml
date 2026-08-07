@@ -17,8 +17,11 @@ resources:
   - podmonitor-flux.yaml
   - grafana-dashboard-cluster-overview.yaml
   - grafana-dashboard-media-environment.yaml
+  - grafana-dashboard-media-movies.yaml
+  - grafana-dashboard-media-tv.yaml
+  - grafana-dashboard-media-music.yaml
+  - grafana-dashboard-media-books.yaml
   - grafana-dashboard-media-streaming.yaml
-  - grafana-dashboard-media-acquisition.yaml
   - grafana-dashboard-media-downloaders.yaml
   - grafana-dashboard-storage-environment.yaml
   - grafana-dashboard-network-environment.yaml

@@ -309,7 +309,7 @@ data:
         {
           "type": "stat",
           "title": "Scrape targets down",
-          "description": "A down exporter makes every library-gap number below go stale while still displaying a confident value.",
+          "description": "A down exporter makes every library-gap number below go stale while still displaying a confident value. The strip below shows WHICH target, and whether it flapped overnight.",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -431,6 +431,85 @@ data:
           ]
         },
         {
+          "type": "state-timeline",
+          "title": "Media exporters - up/down history",
+          "description": "Every media scrape target. Gaps are scrape gaps - they are shown on purpose; a gappy exporter's numbers elsewhere on this board are going stale between appearances.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "lineWidth": 0,
+                "fillOpacity": 70,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {
+                    "0": {
+                      "text": "down",
+                      "color": "red",
+                      "index": 0
+                    },
+                    "1": {
+                      "text": "up",
+                      "color": "green",
+                      "index": 1
+                    }
+                  }
+                }
+              ],
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showValue": "never",
+            "alignValue": "center",
+            "mergeValues": true,
+            "rowHeight": 0.85,
+            "legend": {
+              "showLegend": false
+            },
+            "tooltip": {
+              "mode": "single"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "up{namespace=\"media\"}",
+              "refId": "A",
+              "legendFormat": "{{pod}} {{probe}}"
+            }
+          ]
+        },
+        {
           "type": "row",
           "title": "2 - Is it doing its job?",
           "collapsed": false,
@@ -438,7 +517,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 9
+            "y": 17
           },
           "panels": []
         },
@@ -454,7 +533,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 0,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -512,7 +591,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 4,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -574,7 +653,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -632,7 +711,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -690,7 +769,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -748,7 +827,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 10
+            "y": 18
           },
           "fieldConfig": {
             "defaults": {
@@ -806,7 +885,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 22
           },
           "fieldConfig": {
             "defaults": {
@@ -880,8 +959,8 @@ data:
         },
         {
           "type": "bargauge",
-          "title": "Library gaps - what the stack is failing to deliver",
-          "description": "THE panel this dashboard exists for. Every one of these was already in Prometheus and invisible. Cutoff-unmet is not cosmetic - cutoff drives storage growth, so a large number here is also a capacity forecast.",
+          "title": "Library completeness by domain",
+          "description": "Same-exporter ratios on a shared 0-1 scale. Approximates completeness where unmonitored items exist - the per-domain boards carry the exact counts. Thresholds are calibrated to 2026-08 operating values per domain, so colour means drift below normal, not an aspiration.",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -890,26 +969,18 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 22
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "none",
-              "decimals": 0,
+              "unit": "percentunit",
+              "decimals": 1,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "orange",
-                    "value": 500
-                  },
-                  {
                     "color": "red",
-                    "value": 3000
+                    "value": null
                   }
                 ]
               },
@@ -917,7 +988,120 @@ data:
                 "mode": "thresholds"
               }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TV episodes"
+                },
+                "properties": [
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 0.45
+                        },
+                        {
+                          "color": "green",
+                          "value": 0.55
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Movies"
+                },
+                "properties": [
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 0.6
+                        },
+                        {
+                          "color": "green",
+                          "value": 0.72
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Music songs"
+                },
+                "properties": [
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 0.08
+                        },
+                        {
+                          "color": "green",
+                          "value": 0.11
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Books"
+                },
+                "properties": [
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red",
+                          "value": null
+                        },
+                        {
+                          "color": "orange",
+                          "value": 0.15
+                        },
+                        {
+                          "color": "green",
+                          "value": 0.22
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "options": {
             "displayMode": "gradient",
@@ -937,60 +1121,40 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sonarr_episode_cutoff_unmet_total",
+              "expr": "sonarr_episode_downloaded_total / sonarr_episode_total",
               "refId": "A",
               "instant": true,
-              "legendFormat": "Sonarr episodes below cutoff"
+              "legendFormat": "TV episodes"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sonarr_episode_missing_total",
+              "expr": "radarr_movie_downloaded_total / radarr_movie_total",
               "refId": "A",
               "instant": true,
-              "legendFormat": "Sonarr episodes missing"
+              "legendFormat": "Movies"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "radarr_movie_cutoff_unmet_total",
+              "expr": "sum(lidarr_songs_downloaded_total) / sum(lidarr_songs_total)",
               "refId": "A",
               "instant": true,
-              "legendFormat": "Radarr movies below cutoff"
+              "legendFormat": "Music songs"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "radarr_movie_missing_total",
+              "expr": "readarr_book_downloaded_total / readarr_book_total",
               "refId": "A",
               "instant": true,
-              "legendFormat": "Radarr movies missing"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "sum(lidarr_albums_missing_total)",
-              "refId": "A",
-              "instant": true,
-              "legendFormat": "Lidarr albums missing"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "bazarr_subtitles_missing_total",
-              "refId": "A",
-              "instant": true,
-              "legendFormat": "Bazarr subtitles missing"
+              "legendFormat": "Books"
             }
           ]
         },
@@ -1002,14 +1166,14 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 22
+            "y": 30
           },
           "panels": []
         },
         {
           "type": "stat",
           "title": "Queued across *arrs",
-          "description": "Backlog the acquisition side has accepted but not finished. Steady growth means grabbing outpaces importing.",
+          "description": "Backlog the acquisition side has accepted but not finished. Steady growth means grabbing outpaces importing - the sparkline is the point.",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1018,7 +1182,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 0,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1045,7 +1209,7 @@ data:
           },
           "options": {
             "colorMode": "background",
-            "graphMode": "none",
+            "graphMode": "area",
             "justifyMode": "auto",
             "textMode": "auto",
             "reduceOptions": {
@@ -1063,8 +1227,7 @@ data:
                 "uid": "prometheus"
               },
               "expr": "sum({__name__=~\"(sonarr|radarr|lidarr|readarr)_queue_total\"})",
-              "refId": "A",
-              "instant": true
+              "refId": "A"
             }
           ]
         },
@@ -1080,7 +1243,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 4,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1107,7 +1270,7 @@ data:
           },
           "options": {
             "colorMode": "background",
-            "graphMode": "none",
+            "graphMode": "area",
             "justifyMode": "auto",
             "textMode": "auto",
             "reduceOptions": {
@@ -1125,8 +1288,7 @@ data:
                 "uid": "prometheus"
               },
               "expr": "sabnzbd_queue_length",
-              "refId": "A",
-              "instant": true
+              "refId": "A"
             }
           ]
         },
@@ -1142,7 +1304,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1200,7 +1362,7 @@ data:
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 23
+            "y": 31
           },
           "fieldConfig": {
             "defaults": {
@@ -1262,7 +1424,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 35
           },
           "fieldConfig": {
             "defaults": {
@@ -1346,7 +1508,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 35
           },
           "fieldConfig": {
             "defaults": {
@@ -1444,7 +1606,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 43
           },
           "panels": []
         },
@@ -1460,7 +1622,7 @@ data:
             "h": 4,
             "w": 5,
             "x": 0,
-            "y": 36
+            "y": 44
           },
           "fieldConfig": {
             "defaults": {
@@ -1516,64 +1678,6 @@ data:
         },
         {
           "type": "stat",
-          "title": "Library free space",
-          "description": "Root folder free space as the *arrs see it - the NFS share, not a PVC. This is what actually stops imports.",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 5,
-            "y": 36
-          },
-          "fieldConfig": {
-            "defaults": {
-              "unit": "bytes",
-              "decimals": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "color": {
-                "mode": "thresholds"
-              }
-            },
-            "overrides": []
-          },
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "textMode": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "prometheus"
-              },
-              "expr": "max(sonarr_rootfolder_freespace_bytes)",
-              "refId": "A",
-              "instant": true
-            }
-          ]
-        },
-        {
-          "type": "stat",
           "title": "SABnzbd disk used",
           "description": "",
           "datasource": {
@@ -1583,8 +1687,8 @@ data:
           "gridPos": {
             "h": 4,
             "w": 4,
-            "x": 9,
-            "y": 36
+            "x": 5,
+            "y": 44
           },
           "fieldConfig": {
             "defaults": {
@@ -1641,8 +1745,8 @@ data:
           "gridPos": {
             "h": 4,
             "w": 4,
-            "x": 13,
-            "y": 36
+            "x": 9,
+            "y": 44
           },
           "fieldConfig": {
             "defaults": {
@@ -1699,8 +1803,8 @@ data:
           "gridPos": {
             "h": 4,
             "w": 4,
-            "x": 17,
-            "y": 36
+            "x": 13,
+            "y": 44
           },
           "fieldConfig": {
             "defaults": {
@@ -1747,6 +1851,92 @@ data:
           ]
         },
         {
+          "type": "bargauge",
+          "title": "Root folder free space (as the *arrs see it)",
+          "description": "The NFS shares, not PVCs - this is what actually stops imports. One bar per root folder; the emptiest folder can no longer hide the full one.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 48
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "decimals": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 200000000000.0
+                  },
+                  {
+                    "color": "green",
+                    "value": 1000000000000.0
+                  }
+                ]
+              },
+              "color": {
+                "mode": "thresholds"
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sonarr_rootfolder_freespace_bytes",
+              "refId": "A",
+              "instant": true,
+              "legendFormat": "tv {{path}}"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "radarr_rootfolder_freespace_bytes",
+              "refId": "A",
+              "instant": true,
+              "legendFormat": "movies {{path}}"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "lidarr_rootfolder_freespace_bytes",
+              "refId": "A",
+              "instant": true,
+              "legendFormat": "music {{path}}"
+            }
+          ]
+        },
+        {
           "type": "timeseries",
           "title": "media namespace resource use",
           "description": "",
@@ -1756,9 +1946,9 @@ data:
           },
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 40
+            "w": 8,
+            "x": 8,
+            "y": 48
           },
           "fieldConfig": {
             "defaults": {
@@ -1822,9 +2012,9 @@ data:
           },
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 40
+            "w": 8,
+            "x": 16,
+            "y": 48
           },
           "fieldConfig": {
             "defaults": {
@@ -1892,5 +2082,6 @@ data:
           "targetBlank": false,
           "icon": "external link"
         }
-      ]
+      ],
+      "description": "Aggregates the purpose metrics of the media stack: is the experience working. Drill-down order: Environment -> domain (Movies/TV/Music/Books) -> shared stage (Streaming/Downloaders)."
     }

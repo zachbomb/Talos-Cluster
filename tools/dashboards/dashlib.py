@@ -71,6 +71,18 @@ HARD RULES
   degraded, red broken. A "count of bad things" tile uses background colour so
   it reads across the room; a healthy inventory count uses plain value colour
   so the board is not a wall of green blocks.
+* NEVER aggregate a per-entity metric with max()/min() across entities.
+  `max(truenas_pool_scan_percentage)` reported the wrong pool's scrub;
+  `max(*_rootfolder_freespace_bytes)` reported the EMPTIEST folder and hid
+  the full one (lidarr had three folders the day this was found). The
+  docstring alone did not prevent recurrence, so emit_configmap now refuses
+  to emit these shapes for known per-entity metrics.
+* Cross-exporter reconciliation is drawn as OVERLAID SERIES, never as
+  arithmetic in one expr. `a - b` across two exporters returns empty if
+  EITHER exporter dies, and that "No data" is indistinguishable from a
+  broken query. Two independent targets on one timeseries degrade
+  independently. Same-exporter arithmetic shares one failure domain with
+  its own metrics and remains allowed.
 """
 
 DS = {"type": "prometheus", "uid": "prometheus"}
@@ -101,13 +113,18 @@ def _thresholds(steps):
 
 
 def stat(title, expr, x, y, w=W_STAT, h=H_STAT, unit="none", desc="",
-         bad_above=None, warn_above=None, decimals=0):
+         bad_above=None, warn_above=None, decimals=0, graph_mode="none"):
     """Single number.
 
     bad_above=N paints the whole tile red above N - use for counts of broken
     things, so they are visible without reading. Omit it for inventory counts
     (library size, channels, protected PVCs); painting those green makes the
     board a wall of colour and the real problems stop standing out.
+
+    graph_mode="area" adds a sparkline - use it for stats whose DIRECTION
+    matters (missing counts, queue depth): the stat-tile form is value +
+    trend for exactly this reason. A sparkline needs history, so the target
+    switches to a range query; the displayed number is still lastNotNull.
     """
     steps = [{"color": GREEN, "value": None}]
     if warn_above is not None:
@@ -124,10 +141,10 @@ def stat(title, expr, x, y, w=W_STAT, h=H_STAT, unit="none", desc="",
             "color": {"mode": "thresholds"}}, "overrides": []},
         "options": {
             "colorMode": "background" if coloured else "value",
-            "graphMode": "none", "justifyMode": "auto", "textMode": "auto",
+            "graphMode": graph_mode, "justifyMode": "auto", "textMode": "auto",
             "reduceOptions": {"calcs": ["lastNotNull"], "fields": "",
                               "values": False}},
-        "targets": [_target(expr)],
+        "targets": [_target(expr, instant=(graph_mode == "none"))],
     }
 
 
@@ -247,6 +264,107 @@ def bargauge(title, series, x, y, w=12, h=H_TS, unit="none", desc="",
     }
 
 
+def _floor_steps(crit_below, warn_below):
+    """Inverted thresholds - LOW is bad. Grafana steps apply from their value
+    upward, so start red and step UP through orange into green. Getting this
+    backwards paints a healthy value red, which is worse than no colour at
+    all because it trains people to ignore red (see stat_floor)."""
+    steps = [{"color": RED, "value": None}]
+    if crit_below is not None:
+        steps.append({"color": ORANGE, "value": crit_below})
+    if warn_below is not None:
+        steps.append({"color": GREEN, "value": warn_below})
+    return steps
+
+
+def bargauge_floor(title, series, x, y, w=12, h=H_TS, unit="none", desc="",
+                   warn_below=None, crit_below=None, floors=None, decimals=0):
+    """Horizontal comparison where LOW is bad - free space, completeness.
+
+    The per-entity replacement for `max(*_rootfolder_freespace_bytes)`:
+    every entity gets its own bar, so the emptiest folder cannot hide the
+    full one, and the thresholds start red and step up into green.
+
+    floors={legend: (crit_below, warn_below)} overrides thresholds per named
+    bar - needed when the bars share a scale but not a notion of "bad"
+    (a majority-holes music library at 12% complete is policy, not an
+    incident; painting it red forever trains people to ignore red).
+    Only works for fixed legend strings, not {{label}} legends.
+    """
+    overrides = []
+    for legend, (crit, warn) in (floors or {}).items():
+        overrides.append({
+            "matcher": {"id": "byName", "options": legend},
+            "properties": [{"id": "thresholds",
+                            "value": _thresholds(_floor_steps(crit, warn))}]})
+    return {
+        "type": "bargauge", "title": title, "description": desc,
+        "datasource": DS, "gridPos": {"h": h, "w": w, "x": x, "y": y},
+        "fieldConfig": {"defaults": {
+            "unit": unit, "decimals": decimals,
+            "thresholds": _thresholds(_floor_steps(crit_below, warn_below)),
+            "color": {"mode": "thresholds"}}, "overrides": overrides},
+        "options": {"displayMode": "gradient", "orientation": "horizontal",
+                    "showUnfilled": True,
+                    "reduceOptions": {"calcs": ["lastNotNull"], "fields": "",
+                                      "values": False}},
+        "targets": [_target(e, lg) for e, lg in series],
+    }
+
+
+def gauge_floor(title, expr, x, y, w=W_GAUGE, h=H_GAUGE, warn_below=None,
+                crit_below=None, unit="percentunit", desc="", mn=0, mx=1,
+                decimals=1):
+    """Bounded ratio where HIGH is good - completeness ratios. Same inverted
+    threshold trick as stat_floor/bargauge_floor."""
+    return {
+        "type": "gauge", "title": title, "description": desc, "datasource": DS,
+        "gridPos": {"h": h, "w": w, "x": x, "y": y},
+        "fieldConfig": {"defaults": {
+            "unit": unit, "min": mn, "max": mx, "decimals": decimals,
+            "thresholds": _thresholds(_floor_steps(crit_below, warn_below)),
+            "color": {"mode": "thresholds"}}, "overrides": []},
+        "options": {"showThresholdLabels": False, "showThresholdMarkers": True,
+                    "reduceOptions": {"calcs": ["lastNotNull"], "fields": "",
+                                      "values": False}},
+        "targets": [_target(expr)],
+    }
+
+
+def state_timeline(title, expr, x, y, w=12, h=H_TS, legend=None, desc="",
+                   ok_text="up", bad_text="down"):
+    """Discrete state over time - "what happened overnight".
+
+    One panel of `up{namespace="media"}` replaces N copy-pasted exporter-up
+    stat tiles AND answers the question no stat can: did it flap while
+    nobody was looking. An alert that fired for 40 minutes at 03:00 leaves
+    no trace on an instantaneous tile by morning.
+
+    Value mappings carry TEXT labels (0=down red, 1=up green) so colour is
+    never the only channel. spanNulls stays False on purpose: a scrape gap
+    renders as a visible gap in the strip, not as a smoothed-over lie -
+    the flappy-exporter case (bazarr at 81% presence when this was built)
+    is exactly what this panel exists to show.
+    """
+    return {
+        "type": "state-timeline", "title": title, "description": desc,
+        "datasource": DS, "gridPos": {"h": h, "w": w, "x": x, "y": y},
+        "fieldConfig": {"defaults": {
+            "custom": {"lineWidth": 0, "fillOpacity": 70, "spanNulls": False},
+            "mappings": [{"type": "value", "options": {
+                "0": {"text": bad_text, "color": RED, "index": 0},
+                "1": {"text": ok_text, "color": GREEN, "index": 1}}}],
+            "min": 0, "max": 1,
+            "thresholds": _thresholds([{"color": GREEN, "value": None}]),
+            "color": {"mode": "thresholds"}}, "overrides": []},
+        "options": {"showValue": "never", "alignValue": "center",
+                    "mergeValues": True, "rowHeight": 0.85,
+                    "legend": {"showLegend": False},
+                    "tooltip": {"mode": "single"}},
+        "targets": [_target(expr, legend, instant=False)],
+    }
+
+
 def alert_table(title, expr, x, y, w=16, h=H_TS, desc=""):
     """Question 1, always. Scoped ALERTS beat any curated metric: on
     2026-08-06 three CRITICALs ran for ~9 hours while health was reported
@@ -309,7 +427,7 @@ Q4 = "4 - Can it keep going?"
 
 
 def dashboard(title, uid, panels, tags, refresh="1m", time_from="now-6h",
-              links=None):
+              links=None, desc=""):
     dash = {
         "title": title, "uid": uid, "tags": tags, "timezone": "browser",
         "schemaVersion": 39, "version": 1, "editable": True,
@@ -321,7 +439,32 @@ def dashboard(title, uid, panels, tags, refresh="1m", time_from="now-6h",
             "asDropdown": True, "includeVars": False, "keepTime": True,
             "targetBlank": False, "icon": "external link"}],
     }
+    if desc:
+        dash["description"] = desc
     return dash
+
+
+# Metrics that are PER-ENTITY (per root folder, per pool, per channel), where
+# max()/min() across entities systematically reports the wrong entity and
+# hides the one you care about. Grown from measured incidents:
+#   pool_scan_percentage    max() reported a finished pool's 100% while
+#                           another pool's scrub was mid-flight
+#   rootfolder_freespace    max() of FREE space reports the emptiest folder
+#                           and hides the full one; imports stop on the folder
+#                           a title maps to, not on the emptiest one (lidarr
+#                           had three folders when this shipped anyway)
+#   channel_duration        one collapsed lineup among 26 healthy channels
+#                           moves an avg ~4% and disappears inside max()
+PER_ENTITY_METRICS = (
+    "rootfolder_freespace",
+    "pool_scan_percentage",
+    "channel_duration",
+)
+
+import re as _re  # noqa: E402
+_C3_LINT = _re.compile(
+    r"(?<![A-Za-z0-9_])(?:max|min)\s*\(\s*[A-Za-z0-9_:]*(?:%s)"
+    % "|".join(PER_ENTITY_METRICS))
 
 
 def emit_configmap(dash, cm_name, json_key, header_comment):
@@ -333,6 +476,16 @@ def emit_configmap(dash, cm_name, json_key, header_comment):
     if "$" in body:
         raise SystemExit("refusing to emit: '$' in JSON would risk an "
                          "envsubst collision (see module docstring)")
+    hit = _C3_LINT.search(body)
+    if hit:
+        raise SystemExit(
+            "refusing to emit: %r aggregates a PER-ENTITY metric with "
+            "max()/min() (constraint 3). This shape systematically reports "
+            "the wrong entity - max() of free space shows the emptiest "
+            "folder and hides the full one. Use a per-entity bargauge_floor "
+            "legended by the entity label instead. A docstring alone did "
+            "not prevent this recurring; this failure is the enforcement. "
+            "See PER_ENTITY_METRICS in dashlib.py." % hit.group(0))
     indented = "\n".join("    " + ln for ln in body.split("\n"))
     return (header_comment.rstrip("\n") + "\n"
             + "apiVersion: v1\nkind: ConfigMap\nmetadata:\n"
