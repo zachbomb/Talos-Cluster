@@ -12,6 +12,7 @@ resources:
   - prometheusrule-storage.yaml
   - prometheusrule-cronjobs.yaml
   - prometheusrule-network.yaml
+  - prometheusrule-media-integrity.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
   - podmonitor-flux.yaml

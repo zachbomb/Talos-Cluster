@@ -1,0 +1,19 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: media-integrity
+  namespace: media
+  labels:
+    app.kubernetes.io/name: media-integrity
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: media-integrity
+  endpoints:
+    # The gauges only change when a scan completes (every 6h), so a slow
+    # scrape is plenty. A long timeout because the handler serves whatever
+    # the last completed scan produced - it never blocks on a running scan.
+    - port: metrics
+      interval: 5m
+      scrapeTimeout: 1m

@@ -32,3 +32,4 @@ resources:
   - deluge/ks.yaml
   - flaresolverr/ks.yaml
   - immich/ks.yaml
+  - ./media-integrity/ks.yaml

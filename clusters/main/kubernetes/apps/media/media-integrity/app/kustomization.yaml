@@ -1,0 +1,14 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: media
+resources:
+  - deployment.yaml
+  - service.yaml
+  - servicemonitor.yaml
+configMapGenerator:
+  - name: media-integrity-probe
+    files:
+      - integrity_probe.py=probe/integrity_probe.py
+generatorOptions:
+  disableNameSuffixHash: false

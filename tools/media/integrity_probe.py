@@ -1,0 +1,1 @@
+../../clusters/main/kubernetes/apps/media/media-integrity/app/probe/integrity_probe.py

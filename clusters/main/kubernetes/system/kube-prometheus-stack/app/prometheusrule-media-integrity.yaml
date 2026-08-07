@@ -1,0 +1,66 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: media-integrity
+  namespace: kube-prometheus-stack
+spec:
+  groups:
+    - name: media-integrity
+      rules:
+        # The signal this whole component exists for. 17 files sat undemuxable
+        # for 16 months while every service reported them present and healthy,
+        # because nothing in the stack ever opened a file.
+        - alert: MediaFilesUnreadable
+          expr: media_integrity_unreadable > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $value }} unplayable file(s) in the {{ $labels.library }} library"
+            description: >-
+              These files exist and every service reports them as available,
+              but they cannot be demuxed - Plex, Emby and Tunarr cannot play a
+              frame. Exact paths are logged by the media-integrity pod
+              (kubectl logs -n media deploy/media-integrity). Re-acquire rather
+              than repair; the 2026-08 set were corrupt on arrival.
+
+        # A scan that stops running is indistinguishable from a clean library,
+        # which is precisely the failure mode this component was built to end.
+        - alert: MediaIntegrityScanStale
+          expr: time() - media_integrity_last_scan_timestamp > 86400
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "media-integrity scan for {{ $labels.library }} is stale"
+            description: >-
+              No completed scan in over 24h against a 6h interval. The gauges
+              below are last-known values and may no longer reflect the
+              library. A silent scanner reads exactly like a healthy library.
+
+        - alert: MediaIntegrityProbeErrors
+          expr: media_integrity_scan_errors > 0
+          for: 1h
+          labels:
+            severity: info
+          annotations:
+            summary: "media-integrity probe errors on {{ $labels.library }}"
+            description: >-
+              Probe failures, NOT file defects - a missing ffprobe, an
+              unmounted root. Distinguished from media_integrity_unreadable on
+              purpose so a broken probe never reads as a broken library.
+
+        # Weaker signal, kept separate from corruption on purpose. 170 min in
+        # 0.25 GB is a bad encode, not a broken file; merging them would bury
+        # the files that genuinely cannot be opened.
+        - alert: MediaFilesLowBitrate
+          expr: media_integrity_low_bitrate > 5
+          for: 6h
+          labels:
+            severity: info
+          annotations:
+            summary: "{{ $value }} very low bitrate file(s) in {{ $labels.library }}"
+            description: >-
+              Playable but likely poor quality (<250 kbps for a feature).
+              A quality signal, not an integrity one.
