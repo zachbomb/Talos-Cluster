@@ -66,6 +66,7 @@ import subprocess
 import sys
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 VIDEO_EXT = ("*.mkv", "*.mp4", "*.m4v", "*.avi", "*.mpg", "*.ts", "*.wmv")
 
@@ -175,7 +176,7 @@ def check_media(path):
     return "ok", "%d streams, %.0f s" % (nstreams, d)
 
 
-def scan(root):
+def scan(root, workers=12):
     t0 = time.time()
     counts = {"total": 0, "unreadable": 0, "low_bitrate": 0, "errors": 0}
     detail = {"unreadable": [], "low_bitrate": []}
@@ -192,23 +193,33 @@ def scan(root):
                     for p in VIDEO_EXT + AUDIO_EXT):
                 files.append(os.path.join(dirpath, fn))
 
-    for path in files:
-        counts["total"] += 1
+    def classify(path):
         if path.lower().endswith(IMAGE_EXT):
             ok, why = check_disc_image(path)
-            if not ok:
+            return (path, "unreadable" if not ok else "ok", why)
+        state, why = check_media(path)
+        return (path, state, why)
+
+    # Probing is LATENCY-bound, not CPU-bound: measured at 0.6% CPU while
+    # sequentially walking an NFS share, because each ffprobe is a round-trip
+    # that spends its life waiting. Sequential, a 111k-file music library
+    # tracked at ~12 hours. Concurrency is therefore the right lever and
+    # priority is not - these workers add almost no CPU, they just stop the
+    # process idling between round-trips.
+    #
+    # An early 0.10 s/file benchmark was misleadingly fast because it read 60
+    # files from one directory whose metadata the server had already cached.
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for path, state, why in pool.map(classify, files):
+            counts["total"] += 1
+            if state == "unreadable":
                 counts["unreadable"] += 1
                 detail["unreadable"].append((path, why))
-            continue
-        state, why = check_media(path)
-        if state == "unreadable":
-            counts["unreadable"] += 1
-            detail["unreadable"].append((path, why))
-        elif state == "low_bitrate":
-            counts["low_bitrate"] += 1
-            detail["low_bitrate"].append((path, why))
-        elif state == "error":
-            counts["errors"] += 1
+            elif state == "low_bitrate":
+                counts["low_bitrate"] += 1
+                detail["low_bitrate"].append((path, why))
+            elif state == "error":
+                counts["errors"] += 1
     return counts, detail, time.time() - t0
 
 
@@ -245,6 +256,8 @@ def main():
     ap.add_argument("--lib", action="append", default=[],
                     metavar="NAME=PATH",
                     help="repeatable; e.g. --lib movies=/media/movies")
+    ap.add_argument("--workers", type=int, default=12,
+                    help="concurrent probes; the work is latency-bound")
     ap.add_argument("--root")
     ap.add_argument("--library")
     ap.add_argument("--port", type=int)
@@ -268,7 +281,7 @@ def main():
         blocks, agg = [], {"total": 0, "unreadable": 0,
                            "low_bitrate": 0, "errors": 0}
         for name, path in libs:
-            counts, detail, elapsed = scan(path)
+            counts, detail, elapsed = scan(path, a.workers)
             blocks.append(render(name, counts, elapsed))
             for k in agg:
                 agg[k] += counts[k]
