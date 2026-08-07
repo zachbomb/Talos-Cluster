@@ -238,22 +238,52 @@ def render(library, counts, elapsed):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--root", required=True)
-    ap.add_argument("--library", required=True)
+    # Repeatable `--lib name=/path` so ONE process covers every library. The
+    # alternative - a container per library - multiplies the scrape surface
+    # and makes "which library stopped being scanned" hard to see, which is
+    # the exact question this component must always be able to answer.
+    ap.add_argument("--lib", action="append", default=[],
+                    metavar="NAME=PATH",
+                    help="repeatable; e.g. --lib movies=/media/movies")
+    ap.add_argument("--root")
+    ap.add_argument("--library")
     ap.add_argument("--port", type=int)
     ap.add_argument("--interval", type=int, default=21600)
     ap.add_argument("--list", action="store_true",
                     help="print offending paths to stderr")
     a = ap.parse_args()
 
+    libs = []
+    for spec in a.lib:
+        if "=" not in spec:
+            raise SystemExit("--lib expects NAME=PATH, got %r" % spec)
+        name, path = spec.split("=", 1)
+        libs.append((name, path))
+    if a.root and a.library:
+        libs.append((a.library, a.root))
+    if not libs:
+        raise SystemExit("give --lib NAME=PATH (repeatable) or --root/--library")
+
     def run_once():
-        counts, detail, elapsed = scan(a.root)
-        if a.list:
-            for kind in ("unreadable", "low_bitrate"):
-                for p, why in detail[kind]:
-                    print("%-12s %s  (%s)" % (kind.upper(), p, why),
-                          file=sys.stderr)
-        return render(a.library, counts, elapsed), counts
+        blocks, agg = [], {"total": 0, "unreadable": 0,
+                           "low_bitrate": 0, "errors": 0}
+        for name, path in libs:
+            counts, detail, elapsed = scan(path)
+            blocks.append(render(name, counts, elapsed))
+            for k in agg:
+                agg[k] += counts[k]
+            if a.list:
+                for kind in ("unreadable", "low_bitrate"):
+                    for pp, why in detail[kind]:
+                        print("%-12s [%s] %s  (%s)"
+                              % (kind.upper(), name, pp, why), file=sys.stderr)
+        # Only the first block keeps the HELP/TYPE headers; repeating them
+        # for every library makes Prometheus reject the whole exposition.
+        out = [blocks[0]] if blocks else []
+        for b in blocks[1:]:
+            out.append("\n".join(l for l in b.splitlines()
+                                  if not l.startswith("#")) + "\n")
+        return "".join(out), agg
 
     if not a.port:
         text, counts = run_once()
@@ -264,8 +294,8 @@ def main():
         return
 
     from http.server import BaseHTTPRequestHandler, HTTPServer
-    state = {"text": render(a.library, {"total": 0, "unreadable": 0,
-                                        "low_bitrate": 0, "errors": 0}, 0.0)}
+    state = {"text": render(libs[0][0], {"total": 0, "unreadable": 0,
+                                         "low_bitrate": 0, "errors": 0}, 0.0)}
 
     def loop():
         while True:

@@ -62,10 +62,30 @@ spec:
           command: ["python3"]
           args:
             - /probe/integrity_probe.py
-            - --root=/media/movies
-            - --library=movies
+            # One process covers every library. A container per library would
+            # multiply the scrape surface and make "which library stopped
+            # being scanned" hard to see - the exact question this component
+            # must always be able to answer.
+            - --lib=movies=/media/movies
+            - --lib=tv=/media/tv
+            # Music is three SEPARATE libraries, one per Lidarr instance, and
+            # they must stay separate: a single "music" number would hide
+            # which one degraded.
+            - --lib=music_main=/media/music/Main
+            - --lib=music_flac=/media/music/FLAC
+            - --lib=music_liz=/media/music/Liz iTunes
+            # NOT scanned, on purpose:
+            #   music/RoonBackups - Roon backup data (_roon_backup_root_,
+            #     UUID dirs), not playable media. Probing it would report
+            #     permanent corruption.
+            #   music/SuperSync   - an iTunes-style library no Lidarr manages.
+            #     Real media, but adding it implies it should be tracked;
+            #     that is an open decision, not an oversight.
             - --port=9838
-            - --interval=21600      # 6h; a full movies pass takes ~10 min
+            # Daily. A full pass is ~4.5h (movies ~10m, tv ~75m at 8,276
+            # files, music ~3h at 111k). A 6h interval would leave it scanning
+            # almost continuously against a node that already runs at 90%+ CPU.
+            - --interval=86400
             - --list                 # offending paths to stderr for the log
           env:
             - name: PATH
