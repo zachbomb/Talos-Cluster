@@ -160,8 +160,38 @@ spec:
         # below the PVC size so head writes never run out of space. 2026-06-10:
         # PVC 60Gi → 100Gi, retentionSize 50GB → 80GB after WAL filled and
         # CrashLoopBacked off with "no space left on device" on /prometheus/wal.
-        retention: 14d
-        retentionSize: 80GB
+        #
+        # 2026-08-06: 14d → 60d. Trend panels on the new cluster-overview
+        # dashboard were capped at two weeks, which is too short to see a PVC
+        # fill-rate or a slow memory creep develop.
+        #
+        # THE MEASUREMENT (taken before changing anything):
+        #   blocks on disk      13.77 GiB
+        #   oldest sample       10.2 days   <- NEITHER limit was binding; the
+        #                                      TSDB had simply only been
+        #                                      accumulating since ~Jul 27
+        #   growth              ~1.35 GiB/day
+        #   PVC                 14.3 GiB used of 98.1 GiB (14.6%)
+        #   head series         211,995 at ~6,770 samples/sec
+        #
+        # WHY 60d AND NOT THE 90d ORIGINALLY SCOPED: 90d × 1.35 GiB/day is
+        # ~122 GiB, which does not fit the 100Gi volume. 90d was reachable only
+        # by expanding the PVC (Longhorn has the headroom - 1507 GiB provisioned
+        # of 3832 GiB) or by dropping series. 60d fits with room to spare and is
+        # still a 4x improvement, so the volume stays as it is.
+        #
+        # WHY retentionSize STAYS BELOW THE TIME TARGET: 85GB is 79.2 GiB, and
+        # 60 days at current growth is ~81 GiB of blocks plus WAL. So the SIZE
+        # cap will bind first, around day ~57, and that is deliberate. The two
+        # failure modes are not symmetric: too small costs a couple of days of
+        # history, while too large reproduces the 2026-06-10 disk-full
+        # CrashLoop on /prometheus/wal. Err small.
+        #
+        # Growth is extrapolated from 10.2 days and assumes series count holds.
+        # Re-measure prometheus_tsdb_storage_blocks_bytes before trusting it for
+        # any further increase.
+        retention: 60d
+        retentionSize: 85GB
         # External labels to add to any time series or
         # alerts when communicating with external systems
         externalLabels:
