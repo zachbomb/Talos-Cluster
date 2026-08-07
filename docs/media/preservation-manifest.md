@@ -889,9 +889,13 @@ Note that both instances found this way are franchise cases where one title is a
 | Alien³ (1992) | **Aliens (1986) {tmdb-679} {edition-Extend** | 6y | 154.5 | 65.84 |
 | The Nun (1965) | **The.Nuns.Story.1959.1080p.WAC.Bluray.FLA** | 6y | 151.5 | 13.60 |
 
-### Release-year drift — 43 files. Usually harmless.
+### Release-year drift — 43 files. NOT harmless — see below.
 
-Gap of 1–2 years: festival vs wide release, or a differing metadata source. Listed for completeness, not as defects.
+Gap of 1–2 years: festival vs wide release, or a differing metadata source. An earlier version of this document called these "usually harmless" and listed them as non-defects. **That was wrong**, and one of them proved it:
+
+> `School for Postmen` is recorded in Radarr as **1946**. Every release for it is labelled **1947** — as was the file that had to be deleted (`The.School.for.Postmen.1947…`). When the replacement was searched, all 18 candidate releases, including 11 × Bluray-1080p, were rejected with `Unknown Movie. Unable to match to correct movie using release title`. A one-year drift made the film **unacquirable**.
+
+So treat this table as a latent acquisition-failure list, not noise. A drifted year is silent until the day a file needs replacing — which is exactly the day it matters.
 
 | Folder | File | Gap |
 |---|---|---:|
