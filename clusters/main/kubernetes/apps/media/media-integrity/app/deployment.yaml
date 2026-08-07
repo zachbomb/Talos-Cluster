@@ -8,9 +8,9 @@
 # stack tracks PRESENCE and METADATA and nothing opens a file, so no dashboard
 # or alert could have caught it.
 #
-# IMAGE: the probe needs python3 AND ffprobe. Rather than apt-installing at
-# runtime (fragile, repeated on every restart), a static ffprobe is copied in
-# by an initContainer from mwader/static-ffmpeg and put on PATH.
+# IMAGE: the probe needs python3 AND ffprobe in ONE container. See the note on
+# the image below - the initContainer approach this originally used cannot
+# work, because the static-ffmpeg image has no shell to copy itself with.
 #
 # The media share is mounted READ-ONLY. This process must never be able to
 # modify the library it is auditing.
@@ -40,28 +40,28 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
-      initContainers:
-        - name: fetch-ffprobe
-          image: mwader/static-ffmpeg:7.1
-          command: ["/bin/sh", "-c"]
-          args:
-            - cp /ffprobe /bin-shared/ffprobe && chmod 0755 /bin-shared/ffprobe
-          volumeMounts:
-            - name: binshared
-              mountPath: /bin-shared
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities: { drop: ["ALL"] }
-          resources:
-            requests: { cpu: 10m, memory: 32Mi }
-            limits: { memory: 128Mi }
       containers:
         - name: exporter
-          image: python:3.12-slim
-          command: ["python3"]
+          # python:3.12-ALPINE, not -slim, and ffmpeg from the same Alpine
+          # repos. The first attempt copied a static ffprobe in from
+          # mwader/static-ffmpeg via an initContainer; that image is binaries
+          # only - no /bin/sh, no cp - so nothing inside it can perform the
+          # copy. Verified by running it: `/ffprobe -version` works, `sh`,
+          # `busybox` and `cp` are all absent.
+          #
+          # The obvious substitutes (jrottenberg/ffmpeg:*-alpine,
+          # linuxserver/ffmpeg) DO have a shell and ffprobe, but their
+          # binaries are musl-linked while python:3.12-slim is Debian/glibc,
+          # so a copied binary would not run. Staying on one libc removes the
+          # whole class of problem.
+          image: python:3.12-alpine
+          command: ["/bin/sh", "-c"]
           args:
-            - /probe/integrity_probe.py
+            - |
+              apk add --no-cache ffmpeg >/dev/null 2>&1 || {
+                echo "FATAL: could not install ffmpeg" >&2; exit 1; }
+              exec python3 /probe/integrity_probe.py "$@"
+            - --
             # One process covers every library. A container per library would
             # multiply the scrape surface and make "which library stopped
             # being scanned" hard to see - the exact question this component
@@ -88,8 +88,6 @@ spec:
             - --interval=86400
             - --list                 # offending paths to stderr for the log
           env:
-            - name: PATH
-              value: /bin-shared:/usr/local/bin:/usr/bin:/bin
             - name: PYTHONUNBUFFERED
               value: "1"
           ports:
@@ -98,9 +96,6 @@ spec:
           volumeMounts:
             - name: probe
               mountPath: /probe
-              readOnly: true
-            - name: binshared
-              mountPath: /bin-shared
               readOnly: true
             - name: media
               mountPath: /media
@@ -114,7 +109,11 @@ spec:
             limits: { memory: 512Mi }
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
+            # NOT read-only: `apk add ffmpeg` writes to /var/cache/apk and
+            # /usr/lib at startup. The media share is mounted read-only
+            # separately, which is the protection that actually matters here -
+            # this process must never be able to modify what it audits.
+            readOnlyRootFilesystem: false
             capabilities: { drop: ["ALL"] }
           startupProbe:
             httpGet: { path: /, port: metrics }
@@ -128,8 +127,6 @@ spec:
         - name: probe
           configMap:
             name: media-integrity-probe
-        - name: binshared
-          emptyDir: {}
         # Inline NFS, matching every other media app. `media-nfs-pvc` exists
         # as a manifest but is COMMENTED OUT of apps/media/kustomization.yaml,
         # so the claim has never been created - referencing it left this pod
