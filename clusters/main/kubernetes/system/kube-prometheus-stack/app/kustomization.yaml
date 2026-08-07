@@ -14,6 +14,7 @@ resources:
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
   - podmonitor-flux.yaml
+  - grafana-dashboard-cluster-overview.yaml
   - grafana-dashboard-dcgm-gpu.yaml
   - grafana-dashboard-proxmox.yaml
   - grafana-dashboard-unpoller.yaml
