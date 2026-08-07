@@ -284,6 +284,53 @@ def build(rows):
         for r in group:
             r["title_collision"] = {"kind": kind, "folders": folders}
 
+    # ------------------------------------------------- filler contamination
+    # Channel 20 did NOT play the wrong feature. Its FILLER pool pulled
+    # featurettes belonging to a different film, because the two films share
+    # a name and the filler group was keyed on that name.
+    #
+    # This axis has to include EXTRAs, which the deletion-gate analysis above
+    # deliberately excludes. For deciding what may be deleted, a trailer is
+    # not a library title. For deciding what may be used as filler, trailers
+    # and featurettes ARE the entire population - so excluding them, as an
+    # earlier version of this file did, makes exactly this defect invisible.
+    stems_all = defaultdict(set)
+    for r in rows:
+        stems_all[_stem(r["folder"])].add(r["folder"])
+    colliding = {s for s, f in stems_all.items() if len(f) > 1}
+
+    for r in rows:
+        if r["tier"] != EXTRA_TIER:
+            continue
+        risks = []
+        if _stem(r["folder"]) in colliding:
+            risks.append(("HIGH",
+                "parent folder name collides with %s - a filler group keyed "
+                "on title cannot tell these apart"
+                % " / ".join(sorted(stems_all[_stem(r["folder"])] -
+                                    {r["folder"]}))))
+        t = (r.get("title") or "").strip()
+        # A NUMBERED SEGMENT title names a distinct work ("3. AROUND PARIS"),
+        # so an extra carrying one is not a trailer at all - it is another
+        # film from the set, filed as this film's extra.
+        #
+        # A bare DISC LABEL is NOT the same thing and must not be treated as
+        # one. MakeMKV stamps the disc's volume label onto every title pulled
+        # off that disc, so a box-set film's own genuine trailer legitimately
+        # carries the box's label. An earlier version of this check flagged
+        # all 23 such extras as contamination; they are expected.
+        if t and not DOTTY.match(t):
+            if SEGMENT.match(t):
+                risks.append(("MEDIUM",
+                    "container title %r is a numbered segment - a distinct "
+                    "work from the set, not a trailer for this film" % t))
+            elif DISC.search(t):
+                risks.append(("INFO",
+                    "container title %r is the source disc's label; expected "
+                    "for a box-set rip, not by itself contamination" % t))
+        if any(sev in ("HIGH", "MEDIUM") for sev, _ in risks):
+            r["filler_risk"] = risks
+
     # A file whose OWN name carries a different year than its folder - how
     # `American Woman (2019) Bluray-1080p.mkv` came to sit inside
     # `American Woman (2018)/`. A folder-level check cannot see this.
@@ -485,6 +532,47 @@ def render_md(rows):
             groups.setdefault(tuple(tc["folders"]), (tc["kind"], []))[1].append(r)
     dupes = {k: v for k, v in groups.items() if v[0] == "same-film"}
     hazard = {k: v for k, v in groups.items() if v[0] == "distinct-works"}
+
+    fr = [r for r in rows if r.get("filler_risk")]
+    L.append("## Filler contamination — %d extras" % len(fr))
+    L.append("")
+    L.append("**This is what actually went wrong on channel 20.** It did not "
+             "play the wrong feature — its *filler pool* served featurettes "
+             "belonging to a different film, because the two films share a "
+             "name and the filler group was keyed on that name.")
+    L.append("")
+    L.append("Extras are excluded from the deletion-gate analysis above, and "
+             "correctly so: a trailer is not a library title. But for filler "
+             "they are the *entire* population, so an earlier version of this "
+             "generator could not see this defect at all — it dropped every "
+             "`EXTRA` row before the comparison ran. Two independent risks:")
+    L.append("")
+    L.append("| Folder | Extra | Min | Risk |")
+    L.append("|---|---|---:|---|")
+    for r in sorted(fr, key=lambda r: (r["folder"], r["file"])):
+        dur = "%.1f" % (r["duration"] / 60.0) if r.get("duration") else "?"
+        L.append("| %s | %s | %s | %s |" % (
+            r["folder"][:26], r["file"][:30], dur,
+            " ; ".join("**%s** %s" % (sev, why)
+                       for sev, why in r["filler_risk"])[:132]))
+    L.append("")
+    L.append("- **HIGH** — the extra sits in a folder whose name collides "
+             "with another film's. A filler group keyed on title cannot tell "
+             "them apart. **This is the channel-20 defect.**")
+    L.append("- **MEDIUM** — the container title is a *numbered segment* "
+             "(`3. AROUND PARIS`, `13. VISUAL ARTIST`, `5. MARRIED LIFE`), "
+             "which names a distinct work from a set. An extra carrying one "
+             "is not a trailer at all; it is another film filed as this "
+             "film's extra.")
+    L.append("")
+    L.append("A bare **disc label** is deliberately *not* flagged. MakeMKV "
+             "stamps the source disc's volume label onto every title pulled "
+             "off it, so a box-set film's own genuine trailer legitimately "
+             "carries the box's label — `8½ (1963)-trailer.mkv` reading "
+             "`ESSENTIAL FELLINI - DISC 8` is expected. An earlier version of "
+             "this check flagged all 23 such extras as contamination and was "
+             "wrong to.")
+    L.append("")
 
     L.append("## Same-name collisions — %d folder groups" % len(groups))
     L.append("")

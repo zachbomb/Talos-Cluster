@@ -6651,7 +6651,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "MEDIUM",
+     "container title '3. AROUND PARIS' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -9474,7 +9480,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "MEDIUM",
+     "container title '13. VISUAL ARTIST' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -10154,7 +10166,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with First Cow (2020) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -11899,7 +11917,17 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Happiness (1998) - a filler group keyed on title cannot tell these apart"
+    ],
+    [
+     "MEDIUM",
+     "container title '5. MARRIED LIFE' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -13627,7 +13655,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Imitation of Life (1934) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -14540,7 +14574,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "MEDIUM",
+     "container title '10. JACQUES DEMY' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -14593,7 +14633,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "MEDIUM",
+     "container title '9. JANE B.' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -16763,7 +16809,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Lola (1981) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -16779,7 +16831,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Lola (1961) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -17212,7 +17270,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Love in the Afternoon (1972) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -17251,7 +17315,17 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Love in the Afternoon (1957) - a filler group keyed on title cannot tell these apart"
+    ],
+    [
+     "INFO",
+     "container title 'ERIC ROHMER\u2019S SIX MORAL TALES - DISC 03' is the source disc's label; expected for a box-set rip, not by itself contamination"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -25556,7 +25630,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with Solaris (1972) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -32387,7 +32467,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "HIGH",
+     "parent folder name collides with The Man Who Knew Too Much (1934) - a filler group keyed on title cannot tell these apart"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -37008,7 +37094,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "MEDIUM",
+     "container title '8. NO SHELTER' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",
@@ -37104,7 +37196,13 @@
    "tier": "EXTRA",
    "evidence": "extra (trailer/featurette/sample), not a library title",
    "duration_collision": false,
-   "folder_video_count": 0
+   "folder_video_count": 0,
+   "filler_risk": [
+    [
+     "MEDIUM",
+     "container title '1. AGN\u00c8S FOREVER' is a numbered segment - a distinct work from the set, not a trailer for this film"
+    ]
+   ]
   },
   {
    "domain": "movies",

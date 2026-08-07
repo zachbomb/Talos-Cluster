@@ -797,6 +797,35 @@ Two sub-classes are worth pulling out, because they are not equally uncertain:
 | You're Never Too Young (1955) | `—` | 102.9 | no container title tag and no source or group token; provenance not determinable from metadata a |
 | Ådalen 31 (1969) | `ADALEN 31` | 114.5 | container title 'ADALEN 31' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typ |
 
+## Filler contamination — 15 extras
+
+**This is what actually went wrong on channel 20.** It did not play the wrong feature — its *filler pool* served featurettes belonging to a different film, because the two films share a name and the filler group was keyed on that name.
+
+Extras are excluded from the deletion-gate analysis above, and correctly so: a trailer is not a library title. But for filler they are the *entire* population, so an earlier version of this generator could not see this defect at all — it dropped every `EXTRA` row before the comparison ran. Two independent risks:
+
+| Folder | Extra | Min | Risk |
+|---|---|---:|---|
+| Cléo from 5 to 7 (1962) | Cléo from 5 to 7 (1962)-traile | 2.1 | **MEDIUM** container title '3. AROUND PARIS' is a numbered segment - a distinct work from the set, not a trailer for this film |
+| Faces Places (2017) | Faces Places (2017)-trailer.mk | 2.2 | **MEDIUM** container title '13. VISUAL ARTIST' is a numbered segment - a distinct work from the set, not a trailer for this film |
+| First Cow (2019) | First Cow (2019)-trailer.mp4 | 1.7 | **HIGH** parent folder name collides with First Cow (2020) - a filler group keyed on title cannot tell these apart |
+| Happiness (1965) | Happiness (1965)-trailer.mkv | 2.3 | **HIGH** parent folder name collides with Happiness (1998) - a filler group keyed on title cannot tell these apart ; **MEDIUM** cont |
+| Imitation of Life (1959) | Imitation of Life (1959)-trail | 2.3 | **HIGH** parent folder name collides with Imitation of Life (1934) - a filler group keyed on title cannot tell these apart |
+| Jacquot (1991) | Jacquot (1991)-trailer.mkv | 2.2 | **MEDIUM** container title '10. JACQUES DEMY' is a numbered segment - a distinct work from the set, not a trailer for this film |
+| Jane B. by Agnès V. (1988) | Jane B. by Agnès V. (1988)-tra | 2.6 | **MEDIUM** container title '9. JANE B.' is a numbered segment - a distinct work from the set, not a trailer for this film |
+| Lola (1961) | Lola (1961)-trailer.mp4 | 1.8 | **HIGH** parent folder name collides with Lola (1981) - a filler group keyed on title cannot tell these apart |
+| Lola (1981) | Lola (1981)-trailer.mkv | 3.3 | **HIGH** parent folder name collides with Lola (1961) - a filler group keyed on title cannot tell these apart |
+| Love in the Afternoon (195 | Love in the Afternoon (1957)-t | 3.0 | **HIGH** parent folder name collides with Love in the Afternoon (1972) - a filler group keyed on title cannot tell these apart |
+| Love in the Afternoon (197 | Love in the Afternoon (1972)-t | 4.1 | **HIGH** parent folder name collides with Love in the Afternoon (1957) - a filler group keyed on title cannot tell these apart ; **I |
+| Solaris (2002) | Solaris (2002)-trailer.mp4 | 1.7 | **HIGH** parent folder name collides with Solaris (1972) - a filler group keyed on title cannot tell these apart |
+| The Man Who Knew Too Much  | The Man Who Knew Too Much (195 | 6.2 | **HIGH** parent folder name collides with The Man Who Knew Too Much (1934) - a filler group keyed on title cannot tell these apart |
+| Vagabond (1985) | Vagabond (1985)-trailer.mkv | 2.5 | **MEDIUM** container title '8. NO SHELTER' is a numbered segment - a distinct work from the set, not a trailer for this film |
+| Varda by Agnès (2019) | Varda by Agnès (2019)-trailer. | 2.8 | **MEDIUM** container title '1. AGNÈS FOREVER' is a numbered segment - a distinct work from the set, not a trailer for this film |
+
+- **HIGH** — the extra sits in a folder whose name collides with another film's. A filler group keyed on title cannot tell them apart. **This is the channel-20 defect.**
+- **MEDIUM** — the container title is a *numbered segment* (`3. AROUND PARIS`, `13. VISUAL ARTIST`, `5. MARRIED LIFE`), which names a distinct work from a set. An extra carrying one is not a trailer at all; it is another film filed as this film's extra.
+
+A bare **disc label** is deliberately *not* flagged. MakeMKV stamps the source disc's volume label onto every title pulled off it, so a box-set film's own genuine trailer legitimately carries the box's label — `8½ (1963)-trailer.mkv` reading `ESSENTIAL FELLINI - DISC 8` is expected. An earlier version of this check flagged all 23 such extras as contamination and was wrong to.
+
 ## Same-name collisions — 15 folder groups
 
 Folders whose names are identical once the year is stripped. Added after channel 20 played Rohmer's *Love in the Afternoon* (1972) where Wilder's (1957) was wanted — **both are in the library and both are correctly foldered**, so there is no filing error to find and anything matching on title alone picks one arbitrarily.
