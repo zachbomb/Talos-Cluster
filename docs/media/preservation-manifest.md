@@ -797,6 +797,149 @@ Two sub-classes are worth pulling out, because they are not equally uncertain:
 | You're Never Too Young (1955) | `—` | 102.9 | no container title tag and no source or group token; provenance not determinable from metadata a |
 | Ådalen 31 (1969) | `ADALEN 31` | 114.5 | container title 'ADALEN 31' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typ |
 
+## Same-name collisions — 15 folder groups
+
+Folders whose names are identical once the year is stripped. Added after channel 20 played Rohmer's *Love in the Afternoon* (1972) where Wilder's (1957) was wanted — **both are in the library and both are correctly foldered**, so there is no filing error to find and anything matching on title alone picks one arbitrarily.
+
+Runtime separates the two situations that produce an identical stem: runtimes that **agree** mean one film filed under two years (a duplicate); runtimes that **differ** mean two films sharing a name (a matching hazard).
+
+### Same film filed under two years — 4 groups. DUPLICATES.
+
+| Title | Folder | File | Min | GB | Tier |
+|---|---|---|---:|---:|---|
+| american woman | American Woman (2018) | American Woman (2018).mkv | 111.9 | 5.20 | `REVIEW` |
+| american woman | American Woman (2018) | American Woman (2019) Bluray-1080p | 111.9 | 5.20 | `REVIEW` |
+| american woman | American Woman (2019) | American.Woman.2019.1080p.BluRay.x | 111.9 | 5.20 | `REPLACEABLE` |
+| first cow | First Cow (2019) | First Cow (2019).mkv | 121.8 | 22.85 | `REVIEW` |
+| first cow | First Cow (2020) | First Cow (2020).mkv | 121.8 | 9.62 | `REVIEW` |
+| happiness | Happiness (1965) | Le.Bonheur.1965.1080p.BluRay.x264- | ? | 0.11 | `REPLACEABLE` |
+| happiness | Happiness (1998) | Happiness (1998) {tmdb-10683} - [B | 139.9 | 17.05 | `REPLACEABLE` |
+| jour de fête dans les  | JOUR DE FÊTE DANS LES MO | JOUR DE FÊTE DANS LES MONTS NAGA ( | 80.5 | 9.15 | `REVIEW` |
+| jour de fête dans les  | JOUR DE FÊTE DANS LES MO | JOUR DE FÊTE DANS LES MONTS NAGA ( | 80.3 | 9.16 | `REVIEW` |
+
+### Different films sharing a name — 11 groups. MATCHING HAZARD.
+
+Nothing is wrong with these on disk. They are listed because every one of them is a place where a title-based lookup — a channel lineup, an NFO match, a Plex/Emby agent — can silently resolve to the wrong film.
+
+| Title | Folder | Min | GB | Tier |
+|---|---|---:|---:|---|
+| dune | Dune (1984) | 136.8 | 90.66 | `REPLACEABLE` |
+| dune | Dune (2021) | 155.4 | 72.35 | `REPLACEABLE` |
+| holiday | Holiday (1930) | 91.0 | 12.42 | `REVIEW` |
+| holiday | Holiday (1938) | 95.6 | 26.48 | `REVIEW` |
+| imitation of life | Imitation of Life (1934) | 110.8 | 30.48 | `REVIEW` |
+| imitation of life | Imitation of Life (1959) | 124.5 | 1.99 | `REVIEW` |
+| lola | Lola (1961) | 88.8 | 24.00 | `REVIEW` |
+| lola | Lola (1981) | 115.2 | 30.16 | `REVIEW` |
+| long day's journey into  | Long Day's Journey Into Night  | 170.3 | 0.25 | `REVIEW` |
+| long day's journey into  | Long Day's Journey Into Night  | 138.9 | 46.85 | `REVIEW` |
+| love in the afternoon | Love in the Afternoon (1957) | 129.9 | 37.29 | `REVIEW` |
+| love in the afternoon | Love in the Afternoon (1972) | 97.3 | 7.04 | `REPLACEABLE` |
+| magnificent obsession | Magnificent Obsession (1935) | 102.2 | 27.96 | `PROTECTED` |
+| magnificent obsession | Magnificent Obsession (1954) | 108.0 | 30.05 | `PROTECTED` |
+| malcolm x | Malcolm X (1972) | 91.7 | 7.67 | `REPLACEABLE` |
+| malcolm x | Malcolm X (1992) | 201.6 | 97.87 | `REPLACEABLE` |
+| solaris | Solaris (1972) | 166.6 | 25.38 | `REPLACEABLE` |
+| solaris | Solaris (2002) | 98.7 | 2.96 | `REVIEW` |
+| the man who knew too muc | The Man Who Knew Too Much (193 | 76.1 | 20.74 | `REVIEW` |
+| the man who knew too muc | The Man Who Knew Too Much (195 | 120.0 | 53.91 | `REPLACEABLE` |
+| west side story | West Side Story (1961) | 153.8 | 35.07 | `REPLACEABLE` |
+| west side story | West Side Story (2021) | 156.3 | 54.86 | `REPLACEABLE` |
+
+### Wrong film in the folder — 5 files. FIX THESE.
+
+The file's own name carries a year more than 2 apart from its folder's. A production-vs-release difference is 1–2 years; a larger gap is usually a **different film sitting in another film's folder**.
+
+Note that both instances found this way are franchise cases where one title is a substring of the other — `Aliens` inside `Alien³`, `Blade Runner` inside `Blade Runner 2049`. Title prefix-matching does **not** catch those (`alien` is a prefix of `aliens`); the year gap is the only signal that does.
+
+| Folder | Contains | Gap | Min | GB |
+|---|---|---:|---:|---:|
+| Blade Runner 2049 (2017) | **Blade Runner (1982) {tmdb-78} {edition-F** | 35y | 117.5 | 45.22 |
+| Tokyo Story (1972) (1972) | **Tokyo.Story.1953.REMASTERED.1080p.BluRay** | 19y | 137.2 | 12.91 |
+| Ten Nights in a Bar Room ( | **Ten Nights in a Bar Room (1921).mkv** | 10y | 63.9 | 10.63 |
+| Alien³ (1992) | **Aliens (1986) {tmdb-679} {edition-Extend** | 6y | 154.5 | 65.84 |
+| The Nun (1965) | **The.Nuns.Story.1959.1080p.WAC.Bluray.FLA** | 6y | 151.5 | 13.60 |
+
+### Release-year drift — 43 files. Usually harmless.
+
+Gap of 1–2 years: festival vs wide release, or a differing metadata source. Listed for completeness, not as defects.
+
+| Folder | File | Gap |
+|---|---|---:|
+| A Single Man (2010) | A.Single.Man.2009.1080p.BluRay.DTS.x264- | 1y |
+| Almayer's Folly (2012) | La.folie.Almayer.2011.1080p.BluRay.DD+5. | 1y |
+| American Woman (2018) | American Woman (2019) Bluray-1080p.mkv | 1y |
+| Annette (2020) | Annette (2021) {tmdb-424277} [Bluray-108 | 1y |
+| Audition (1999) | Audition (2000) {tmdb-11075} [Remux-2160 | 1y |
+| Baadasssss! (2003) | Baadasssss.2004.1080p.BRRip.DDP.5.1.H.26 | 1y |
+| Blood Simple (1984) | Blood Simple (1985) {tmdb-11368} [Remux- | 1y |
+| Brick (2005) | Brick (2006) {tmdb-9270} [Remux-2160p][D | 1y |
+| Chinese Roulette (1977) | Chinese.Roulette.1976.1080p.BluRay.x264- | 1y |
+| Chungking Express (1996) (1996 | Chungking.Express.1994.2160p.4K.BluRay.5 | 2y |
+| Driven (2019) | Driven.2018.1080p.BluRay.DTS-HD.MA.5.1.X | 1y |
+| Everybody Knows (2019) | Everybody.Knows.2018.1080p.BluRay.x264-O | 1y |
+| Ex Machina (2014) | Ex Machina (2015) {tmdb-264660} [Remux-2 | 1y |
+| Grey Gardens (1976) | Grey.Gardens.1975.1080p.BluRay.FLAC.1.0. | 1y |
+| In the Mood for Love (2001) | In.the.Mood.for.Love.2000.UHD.BluRay.216 | 1y |
+| Jane Eyre (2010) | Jane.Eyre.2011.1080p.BluRay.DTS-HD.MA5.1 | 1y |
+| Kedi (2017) | Kedi.2016.2160p.RED.WEB-DL.AAC5.1.VP9-BT | 1y |
+| Kingsman The Secret Service (2 | Kingsman The Secret Service (2015) {tmdb | 1y |
+| Love Is Colder Than Death (197 | Love.Is.Colder.Than.Death.1969.1080p.Blu | 1y |
+| Mary Jane's Not a Virgin Anymo | Mary.Janes.Not.a.Virgin.Anymore.1998.108 | 2y |
+| On Swift Horses (2024) | On Swift Horses (2025) {tmdb-1092506} [i | 1y |
+| One from the Heart (1981) | One from the Heart (1982) {tmdb-41291} [ | 1y |
+| Pixote (1981) | Pixote.1980.1080p.BluRay.FLAC1.0.x264-Zo | 1y |
+| Presence (2024) | Presence (2025) {tmdb-1140535} [Bluray-2 | 1y |
+| SLC Punk (1999) | SLC Punk (1998) {tmdb-6396} [Remux-2160p | 1y |
+| Sambizanga (1972) | Sambizanga (1973) {tmdb-87392} [VOSTFR][ | 1y |
+| School for Postmen (1946) | The.School.for.Postmen.1947.1080p.BluRay | 1y |
+| Shake! Otis at Monterey (1986) | Shake.Otis.at.Monterey.1987.1080p.BluRay | 1y |
+| Sound of Metal (2019) | Sound.Of.Metal.2020.1080p.UHD.BluRay.DD. | 1y |
+| Spider-Man Into the Spider-Ver | Spider-Man Into the Spider-Verse (2018)  | 1y |
+| Take Shelter (2012) | Take.Shelter.2011.1080p.BluRay.DD+5.1.x2 | 1y |
+| The Celluloid Closet (1995) | The Celluloid Closet (1996) {tmdb-32562} | 1y |
+| The City (1999) | Babe Pig in the City (1998) {tmdb-9447}  | 1y |
+| The Dutchman (2025) | The Dutchman (2026) {tmdb-1180417} [AMZN | 1y |
+| The Hero (1966) | The.Heroes.of.Telemark.1965.1080p.BluRay | 1y |
+| The Producers (1968) | The.Producers.1967.REMASTERED.1080p.BluR | 1y |
+| The Raid- Redemption (2011) | The Raid (2012) {tmdb-94329} {edition-Un | 1y |
+| War and Peace (1966) | Part III The Year 1812 (1967).mkv | 1y |
+| War and Peace (1966) | Part IV Pierre Bezukhov (1967).mkv | 1y |
+| What We Do In The Shadows (201 | What.We.Do.in.the.Shadows.2014.1080p.Blu | 1y |
+| Wildflowers (2000) | Wildflowers.1999.iNTERNAL.DVDRip.X264-MU | 1y |
+| Wildlike (2015) | Wildlike.2014.1080p.BluRay.x264.AC3-Fuze | 1y |
+| Zola (2020) | Zola (2021) {tmdb-539565} [HMAX][WEBDL-2 | 1y |
+
+### Unreadable / implausible files — 19
+
+Surfaced incidentally by the collision scan. A file that cannot hold what it claims is a content problem regardless of naming.
+
+**Verified 2026-08-07 by re-probing every entry: 17 of 19 are genuinely corrupt**, not a probe artifact — 14 fail with `EBML header parsing failed` (the Matroska header itself is unreadable, so the file cannot be demuxed at all), plus an invalid `.iso`, a `0x0` picture size, and an EBML length error. Several are 10–45 GB. Only one reads fine; the remaining entry is the low-bitrate flag rather than a corruption.
+
+**These are NOT the Aug 2026 JBOD silent-checksum corruption.** 16 of 19 mtimes cluster in Feb–Apr 2025, 12 in April 2025 alone. Storage corruption does not alter mtime and would hit files regardless of when they were written, scattering across the library's whole history. A tight write-time cluster of predominantly French/MULTi arthouse titles points at one bad acquisition run — corrupt on arrival, or damaged in that window. Re-acquire rather than attempting repair.
+
+| Folder | File | Problem |
+|---|---|---|
+| Fellini Satyricon (1969) | Fellini.s.Satyricon.1969.MULTi.1 | duration reads 0 or absent - unplayable or truncated |
+| HIStory on Film, Volume II ( | HIStory on Film, Volume II (1997 | duration reads 0 or absent - unplayable or truncated |
+| Happiness (1965) | Le.Bonheur.1965.1080p.BluRay.x26 | duration reads 0 or absent - unplayable or truncated |
+| House Specialty (1978) | House.Specialty.1978.1080p.BluRa | duration reads 0 or absent - unplayable or truncated |
+| L'Argent (1983) | L.argent.1983.FRENCH.1080p.BluRa | duration reads 0 or absent - unplayable or truncated |
+| Long Day's Journey Into Nigh | Long Day's Journey Into Night (1 | 170 min in 0.25 GB = 196 kbps, too low to be intact video |
+| Love Streams (1984) | Love.Streams.1984.MULTi.1080p.Bl | duration reads 0 or absent - unplayable or truncated |
+| Mouchette (1967) | Mouchette.1967.REMASTERED.1080p. | duration reads 0 or absent - unplayable or truncated |
+| Nocturama (2016) | Nocturama.2016.LIMITED.1080p.Blu | duration reads 0 or absent - unplayable or truncated |
+| Police Story (1985) | Police.Story.1985.MULTi.1080p.Bl | duration reads 0 or absent - unplayable or truncated |
+| Rumble Fish (1983) | Rumble.Fish.1983.MULTi.1080p.Blu | duration reads 0 or absent - unplayable or truncated |
+| School for Postmen (1946) | The.School.for.Postmen.1947.1080 | duration reads 0 or absent - unplayable or truncated |
+| Spirits of the Dead (1968) | Histoires.Extraordinaires.1968.F | duration reads 0 or absent - unplayable or truncated |
+| The 39 Steps (1935) | The.39.Steps.1935.MULTi.1080p.Bl | duration reads 0 or absent - unplayable or truncated |
+| The Beaches of Agnès (2008) | The.Beaches.of.Agnes.2008.1080p. | duration reads 0 or absent - unplayable or truncated |
+| The Congress (2013) | The.Congress.2013.MULTi.1080p.Bl | duration reads 0 or absent - unplayable or truncated |
+| Wonderstruck (2017) | Wonderstruck (2017).iso | duration reads 0 or absent - unplayable or truncated |
+| Zero for Conduct (1933) | Zero.de.Conduite.1933.VOF.1080p. | duration reads 0 or absent - unplayable or truncated |
+| Ô saisons, ô châteaux (1958) | O.Saisons.O.Chateaux.1958.1080p. | duration reads 0 or absent - unplayable or truncated |
+
 ## Same-folder duration collisions — 27 files
 
 Two or more files within 30 s of each other in one folder. This is the shape that reads as "duplicate" and triggers a deletion, so it is where the manifest is most likely to be consulted. The tier column is the answer.

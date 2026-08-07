@@ -1201,7 +1201,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p.BluRay.DTS.x264-VietHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2010",
+    "2009",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -1729,7 +1735,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (rueHD Atmos 7.1][x265]-NAHOM) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1992",
+    "1986",
+    6,
+    "wrong-film"
+   ]
   },
   {
    "domain": "movies",
@@ -1897,7 +1909,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p.BluRay.DD+5.1.x264-SbR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2012",
+    "2011",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -2137,7 +2155,14 @@
    "tier": "REVIEW",
    "evidence": "no container title tag and no source or group token; provenance not determinable from metadata alone",
    "duration_collision": true,
-   "folder_video_count": 2
+   "folder_video_count": 2,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "American Woman (2018)",
+     "American Woman (2019)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -2153,7 +2178,20 @@
    "tier": "REVIEW",
    "evidence": "disc-source token 'Bluray' with quality tokens but NO release group - consistent with a household rip that Radarr renamed on import; Radarr stamps these tokens onto every file it manages, so they are not evidence of a download",
    "duration_collision": true,
-   "folder_video_count": 2
+   "folder_video_count": 2,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "American Woman (2018)",
+     "American Woman (2019)"
+    ]
+   },
+   "year_mismatch": [
+    "2018",
+    "2019",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -2169,7 +2207,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (2019.1080p.BluRay.x264-nikt0) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "American Woman (2018)",
+     "American Woman (2019)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -2457,7 +2502,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p][AAC 5.1][x265]-Tigole) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2020",
+    "2021",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -2985,7 +3036,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (][FLAC 2.0][HEVC]-CiNEPHiLES) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1999",
+    "2000",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -3129,7 +3186,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (80p.BRRip.DDP.5.1.H.265.-iVy) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2003",
+    "2004",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -4361,7 +4424,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix ( HDR10][AC3 5.1][x265]-NAHOM) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2017",
+    "1982",
+    35,
+    "wrong-film"
+   ]
   },
   {
    "domain": "movies",
@@ -4457,7 +4526,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (][DTS-HD MA 5.1][x265]-NAHOM) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1984",
+    "1985",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -4942,7 +5017,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (0][DTS-HD MA 5.1][HEVC]-dOwn) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2005",
+    "2006",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -6190,7 +6271,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (976.1080p.BluRay.x264-GHOULS) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1977",
+    "1976",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -6270,7 +6357,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (94.2160p.4K.BluRay.5.1-WORLD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1996",
+    "1994",
+    2,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -8354,7 +8447,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (y.DTS-HD.MA.5.1.X264-FuzerHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2019",
+    "2018",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -8482,7 +8581,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (D MA 5.1][HEVC]-LaFistiniere) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Dune (1984)",
+     "Dune (2021)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -8498,7 +8604,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix ( HDR10][AAC 7.1][x265]-NAHOM) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Dune (1984)",
+     "Dune (2021)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -9157,7 +9270,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (s.2018.1080p.BluRay.x264-OFT) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2019",
+    "2018",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -9205,7 +9324,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (lus][DTS-X 7.1][HEVC]-SiCFoI) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2014",
+    "2015",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -9829,7 +9954,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p.BluRay.x264-CherryCoke) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -10005,7 +10131,14 @@
    "tier": "REVIEW",
    "evidence": "no container title tag and no source or group token; provenance not determinable from metadata alone",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "First Cow (2019)",
+     "First Cow (2020)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -10037,7 +10170,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'First Cow' is plain human text - no disc number, no release group, no source token; could be a single-disc rip or a retitled download",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "First Cow (2019)",
+     "First Cow (2020)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -11544,7 +11684,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (.BluRay.FLAC.1.0.x264-ENDSKY) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1976",
+    "1975",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -11656,7 +11802,8 @@
    "tier": "REVIEW",
    "evidence": "no container title tag ; disc-source token 'DVD' present; provenance not determinable from metadata alone",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -11768,7 +11915,15 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (5.1080p.BluRay.x264-RedBlade) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "Happiness (1965)",
+     "Happiness (1998)"
+    ]
+   },
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -11784,7 +11939,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (.0][DV HDR10][x265]-hallowed) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "Happiness (1965)",
+     "Happiness (1998)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -12755,7 +12917,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'HOLIDAY' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typed movie title - leans disc rip, but carries no disc number to prove set membership",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Holiday (1930)",
+     "Holiday (1938)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -12771,7 +12940,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'HOLIDAY' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typed movie title - leans disc rip, but carries no disc number to prove set membership",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Holiday (1930)",
+     "Holiday (1938)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -13043,7 +13219,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (78.1080p.BluRay.x264-BiPOLAR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -13427,7 +13604,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'IMITATION OF LIFE' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typed movie title - leans disc rip, but carries no disc number to prove set membership",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Imitation of Life (1934)",
+     "Imitation of Life (1959)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -13459,7 +13643,14 @@
    "tier": "REVIEW",
    "evidence": "no container title tag and no source or group token; provenance not determinable from metadata alone",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Imitation of Life (1934)",
+     "Imitation of Life (1959)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -13555,7 +13746,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (0p.DDP.7.1.HDR.x265-hallowed) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2001",
+    "2000",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -14294,7 +14491,14 @@
    "folder_video_count": 1,
    "cross_folder_twin": [
     "JOUR DE F\u00caTE DANS LES MONTS NAGA (1995)"
-   ]
+   ],
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "JOUR DE F\u00caTE DANS LES MONTS NAGA (1964)",
+     "JOUR DE F\u00caTE DANS LES MONTS NAGA (1995)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -14313,7 +14517,14 @@
    "folder_video_count": 1,
    "cross_folder_twin": [
     "JOUR DE F\u00caTE DANS LES MONTS NAGA (1964)"
-   ]
+   ],
+   "title_collision": {
+    "kind": "same-film",
+    "folders": [
+     "JOUR DE F\u00caTE DANS LES MONTS NAGA (1964)",
+     "JOUR DE F\u00caTE DANS LES MONTS NAGA (1995)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -14414,7 +14625,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ay.DTS-HD.MA5.1.x264-FuzerHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2010",
+    "2011",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -15022,7 +15239,13 @@
    "tier": "REPLACEABLE",
    "evidence": "source token 'WEB-DL' - a WEB source cannot be a rip of a disc anyone owns, so this file is re-acquirable by definition",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2017",
+    "2016",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -15294,7 +15517,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (S-HD MA 7.1][x265]-MainFrame) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2014",
+    "2015",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -15454,7 +15683,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (080p.BluRay.x264.FLAC1.0-BMF) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -16510,7 +16740,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'LOLA' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typed movie title - leans disc rip, but carries no disc number to prove set membership",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Lola (1961)",
+     "Lola (1981)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -16558,7 +16795,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'LOLA' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typed movie title - leans disc rip, but carries no disc number to prove set membership",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Lola (1961)",
+     "Lola (1981)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -16622,7 +16866,15 @@
    "tier": "REVIEW",
    "evidence": "disc-source token 'Bluray' with quality tokens but NO release group - consistent with a household rip that Radarr renamed on import; Radarr stamps these tokens onto every file it manages, so they are not evidence of a download",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Long Day's Journey Into Night (1962)",
+     "Long Day's Journey Into Night (2018)"
+    ]
+   },
+   "implausible": "170 min in 0.25 GB = 196 kbps, too low to be intact video"
   },
   {
    "domain": "movies",
@@ -16638,7 +16890,14 @@
    "tier": "REVIEW",
    "evidence": "container title \"Long Day's Journey Into Night\" is plain human text - no disc number, no release group, no source token; could be a single-disc rip or a retitled download",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Long Day's Journey Into Night (1962)",
+     "Long Day's Journey Into Night (2018)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -16846,7 +17105,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (969.1080p.BluRay.x264-MELiTE) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1970",
+    "1969",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -16914,7 +17179,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p.BluRay.x264-CherryCoke) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -16962,7 +17228,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'Love in the Afternoon (1957)' is plain human text - no disc number, no release group, no source token; could be a single-disc rip or a retitled download",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Love in the Afternoon (1957)",
+     "Love in the Afternoon (1972)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -16994,7 +17267,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (972.1080p.BluRay.x264-MELiTE) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Love in the Afternoon (1957)",
+     "Love in the Afternoon (1972)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -17266,7 +17546,14 @@
    "tier": "PROTECTED",
    "evidence": "container title 'Magnificent Obsession - Disc 02' names disc 2 of a multi-disc set; this file is one disc of that set, not a copy of the movie it is filed under",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Magnificent Obsession (1935)",
+     "Magnificent Obsession (1954)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -17282,7 +17569,14 @@
    "tier": "PROTECTED",
    "evidence": "container title 'Magnificent Obsession - Disc 01' names disc 1 of a multi-disc set; this file is one disc of that set, not a copy of the movie it is filed under",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Magnificent Obsession (1935)",
+     "Magnificent Obsession (1954)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -17314,7 +17608,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (72.1080p.BluRay.x264-HANDJOB) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Malcolm X (1972)",
+     "Malcolm X (1992)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -17330,7 +17631,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (S-HD MA 5.1][HEVC]-FraMeSToR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Malcolm X (1972)",
+     "Malcolm X (1992)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -17602,7 +17910,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (uRay.DDP.2.0.10bit.H.265-iVy) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1996",
+    "1998",
+    2,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -18853,7 +19167,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ERED.1080p.BluRay.x264-USURY) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -19992,7 +20307,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ITED.1080p.BluRay.x264-USURY) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -20680,7 +20996,13 @@
    "tier": "REPLACEABLE",
    "evidence": "source token 'WEBDL' - a WEB source cannot be a rip of a disc anyone owns, so this file is re-acquirable by definition",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2024",
+    "2025",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -20958,7 +21280,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (S-HD MA 5.1][HEVC]-FraMeSToR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1981",
+    "1982",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -21991,7 +22319,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (uRay.FLAC1.0.x264-ZoroSenpai) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1981",
+    "1980",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -22103,7 +22437,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ULTi.1080p.BluRay.x264-MUxHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -22279,7 +22614,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (TrueHD Atmos 7.1][x265]-SPHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2024",
+    "2025",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -23335,7 +23676,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ULTi.1080p.BluRay.x264-ULSHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -23447,7 +23789,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (][DTS-HD MA 5.1][x265]-NAHOM) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1999",
+    "1998",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -23623,7 +23971,13 @@
    "tier": "REPLACEABLE",
    "evidence": "source token 'WEBDL' - a WEB source cannot be a rip of a disc anyone owns, so this file is re-acquirable by definition",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1972",
+    "1973",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -23991,7 +24345,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (47.1080p.BluRay.x264-BiPOLAR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1946",
+    "1947",
+    1,
+    "year-drift"
+   ],
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -24391,7 +24752,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (7.1080p.BluRay.x264-SADPANDA) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1986",
+    "1987",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -25143,7 +25510,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p.BluRay.FLAC1.0.x264-RO) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Solaris (1972)",
+     "Solaris (2002)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -25159,7 +25533,14 @@
    "tier": "REVIEW",
    "evidence": "disc-source token 'Bluray' with quality tokens but NO release group - consistent with a household rip that Radarr renamed on import; Radarr stamps these tokens onto every file it manages, so they are not evidence of a download",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "Solaris (1972)",
+     "Solaris (2002)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -25319,7 +25700,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (BluRay.DD.5.1.HDR.X265-rodeO) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2019",
+    "2020",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -25447,7 +25834,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (D Atmos 7.1][HEVC]-FraMeSToR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2019",
+    "2018",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -25495,7 +25888,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (1080p.BluRay.x264-CherryCoke) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -26967,7 +27361,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (0p.BluRay.DD+5.1.x264-playHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2012",
+    "2011",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -27167,7 +27567,13 @@
    "tier": "REVIEW",
    "evidence": "no container title tag and no source or group token; provenance not determinable from metadata alone",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1931",
+    "1921",
+    10,
+    "wrong-film"
+   ]
   },
   {
    "domain": "movies",
@@ -27439,7 +27845,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ULTi.1080p.BluRay.x264-ROUGH) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -27826,7 +28233,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (2008.1080p.BluRay.x264-USURY) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -28536,7 +28944,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (0][FLAC 2.0][HEVC]-FraMeSToR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1995",
+    "1996",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -28621,7 +29035,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (.1][DV HDR10][x265]-hallowed) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1999",
+    "1998",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -28701,7 +29121,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (MULTi.1080p.BluRay.x264-DEAL) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -29197,7 +29618,13 @@
    "tier": "REPLACEABLE",
    "evidence": "source token 'AMZN' - a WEB source cannot be a rip of a disc anyone owns, so this file is re-acquirable by definition",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2025",
+    "2026",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -30497,7 +30924,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (0p.BluRay.DD.2.0.x264-playHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1966",
+    "1965",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -31908,7 +32341,14 @@
    "tier": "REVIEW",
    "evidence": "container title 'THE MAN WHO KNEW TOO MUCH' is ALL CAPS, the shape of an ISO-9660 volume label rather than a typed movie title - leans disc rip, but carries no disc number to prove set membership",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "The Man Who Knew Too Much (1934)",
+     "The Man Who Knew Too Much (1956)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -31924,7 +32364,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (][DTS-HD MA 5.1][x265]-NAHOM) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "The Man Who Knew Too Much (1934)",
+     "The Man Who Knew Too Much (1956)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -32516,7 +32963,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (ray.FLAC.2.0.x264-RetroPeeps) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1965",
+    "1959",
+    6,
+    "wrong-film"
+   ]
   },
   {
    "domain": "movies",
@@ -33095,7 +33548,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (RED.1080p.BluRay.x264-SPOOKS) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1968",
+    "1967",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -33127,7 +33586,13 @@
    "tier": "REVIEW",
    "evidence": "disc-source token 'BDRip' with quality tokens but NO release group - consistent with a household rip that Radarr renamed on import; Radarr stamps these tokens onto every file it manages, so they are not evidence of a download",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2011",
+    "2012",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -35529,7 +35994,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (D.1080p.BluRay.x264-SADPANDA) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "1972",
+    "1953",
+    19,
+    "wrong-film"
+   ]
   },
   {
    "domain": "movies",
@@ -37145,7 +37616,13 @@
    "tier": "PROTECTED",
    "evidence": "container title 'WAR AND PEACE - DISC 02' names disc 2 of a multi-disc set; this file is one disc of that set, not a copy of the movie it is filed under",
    "duration_collision": false,
-   "folder_video_count": 4
+   "folder_video_count": 4,
+   "year_mismatch": [
+    "1966",
+    "1967",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -37161,7 +37638,13 @@
    "tier": "PROTECTED",
    "evidence": "container title 'WAR AND PEACE - DISC 02' names disc 2 of a multi-disc set; this file is one disc of that set, not a copy of the movie it is filed under",
    "duration_collision": false,
-   "folder_video_count": 4
+   "folder_video_count": 4,
+   "year_mismatch": [
+    "1966",
+    "1967",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -37337,7 +37820,14 @@
    "tier": "REPLACEABLE",
    "evidence": "source token 'WEBDL' - a WEB source cannot be a rip of a disc anyone owns, so this file is re-acquirable by definition",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "West Side Story (1961)",
+     "West Side Story (2021)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -37353,7 +37843,14 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (D Atmos 7.1][HEVC]-FraMeSToR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "title_collision": {
+    "kind": "distinct-works",
+    "folders": [
+     "West Side Story (1961)",
+     "West Side Story (2021)"
+    ]
+   }
   },
   {
    "domain": "movies",
@@ -37369,7 +37866,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (BluRay.x265.DDP.5.1-MovieMan) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2015",
+    "2014",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -37801,7 +38304,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (NTERNAL.DVDRip.X264-MULTiPLY) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2000",
+    "1999",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -37817,7 +38326,13 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (080p.BluRay.x264.AC3-FuzerHD) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2015",
+    "2014",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -37977,7 +38492,8 @@
    "tier": "REVIEW",
    "evidence": "no container title tag and no source or group token; provenance not determinable from metadata alone",
    "duration_collision": false,
-   "folder_video_count": 2
+   "folder_video_count": 2,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -38761,7 +39277,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (p.BluRay.x264.AC3.1.0-MELiTE) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   },
   {
    "domain": "movies",
@@ -38809,7 +39326,13 @@
    "tier": "REPLACEABLE",
    "evidence": "source token 'HMAX' - a WEB source cannot be a rip of a disc anyone owns, so this file is re-acquirable by definition",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "year_mismatch": [
+    "2020",
+    "2021",
+    1,
+    "year-drift"
+   ]
   },
   {
    "domain": "movies",
@@ -38857,7 +39380,8 @@
    "tier": "REPLACEABLE",
    "evidence": "filename carries a release-group suffix (58.1080p.BluRay.x264-BiPOLAR) - a published release, re-acquirable",
    "duration_collision": false,
-   "folder_video_count": 1
+   "folder_video_count": 1,
+   "implausible": "duration reads 0 or absent - unplayable or truncated"
   }
  ]
 }

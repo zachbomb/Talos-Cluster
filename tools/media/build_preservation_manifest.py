@@ -256,6 +256,70 @@ def build(rows):
                      and abs(b["duration"] - a["duration"]) <= 60]
             if twins:
                 a["cross_folder_twin"] = sorted(b["folder"] for b in twins)
+
+    # ------------------------------------------------ same-name collisions
+    # What motivated this: channel 20 played Rohmer's "Love in the Afternoon"
+    # (1972) where Wilder's (1957) was wanted. BOTH are in the library and
+    # both are correctly foldered - so no filing error exists to find, and
+    # anything matching on title alone picks one of them arbitrarily. The
+    # hazard is invisible until you look for names that repeat.
+    #
+    # Runtime separates the two very different situations that produce the
+    # same folder stem:
+    #   runtimes agree  -> ONE film filed under two years (a real duplicate)
+    #   runtimes differ -> TWO films sharing a name (a matching hazard)
+    by_stem = defaultdict(list)
+    for r in rows:
+        if r["tier"] != EXTRA_TIER:
+            by_stem[_stem(r["folder"])].append(r)
+    for stem, group in by_stem.items():
+        folders = sorted({r["folder"] for r in group})
+        if len(folders) < 2:
+            continue
+        durs = [r["duration"] for r in group if r.get("duration")]
+        span = (max(durs) - min(durs)) if durs else None
+        # 90 s: a festival cut vs a release cut differs by seconds, and two
+        # different films sharing a title differ by far more than a minute.
+        kind = "same-film" if (span is not None and span <= 90) else "distinct-works"
+        for r in group:
+            r["title_collision"] = {"kind": kind, "folders": folders}
+
+    # A file whose OWN name carries a different year than its folder - how
+    # `American Woman (2019) Bluray-1080p.mkv` came to sit inside
+    # `American Woman (2018)/`. A folder-level check cannot see this.
+    for r in rows:
+        fy = _re_fileyear.search(r["file"])
+        dy = _re_folderyear.search(r["folder"])
+        # If the file's year also appears in the FOLDER name, it is part of
+        # the title, not a release year - `The Games of the V Olympiad
+        # Stockholm, 1912 (2016)` otherwise reports a 104-year gap.
+        if fy and dy and fy.group(1) != dy.group(1) \
+                and fy.group(1) not in r["folder"]:
+            gap = abs(int(fy.group(1)) - int(dy.group(1)))
+            # A production-vs-release difference is 1-2 years and is ordinary
+            # (A Single Man 2009/2010, Ex Machina 2014/2015). A larger gap is
+            # not a tagging quirk - it is usually a DIFFERENT FILM sitting in
+            # another film's folder. Both real instances found this way were
+            # franchise cases where one title is a substring of the other
+            # (`Aliens` in `Alien³`, `Blade Runner` in `Blade Runner 2049`),
+            # so title prefix-matching does NOT catch them and the year gap
+            # is the only signal that does.
+            r["year_mismatch"] = (dy.group(1), fy.group(1), gap,
+                                  "wrong-film" if gap > 2 else "year-drift")
+
+    # Files that cannot be what they claim. Surfaced incidentally by the
+    # collision scan (Le Bonheur reads 0.0 min; Long Day's Journey claims
+    # 170 min in 0.25 GB) and worth reporting wherever they turn up.
+    for r in rows:
+        if r["tier"] == EXTRA_TIER:
+            continue
+        d = r.get("duration")
+        if not d:
+            r["implausible"] = "duration reads 0 or absent - unplayable or truncated"
+        elif d > 600 and (r["size"] * 8.0 / d) < 250000:
+            r["implausible"] = (
+                "%.0f min in %.2f GB = %.0f kbps, too low to be intact video"
+                % (d / 60.0, r["size"] / 1e9, r["size"] * 8.0 / d / 1000))
     return rows
 
 
@@ -269,6 +333,10 @@ def _stem(folder):
 
 
 _re_year = re.compile(r"\s*\((?:19|20)\d{2}\)\s*$")
+_re_folderyear = re.compile(r"\(((?:19|20)\d{2})\)\s*$")
+# A year token in a filename, parenthesised or dot/space delimited, so both
+# `American Woman (2019) Bluray-1080p` and `American.Woman.2019.1080p` match.
+_re_fileyear = re.compile(r"[.\s(\[]((?:19|20)\d{2})[.\s)\]]")
 
 
 def render_md(rows):
@@ -407,6 +475,131 @@ def render_md(rows):
         L.append("| %s | `%s` | %s | %s |" % (
             r["folder"][:34], (r.get("title") or "—")[:30], dur,
             r["evidence"][:96]))
+    L.append("")
+
+    # ------------------------------------------------ same-name collisions
+    groups = {}
+    for r in rows:
+        tc = r.get("title_collision")
+        if tc:
+            groups.setdefault(tuple(tc["folders"]), (tc["kind"], []))[1].append(r)
+    dupes = {k: v for k, v in groups.items() if v[0] == "same-film"}
+    hazard = {k: v for k, v in groups.items() if v[0] == "distinct-works"}
+
+    L.append("## Same-name collisions — %d folder groups" % len(groups))
+    L.append("")
+    L.append("Folders whose names are identical once the year is stripped. "
+             "Added after channel 20 played Rohmer's *Love in the Afternoon* "
+             "(1972) where Wilder's (1957) was wanted — **both are in the "
+             "library and both are correctly foldered**, so there is no filing "
+             "error to find and anything matching on title alone picks one "
+             "arbitrarily.")
+    L.append("")
+    L.append("Runtime separates the two situations that produce an identical "
+             "stem: runtimes that **agree** mean one film filed under two "
+             "years (a duplicate); runtimes that **differ** mean two films "
+             "sharing a name (a matching hazard).")
+    L.append("")
+
+    L.append("### Same film filed under two years — %d groups. DUPLICATES."
+             % len(dupes))
+    L.append("")
+    L.append("| Title | Folder | File | Min | GB | Tier |")
+    L.append("|---|---|---|---:|---:|---|")
+    for folders, (_, rs) in sorted(dupes.items()):
+        for r in sorted(rs, key=lambda r: (r["folder"], r["file"])):
+            dur = "%.1f" % (r["duration"] / 60.0) if r.get("duration") else "?"
+            L.append("| %s | %s | %s | %s | %.2f | `%s` |" % (
+                _stem(r["folder"])[:22], r["folder"][:24], r["file"][:34],
+                dur, r["size"] / 1e9, r["tier"]))
+    L.append("")
+
+    L.append("### Different films sharing a name — %d groups. MATCHING "
+             "HAZARD." % len(hazard))
+    L.append("")
+    L.append("Nothing is wrong with these on disk. They are listed because "
+             "every one of them is a place where a title-based lookup — a "
+             "channel lineup, an NFO match, a Plex/Emby agent — can silently "
+             "resolve to the wrong film.")
+    L.append("")
+    L.append("| Title | Folder | Min | GB | Tier |")
+    L.append("|---|---|---:|---:|---|")
+    for folders, (_, rs) in sorted(hazard.items()):
+        for r in sorted(rs, key=lambda r: r["folder"]):
+            dur = "%.1f" % (r["duration"] / 60.0) if r.get("duration") else "?"
+            L.append("| %s | %s | %s | %.2f | `%s` |" % (
+                _stem(r["folder"])[:24], r["folder"][:30], dur,
+                r["size"] / 1e9, r["tier"]))
+    L.append("")
+
+    ym = [r for r in rows if r.get("year_mismatch")]
+    wrong = [r for r in ym if r["year_mismatch"][3] == "wrong-film"]
+    drift = [r for r in ym if r["year_mismatch"][3] == "year-drift"]
+
+    L.append("### Wrong film in the folder — %d files. FIX THESE."
+             % len(wrong))
+    L.append("")
+    L.append("The file's own name carries a year more than 2 apart from its "
+             "folder's. A production-vs-release difference is 1–2 years; a "
+             "larger gap is usually a **different film sitting in another "
+             "film's folder**.")
+    L.append("")
+    L.append("Note that both instances found this way are franchise cases "
+             "where one title is a substring of the other — `Aliens` inside "
+             "`Alien³`, `Blade Runner` inside `Blade Runner 2049`. Title "
+             "prefix-matching does **not** catch those (`alien` is a prefix "
+             "of `aliens`); the year gap is the only signal that does.")
+    L.append("")
+    L.append("| Folder | Contains | Gap | Min | GB |")
+    L.append("|---|---|---:|---:|---:|")
+    for r in sorted(wrong, key=lambda r: -r["year_mismatch"][2]):
+        dur = "%.1f" % (r["duration"] / 60.0) if r.get("duration") else "?"
+        L.append("| %s | **%s** | %dy | %s | %.2f |" % (
+            r["folder"][:26], r["file"][:40], r["year_mismatch"][2], dur,
+            r["size"] / 1e9))
+    L.append("")
+
+    L.append("### Release-year drift — %d files. Usually harmless."
+             % len(drift))
+    L.append("")
+    L.append("Gap of 1–2 years: festival vs wide release, or a differing "
+             "metadata source. Listed for completeness, not as defects.")
+    L.append("")
+    L.append("| Folder | File | Gap |")
+    L.append("|---|---|---:|")
+    for r in sorted(drift, key=lambda r: r["folder"]):
+        L.append("| %s | %s | %dy |" % (
+            r["folder"][:30], r["file"][:40], r["year_mismatch"][2]))
+    L.append("")
+
+    imp = [r for r in rows if r.get("implausible")]
+    L.append("### Unreadable / implausible files — %d" % len(imp))
+    L.append("")
+    L.append("Surfaced incidentally by the collision scan. A file that cannot "
+             "hold what it claims is a content problem regardless of naming.")
+    L.append("")
+    L.append("**Verified 2026-08-07 by re-probing every entry: 17 of 19 are "
+             "genuinely corrupt**, not a probe artifact — 14 fail with "
+             "`EBML header parsing failed` (the Matroska header itself is "
+             "unreadable, so the file cannot be demuxed at all), plus an "
+             "invalid `.iso`, a `0x0` picture size, and an EBML length error. "
+             "Several are 10–45 GB. Only one reads fine; the remaining entry "
+             "is the low-bitrate flag rather than a corruption.")
+    L.append("")
+    L.append("**These are NOT the Aug 2026 JBOD silent-checksum corruption.** "
+             "16 of 19 mtimes cluster in Feb–Apr 2025, 12 in April 2025 "
+             "alone. Storage corruption does not alter mtime and would hit "
+             "files regardless of when they were written, scattering across "
+             "the library's whole history. A tight write-time cluster of "
+             "predominantly French/MULTi arthouse titles points at one bad "
+             "acquisition run — corrupt on arrival, or damaged in that "
+             "window. Re-acquire rather than attempting repair.")
+    L.append("")
+    L.append("| Folder | File | Problem |")
+    L.append("|---|---|---|")
+    for r in sorted(imp, key=lambda r: r["folder"]):
+        L.append("| %s | %s | %s |" % (
+            r["folder"][:28], r["file"][:32], r["implausible"][:64]))
     L.append("")
 
     L.append("## Same-folder duration collisions — %d files" % len(collisions))
