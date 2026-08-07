@@ -15,6 +15,7 @@ resources:
   - scrapeconfigs.yaml
   - podmonitor-flux.yaml
   - grafana-dashboard-cluster-overview.yaml
+  - grafana-dashboard-media-environment.yaml
   - grafana-dashboard-dcgm-gpu.yaml
   - grafana-dashboard-proxmox.yaml
   - grafana-dashboard-unpoller.yaml
