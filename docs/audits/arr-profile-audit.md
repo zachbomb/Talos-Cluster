@@ -38,8 +38,6 @@ Written after two profile defects were found by accident on 2026-08-07 while cha
 - **HIGH** · Radarr · `UHD Bluray + WEB [French]` — 147 of 165 assigned files (89%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-1080p×79, Bluray-1080p×52, DVD×7, Bluray-720p×4
 - **HIGH** · Radarr · `UHD Bluray + WEB [German]` — 66 of 69 assigned files (96%) are a quality this profile FORBIDS — they can never be upgraded or replaced: Bluray-1080p×41, WEBDL-1080p×22, DVD×2, WEBDL-720p×1
 - **HIGH** · Radarr · `UHD Bluray + WEB [Original]` — 235 of 278 assigned files (85%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-1080p×119, Bluray-1080p×112, WEBDL-480p×2, DVD×1
-- **HIGH** · Sonarr · `WEB-2160p (Alternative) [Original]` — cutoff `WEB 2160p` is NOT in the allowed set — every item on this profile is permanently cutoff-unmet
-- **HIGH** · Sonarr · `1 WEB-2160p (Alternative) [English]` — cutoff `WEB 2160p` is NOT in the allowed set — every item on this profile is permanently cutoff-unmet
 - **MEDIUM** · Radarr · `Remux + WEB 1080p [Original]` — 2 of 4 assigned files (50%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-720p×1, HDTV-1080p×1
 - **INFO** · Radarr · `Remux + WEB 2160p` — no items assigned — orphan profile
 - **INFO** · Radarr · `Remux + WEB 2160p [French]` — no items assigned — orphan profile

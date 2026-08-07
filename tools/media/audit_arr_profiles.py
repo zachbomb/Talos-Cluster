@@ -70,12 +70,22 @@ def api(base, key, path):
         timeout=240))
 
 
-def allowed_qualities(p):
+def allowed_qualities(p, include_groups=False):
     """Set of quality names the profile permits.
 
-    Radarr nests groups: a group carries `allowed` and holds child qualities.
-    Reading only the top level silently reports an empty set for grouped
-    profiles, which would make every item look non-compliant.
+    Groups carry `allowed` and hold child qualities. Reading only the top
+    level silently reports an empty set for grouped profiles, which would
+    make every item look non-compliant.
+
+    `include_groups` also returns the GROUP names. That matters only for the
+    cutoff check: a cutoff may name a group (`WEB 2160p`) rather than a
+    concrete quality, and comparing it against child names alone reports
+    every such profile as having an unreachable cutoff. The first version of
+    this script did exactly that and produced two false HIGH findings against
+    Sonarr, whose profiles are in fact correct.
+
+    A FILE's quality is always a concrete quality and never a group, so the
+    compliance check below must NOT include group names.
     """
     s = set()
     for it in p.get("items", []):
@@ -83,6 +93,8 @@ def allowed_qualities(p):
             continue
         if it.get("quality"):
             s.add(it["quality"]["name"])
+        if include_groups and it.get("name"):
+            s.add(it["name"])
         for sub in (it.get("items") or []):
             if sub.get("quality"):
                 s.add(sub["quality"]["name"])
@@ -133,7 +145,7 @@ def audit(app, base, key, item_path, title_key):
         if not assigned:
             findings.append(("INFO", name,
                              "no items assigned — orphan profile"))
-        if cutoff_name(p) not in al and al:
+        if al and cutoff_name(p) not in allowed_qualities(p, include_groups=True):
             findings.append(("HIGH", name,
                              "cutoff `%s` is NOT in the allowed set — every "
                              "item on this profile is permanently "
