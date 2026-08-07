@@ -9,12 +9,12 @@ Written after two profile defects were found by accident on 2026-08-07 while cha
 | id | profile | language | cutoff | allowed qualities | items |
 |---|---|---|---|---|---:|
 | 1 | Any | `Original` | `Bluray-2160p` | Bluray-1080p, Bluray-2160p, Bluray-480p, Bluray-576p, Bluray-720p, CAM, DVD, DVDSCR, HDTV-1080p, HDTV-2160p, HDTV-720p, REGIONAL, SDTV, TELECINE, TELESYNC, WEBDL-1080p, WEBDL-2160p, WEBDL-480p, WEBDL-720p, WEBRip-1080p, WEBRip-2160p, WEBRip-480p, WEBRip-720p, WORKPRINT | 18 |
-| 7 | UHD Bluray + WEB | `English` | `Remux-2160p` | Bluray-2160p, Remux-2160p, WEBDL-2160p, WEBRip-2160p | 1680 |
-| 8 | UHD Bluray + WEB [French] | `Original` | `Remux-2160p` | Bluray-2160p, Remux-2160p, WEBDL-2160p, WEBRip-2160p | 256 |
+| 7 | UHD Bluray + WEB | `English` | `Remux-2160p` | Bluray-1080p, Bluray-2160p, Remux-1080p, Remux-2160p, WEBDL-1080p, WEBDL-2160p, WEBRip-1080p, WEBRip-2160p | 1680 |
+| 8 | UHD Bluray + WEB [French] | `Original` | `Remux-2160p` | Bluray-1080p, Bluray-2160p, Remux-1080p, Remux-2160p, WEBDL-1080p, WEBDL-2160p, WEBRip-1080p, WEBRip-2160p | 256 |
 | 10 | Remux + WEB 1080p | `Original` | `Remux-1080p` | Remux-1080p, WEBDL-1080p, WEBRip-1080p | 3 |
 | 11 | Remux + WEB 2160p | `Original` | `Remux-2160p` | Remux-2160p, WEBDL-2160p, WEBRip-2160p | 0 |
-| 12 | UHD Bluray + WEB [German] | `Original` | `Remux-2160p` | Bluray-2160p, Remux-2160p, WEBDL-2160p, WEBRip-2160p | 143 |
-| 13 | UHD Bluray + WEB [Original] | `Original` | `Remux-2160p` | Bluray-2160p, Remux-2160p, WEBDL-2160p, WEBRip-2160p | 365 |
+| 12 | UHD Bluray + WEB [German] | `Original` | `Remux-2160p` | Bluray-1080p, Bluray-2160p, Remux-1080p, Remux-2160p, WEBDL-1080p, WEBDL-2160p, WEBRip-1080p, WEBRip-2160p | 143 |
+| 13 | UHD Bluray + WEB [Original] | `Original` | `Remux-2160p` | Bluray-1080p, Bluray-2160p, Remux-1080p, Remux-2160p, WEBDL-1080p, WEBDL-2160p, WEBRip-1080p, WEBRip-2160p | 365 |
 | 14 | Remux + WEB 1080p [French] | `Original` | `Remux-1080p` | Remux-1080p, WEBDL-1080p, WEBRip-1080p | 1 |
 | 15 | Remux + WEB 1080p [German] | `Original` | `Remux-1080p` | Remux-1080p, WEBDL-1080p, WEBRip-1080p | 1 |
 | 16 | Remux + WEB 1080p [Original] | `Original` | `Remux-1080p` | Remux-1080p, WEBDL-1080p, WEBRip-1080p | 5 |
@@ -33,11 +33,11 @@ Written after two profile defects were found by accident on 2026-08-07 while cha
 
 ## Findings
 
-- **HIGH** · Radarr · `UHD Bluray + WEB` — 861 of 1350 assigned files (64%) are a quality this profile FORBIDS — they can never be upgraded or replaced: Bluray-1080p×372, WEBDL-1080p×347, DVD×60, WEBDL-480p×23
 - **HIGH** · Radarr · `UHD Bluray + WEB` — 3 items whose original language differs from the profile's `English`: Japanese×1, German×1, French×1
-- **HIGH** · Radarr · `UHD Bluray + WEB [French]` — 147 of 165 assigned files (89%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-1080p×79, Bluray-1080p×52, DVD×7, Bluray-720p×4
-- **HIGH** · Radarr · `UHD Bluray + WEB [German]` — 66 of 69 assigned files (96%) are a quality this profile FORBIDS — they can never be upgraded or replaced: Bluray-1080p×41, WEBDL-1080p×22, DVD×2, WEBDL-720p×1
-- **HIGH** · Radarr · `UHD Bluray + WEB [Original]` — 235 of 278 assigned files (85%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-1080p×119, Bluray-1080p×112, WEBDL-480p×2, DVD×1
+- **MEDIUM** · Radarr · `UHD Bluray + WEB` — 122 of 1350 assigned files (9%) are a quality this profile FORBIDS — they can never be upgraded or replaced: DVD×60, WEBDL-480p×23, WEBDL-720p×12, SDTV×8
+- **MEDIUM** · Radarr · `UHD Bluray + WEB [French]` — 14 of 165 assigned files (8%) are a quality this profile FORBIDS — they can never be upgraded or replaced: DVD×7, Bluray-720p×4, WEBDL-480p×1, WEBDL-720p×1
+- **MEDIUM** · Radarr · `UHD Bluray + WEB [German]` — 3 of 69 assigned files (4%) are a quality this profile FORBIDS — they can never be upgraded or replaced: DVD×2, WEBDL-720p×1
+- **MEDIUM** · Radarr · `UHD Bluray + WEB [Original]` — 4 of 278 assigned files (1%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-480p×2, DVD×1, Bluray-720p×1
 - **MEDIUM** · Radarr · `Remux + WEB 1080p [Original]` — 2 of 4 assigned files (50%) are a quality this profile FORBIDS — they can never be upgraded or replaced: WEBDL-720p×1, HDTV-1080p×1
 - **INFO** · Radarr · `Remux + WEB 2160p` — no items assigned — orphan profile
 - **INFO** · Radarr · `Remux + WEB 2160p [French]` — no items assigned — orphan profile
