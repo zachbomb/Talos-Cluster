@@ -120,3 +120,69 @@ spec:
             description: >-
               Scheduled {{ $labels.schedule }} but last succeeded
               {{ $value | humanizeDuration }} ago.
+
+    # Replacement for the chart's KubeJobFailed, which is disabled in
+    # helm-release.yaml (defaultRules.disabled).
+    #
+    # THE PROBLEM WITH THE ORIGINAL: `kube_job_failed > 0` with no time bound.
+    # A Job object that failed once carries that series for as long as the
+    # object exists, and CronJob failedJobsHistoryLimit keeps failed Jobs
+    # indefinitely. On 2026-08-06 it was firing 8 times for failures dated
+    # Jul 26 - Aug 6; every one had already been followed by a successful run
+    # of the same CronJob. The count tracked history limits (3 ddns + 2
+    # longhorn + 3 unifi), not anything broken. Three genuine CRITICALs were
+    # sitting underneath that noise.
+    #
+    # TWO ARMS, because the two kinds of Job fail differently:
+    #
+    #   Arm 1 (CronJob-owned): fire only if the owning CronJob has NOT
+    #     succeeded since this Job was created. A */5 job that blipped once
+    #     and has succeeded 60 times since is not an incident. The join walks
+    #     kube_job_owner to attach owner_name, then label_replace renames
+    #     `cronjob` to `owner_name` so the two can be compared.
+    #
+    #   Arm 2 (everything else): VolSync movers and other one-shot Jobs have
+    #     owner_kind=None and no CronJob to check for recovery, so they use a
+    #     plain 24h window. This arm is why the chart rule was replaced rather
+    #     than simply deleted - the CronJobStale* rules above do not cover
+    #     these, and 3 such Jobs exist in this cluster.
+    #
+    # VALIDATED when written: the full expression returned 0 series against
+    # all 8 stale failures, and the same join WITHOUT the recovery suppression
+    # returned all 8 - a positive control proving the join matches rather than
+    # silently failing to.
+    - name: job-health
+      rules:
+        - alert: KubeJobFailedRecent
+          expr: |-
+            (
+              (
+                kube_job_created
+                * on(namespace, job_name) group_left(owner_name)
+                (
+                  kube_job_owner{owner_kind="CronJob"}
+                  and on(namespace, job_name) (kube_job_status_failed > 0)
+                )
+              )
+              > on(namespace, owner_name) group_left()
+              label_replace(kube_cronjob_status_last_successful_time, "owner_name", "$1", "cronjob", "(.*)")
+            )
+            or
+            (
+              kube_job_status_failed > 0
+              and on (namespace, job_name) (time() - kube_job_created < 86400)
+              unless on (namespace, job_name) kube_job_owner{owner_kind="CronJob"}
+            )
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed and has not recovered"
+            description: >-
+              This Job failed and, if it belongs to a CronJob, that CronJob has
+              not had a successful run since. Unlike the chart's KubeJobFailed
+              this cannot rot: it clears as soon as a later run succeeds, or
+              after 24h for one-shot Jobs. Check
+              `kubectl describe job -n {{ $labels.namespace }} {{ $labels.job_name }}`
+              and note that failed Job pods are often garbage-collected, so logs
+              may already be gone.

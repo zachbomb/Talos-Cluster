@@ -35,6 +35,26 @@ spec:
         enabled: true
         forceConflicts: true
     cleanPrometheusOperatorObjectNames: true
+    defaultRules:
+      disabled:
+        # The chart's KubeJobFailed is `kube_job_failed > 0` with NO time bound.
+        # A Job object that failed once keeps that series forever, and CronJob
+        # failedJobsHistoryLimit retains those objects indefinitely, so the alert
+        # never clears on its own.
+        #
+        # On 2026-08-06 it was firing 8 times for failures dated Jul 26 - Aug 6.
+        # Every single one had already been followed by a successful run of the
+        # same CronJob; the count was purely a function of history limits
+        # (3 ddns + 2 longhorn + 3 unifi = 8), not of anything being broken.
+        # An alert that stays lit for two weeks after the problem resolved is an
+        # alert people learn to scroll past -- and three genuine CRITICALs were
+        # sitting underneath it.
+        #
+        # Replaced by KubeJobFailedRecent in prometheusrule-cronjobs.yaml, which
+        # is the same signal bounded to 24h so it cannot rot. NOT simply deleted:
+        # 3 of the Jobs tracked here have owner_kind=None (VolSync movers and
+        # other one-shot Jobs), which the CronJobStale* rules do not cover.
+        KubeJobFailed: true
     alertmanager:
       enabled: true
       # Override default inhibit_rules to exempt the Watchdog heartbeat from
