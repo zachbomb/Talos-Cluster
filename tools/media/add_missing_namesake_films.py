@@ -47,10 +47,17 @@ BASE = "http://192.168.10.210:7878/api/v3"
 ROOT = "/media/media/movies"
 
 # tmdbId -> (label, qualityProfileId)
+#
+# The first three are the folder namesakes. The last three are the rest of the
+# Alien franchise, which the same investigation showed was absent entirely -
+# the library held only Alien and Aliens. Added at the operator's request.
 ADD = {
     335984: ("Blade Runner 2049 (2017)", 7),
     8077:   ("Alien 3 (1992)", 7),
     42722:  ("The Nun / La Religieuse (1967, Rivette)", 8),
+    8078:   ("Alien: Resurrection (1997)", 7),
+    70981:  ("Prometheus (2012)", 7),
+    126889: ("Alien: Covenant (2017)", 7),
 }
 
 
