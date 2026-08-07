@@ -1,0 +1,188 @@
+---
+# Network path alerting: Traefik, Blocky, MetalLB, Cloudflared, CoreDNS.
+#
+# WHY THIS EXISTS: an audit on 2026-08-06 counted the alerting rules covering
+# each domain. Storage had 38. The ENTIRE network path had 3 - and all three
+# were node-level NIC counters (NodeNetworkInterfaceFlapping,
+# NodeNetworkReceiveErrs, NodeNetworkTransmitErrs). There was not one rule for
+# Traefik, Blocky, MetalLB, Cloudflared or CoreDNS.
+#
+# That is the ingress and DNS path for every application in the cluster. A
+# Traefik that stops serving, a Blocky with ad-blocking silently switched off,
+# an exhausted MetalLB pool, or a Cloudflare tunnel down to one connection
+# would all have been discovered by a human noticing something was wrong.
+#
+# The gap was found while building the Network environment dashboard: its
+# "is it broken right now?" row would have been structurally incapable of ever
+# showing anything, because nothing upstream had decided any of this was worth
+# alerting on. A dashboard can only surface what a rule already evaluates.
+#
+# Thresholds below are set against measured values at the time of writing, all
+# taken from live Prometheus rather than assumed:
+#   metallb pool utilisation   0.63   (40 of 63 addresses in use)
+#   cloudflared HA connections 4
+#   blocky list refresh age    8,315 s (~2.3 h)
+#   coredns SERVFAIL rate      0
+#   traefik 5xx rate           0
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: network
+  namespace: kube-prometheus-stack
+  labels:
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  groups:
+    - name: ingress-health
+      rules:
+        # Traefik is the sole ingress for every app. If its metrics vanish the
+        # dashboards go quiet rather than red, which is the failure mode that
+        # let three CRITICALs run for nine hours earlier today.
+        - alert: TraefikMetricsAbsent
+          expr: absent(traefik_open_connections)
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Traefik metrics have disappeared"
+            description: >-
+              No traefik_open_connections series. Either Traefik is down or its
+              ServiceMonitor stopped matching. Every ingress dashboard is now
+              blank rather than alarming, so treat a quiet board as suspect
+              until this clears.
+
+        - alert: TraefikHigh5xxRate
+          expr: sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Traefik is serving {{ $value | humanize }} 5xx/sec"
+            description: >-
+              Sustained server errors through the ingress. Check which service
+              with
+              `sum by (service) (rate(traefik_service_requests_total{code=~"5.."}[5m]))`.
+
+    - name: dns-health
+      rules:
+        # Blocky can be running, healthy and answering while ad-blocking is
+        # switched off - the failure is invisible from every liveness probe and
+        # from uptime monitoring, because DNS still resolves. Only this flag
+        # distinguishes "working" from "working as configured".
+        - alert: BlockyBlockingDisabled
+          expr: blocky_blocking_enabled == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Blocky DNS blocking is DISABLED"
+            description: >-
+              Blocky is resolving normally but not blocking. Nothing else in
+              the stack can detect this: probes pass, queries succeed, uptime
+              is green. Re-enable via the API or check whether a temporary
+              disable was left in place.
+
+        # Denylists that stop refreshing decay silently - the blocklist keeps
+        # working with stale data and slowly stops matching new domains.
+        - alert: BlockyListRefreshStale
+          expr: (time() - max(blocky_last_list_group_refresh_timestamp_seconds)) > 172800
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Blocky denylists have not refreshed in over 2 days"
+            description: >-
+              Last successful list-group refresh was
+              {{ $value | humanizeDuration }} ago. Blocking still works but
+              against an ageing list.
+
+        - alert: BlockyListDownloadFailing
+          expr: sum(increase(blocky_failed_downloads_total[1h])) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Blocky failed to download a denylist"
+            description: >-
+              {{ $value }} failed list downloads in the last hour. Usually an
+              upstream list host being unreachable; persistent failures lead to
+              BlockyListRefreshStale.
+
+        - alert: CoreDNSHighServfail
+          expr: sum(rate(coredns_dns_responses_total{rcode="SERVFAIL"}[5m])) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CoreDNS returning {{ $value | humanize }} SERVFAIL/sec"
+            description: >-
+              In-cluster DNS is failing to resolve. This breaks service
+              discovery for everything, and usually presents as unrelated apps
+              throwing connection errors rather than as a DNS problem.
+
+    - name: loadbalancer-health
+      rules:
+        # The MetalLB pool is 192.168.10.193-254 and every service IP is
+        # pre-assigned in clusterenv.yaml. Exhaustion does not degrade - the
+        # next LoadBalancer service simply never gets an address and sits
+        # pending, which reads as an app deployment problem.
+        - alert: MetalLBPoolNearExhausted
+          expr: >-
+            sum(metallb_allocator_addresses_in_use_total)
+            / sum(metallb_allocator_addresses_total) > 0.9
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MetalLB address pool {{ $value | humanizePercentage }} allocated"
+            description: >-
+              Was 63% when this rule was written. At exhaustion the next
+              LoadBalancer service stays Pending forever with no error that
+              names MetalLB.
+
+        - alert: MetalLBConfigStale
+          expr: max(metallb_k8s_client_config_stale_bool) == 1
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MetalLB is running on stale configuration"
+            description: >-
+              MetalLB could not load current config and is serving the last
+              known good one. IP assignments will not reflect the repo until
+              this clears.
+
+        - alert: MetalLBUpdateErrors
+          expr: sum(increase(metallb_k8s_client_update_errors_total[1h])) > 5
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MetalLB has {{ $value }} k8s update errors in the last hour"
+
+    - name: tunnel-health
+      rules:
+        # cloudflared runs 4 HA connections. Losing some is survivable and
+        # invisible to users; losing all takes external access down.
+        - alert: CloudflaredTunnelDegraded
+          expr: sum(cloudflared_tunnel_ha_connections) < 4
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Cloudflare tunnel down to {{ $value }} of 4 HA connections"
+            description: >-
+              Still serving, with less redundancy. Sustained degradation
+              usually precedes a full tunnel drop.
+
+        - alert: CloudflaredTunnelDown
+          expr: sum(cloudflared_tunnel_ha_connections) == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Cloudflare tunnel has NO connections"
+            description: >-
+              All external access through the tunnel is down. Internal access
+              via Traefik is unaffected, so this can go unnoticed from inside
+              the network entirely.

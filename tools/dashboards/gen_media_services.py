@@ -149,11 +149,11 @@ ACQ = [
 
     row(Q3, 18),
     stat("Queued across *arrs",
-         "sum(sonarr_queue_total)+sum(radarr_queue_total)+sum(lidarr_queue_total)+sum(readarr_queue_total)",
+         'sum({__name__=~"(sonarr|radarr|lidarr|readarr)_queue_total"})',
          0, 19, warn_above=250),
     stat("Sonarr monitored seasons", "sonarr_season_monitored_total", 4, 19),
     stat("Radarr monitored", "radarr_movie_monitored_total", 8, 19),
-    stat("Grabs recorded", "sum(sonarr_history_total)+sum(radarr_history_total)",
+    stat("Grabs recorded", 'sum({__name__=~"(sonarr|radarr)_history_total"})',
          12, 19,
          desc="Lifetime history rows, not a rate - useful as a sanity check "
               "that the pipeline has ever worked, not as a health signal."),

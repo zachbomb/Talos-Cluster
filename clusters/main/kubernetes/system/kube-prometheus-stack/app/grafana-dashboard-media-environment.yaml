@@ -207,6 +207,7 @@ data:
                 "align": "auto",
                 "filterable": true
               },
+              "noValue": "No alerts firing - nothing is broken right now",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -1061,7 +1062,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "sum(sonarr_queue_total)+sum(radarr_queue_total)+sum(lidarr_queue_total)+sum(readarr_queue_total)",
+              "expr": "sum({__name__=~\"(sonarr|radarr|lidarr|readarr)_queue_total\"})",
               "refId": "A",
               "instant": true
             }

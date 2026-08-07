@@ -87,7 +87,7 @@ P += [
 P += [
     row(Q3, 22),
     stat("Queued across *arrs",
-         "sum(sonarr_queue_total)+sum(radarr_queue_total)+sum(lidarr_queue_total)+sum(readarr_queue_total)",
+         'sum({__name__=~"(sonarr|radarr|lidarr|readarr)_queue_total"})',
          0, 23, warn_above=250,
          desc="Backlog the acquisition side has accepted but not finished. "
               "Steady growth means grabbing outpaces importing."),

@@ -95,7 +95,20 @@ spec:
       app.kubernetes.io/name: bazarr-exportarr
   endpoints:
     - port: metrics
-      interval: 90s
-      # bazarr's /api/movies is slow (~9s — it tracks the full ~2.4k-movie library
-      # for subtitles), so the full exportarr scrape exceeds the default 10s timeout.
-      scrapeTimeout: 45s
+      # bazarr's /api/movies is slow (it tracks the full ~2.4k-movie library
+      # for subtitles), so the full exportarr scrape exceeds the default 10s
+      # timeout. Originally raised to 90s/45s when that call took ~9s.
+      #
+      # 2026-08-07: raised again, 90s/45s -> 5m/2m. Measured directly today the
+      # full scrape takes 49.6s and returns HTTP 200 - it COMPLETES, it just
+      # overran the 45s budget. Every scrape was failing with
+      # `context deadline exceeded`, so every bazarr_* metric was absent and
+      # the subtitle-gap panels rendered blank.
+      #
+      # Note how this failed: not loudly, but as an empty panel. A missing
+      # metric reads as "nothing wrong", which is why it went unnoticed until
+      # a dashboard build validated every expression and found the hole.
+      #
+      # scrapeTimeout MUST be <= interval or Prometheus rejects the config.
+      interval: 5m
+      scrapeTimeout: 2m

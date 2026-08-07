@@ -47,6 +47,20 @@ spec:
         endpoints:
           - path: /metrics
             port: metrics
+            # 2026-08-07: this exporter was scraping FOREVER at the 10s default
+            # and had been silently down. Measured directly: >64 s to answer
+            # /metrics and still not finished. Every scrape failed with
+            # `context deadline exceeded`, so every lidarr_* metric was absent
+            # and the media dashboards' library-gap panels went blank.
+            #
+            # exportarr walks the whole Lidarr library per scrape and this
+            # instance has ~4,287 artists, so the cost is real work rather than
+            # a hang. Raising the budget restores visibility; making the
+            # exporter fast is a separate problem.
+            #
+            # scrapeTimeout MUST be <= interval or Prometheus rejects the config.
+            interval: 5m
+            scrapeTimeout: 3m
         prometheusRule:
           enabled: false
         targetSelector: metrics

@@ -259,6 +259,7 @@ data:
                 "align": "auto",
                 "filterable": true
               },
+              "noValue": "No alerts firing - nothing is broken right now",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [

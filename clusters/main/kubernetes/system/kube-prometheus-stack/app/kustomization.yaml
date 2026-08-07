@@ -11,6 +11,7 @@ resources:
   - prometheusrule-crowdsec.yaml
   - prometheusrule-storage.yaml
   - prometheusrule-cronjobs.yaml
+  - prometheusrule-network.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
   - podmonitor-flux.yaml
@@ -19,6 +20,8 @@ resources:
   - grafana-dashboard-media-streaming.yaml
   - grafana-dashboard-media-acquisition.yaml
   - grafana-dashboard-media-downloaders.yaml
+  - grafana-dashboard-storage-environment.yaml
+  - grafana-dashboard-network-environment.yaml
   - grafana-dashboard-dcgm-gpu.yaml
   - grafana-dashboard-proxmox.yaml
   - grafana-dashboard-unpoller.yaml

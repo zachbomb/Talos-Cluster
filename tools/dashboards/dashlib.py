@@ -250,12 +250,26 @@ def bargauge(title, series, x, y, w=12, h=H_TS, unit="none", desc="",
 def alert_table(title, expr, x, y, w=16, h=H_TS, desc=""):
     """Question 1, always. Scoped ALERTS beat any curated metric: on
     2026-08-06 three CRITICALs ran for ~9 hours while health was reported
-    green from hand-picked series."""
+    green from hand-picked series.
+
+    ON THE EMPTY STATE - there are two kinds of empty and they are NOT the
+    same, though Grafana renders both as "No data":
+
+      * a query that can NEVER return data (e.g. filtering a metric whose
+        source emits a -1 sentinel). That panel is dead and must be deleted.
+      * an alert table with nothing firing. That is the HEALTHY case, and the
+        panel comes alive the moment something breaks.
+
+    Conflating them once cost a working panel. So `noValue` is set here: the
+    empty state reads as a statement instead of looking like a broken query,
+    which is what made the distinction hard to see in the first place.
+    """
     return {
         "type": "table", "title": title, "description": desc, "datasource": DS,
         "gridPos": {"h": h, "w": w, "x": x, "y": y},
         "fieldConfig": {"defaults": {
             "custom": {"align": "auto", "filterable": True},
+            "noValue": "No alerts firing - nothing is broken right now",
             "thresholds": _thresholds([{"color": GREEN, "value": None}])},
             "overrides": [{
                 "matcher": {"id": "byName", "options": "severity"},
