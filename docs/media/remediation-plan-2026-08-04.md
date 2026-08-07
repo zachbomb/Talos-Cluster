@@ -322,10 +322,27 @@ M\*A\*S\*H** (id 870, tmdb 651) at `/media/media/movies/MASH (1970)` with a 7.2 
 DSNP WEBDL-1080p copy — no pending rename (its file is already canonically named).
 
 **Phase 2 actions (ordered):**
-1. **[HUMAN GATE]** Confirm the 7.2 GB tracked WEBDL is the copy to keep (it is newer,
-   larger, properly tagged). Cross-check the 4.0 GB rip against the SQ-8 household
-   disc-rip preservation manifest before destroying it — if it is a household rip, archive
-   instead of delete.
+1. **[HUMAN GATE] — ⚠️ THIS STEP'S PREMISE IS WRONG; SEE BELOW BEFORE ACTING.**
+   ~~Confirm the 7.2 GB tracked WEBDL is the copy to keep (it is newer, larger, properly
+   tagged). Cross-check the 4.0 GB rip against the SQ-8 household disc-rip preservation
+   manifest before destroying it — if it is a household rip, archive instead of delete.~~
+
+   The SQ-8 manifest now exists (`docs/media/preservation-manifest.md`) and running D9
+   against it reverses which copy is expendable:
+
+   - tracked `M-A-S-H (1970) … [DSNP][WEBDL-1080p]…-GPRS.mkv` (7.20 GB) → **`REPLACEABLE`**.
+     A Disney+ WEB-DL cannot be a rip of a disc anyone owns, so it is re-acquirable by
+     definition.
+   - orphan `Monster Mash (1970).mkv` (4.03 GB, 115.9 min) → **`REVIEW`**. No container
+     title, no source token, no release group — nothing establishes it can be re-obtained.
+
+   "Newer, larger, properly tagged" tracked replaceability, not irreplaceability. The 7.2 GB
+   figure also reflects h264-vs-HEVC bitrate inefficiency rather than more content, and the
+   4.03 GB orphan carries the Altman commentary and chapter navigation
+   (`docs/media/quarantine-decisions-research.md`).
+
+   **Revised action:** manual-import the 4.03 GB orphan onto record 870 replacing the WEBDL,
+   then remove the superseded WEBDL. Do not delete the orphan.
 2. Delete (or archive) the orphan folder — before → after:
    - `/media/media/movies/Monster Mash (1970)/` → (deleted, all 16 items)
    - or archive variant: `/media/media/movies/Monster Mash (1970)/` → `<archive location per SQ-8>/Monster Mash (1970)/`
@@ -460,8 +477,10 @@ empty (0 entries). No Radarr record. TMDB entry confirmed live: tmdb 1739328 / t
 3. **D5** (gated; at minimum step 2's detach can run with D1–D4)
 4. **D7, D8** (corrupted-file delete + re-search; downloads then import on their own)
 5. **D11** (structural split; biggest moves, still fully deterministic)
-6. **D9, D12, D13** (duplicate deletions after one batched human confirmation; check D9
-   against the SQ-8 manifest first)
+6. **D12, D13** (duplicate deletions after one batched human confirmation).
+   **D9 is no longer a duplicate deletion** — the SQ-8 manifest
+   (`docs/media/preservation-manifest.md`) shows the tracked WEBDL is the replaceable copy
+   and the orphan is not, so D9 becomes a file swap onto record 870. See D9 above.
 7. **D14, D15** (residue cleanup)
 8. **D10** (research task; no deadline pressure)
 9. Only after 1–8: re-run `GET /rename?movieId=` for every touched record and proceed to
