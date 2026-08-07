@@ -170,17 +170,50 @@ data:
         except Exception:
             pass  # best effort - must never break the scrape
     
-        # disk temperatures - best effort
+        # disk inventory, SMART visibility, and temperatures - best effort
+        #
+        # WHY PRESENCE IS ITS OWN METRIC: the disk alert used to count
+        # temperature series as a proxy for "the disk is still attached".
+        # That proxy broke on 2026-08-06. The six JBOD Seagates moved to
+        # per-disk scsi-block passthrough and now present the ENCLOSURE's
+        # SCSI identity (model reads "QNAP", not ST18000NE000) while their
+        # real serials still come through. They stay fully present and in the
+        # pool, but SAT/SMART attribute passthrough does not survive that
+        # layer, so their temperature vanished. The alert then declared that
+        # disks had "disappeared from the OS entirely" about six disks that
+        # were sitting right there, serving a scrub.
+        #
+        # Presence and SMART-visibility are different facts. Conflating them
+        # meant a monitoring regression masqueraded as a transport failure,
+        # and the real transport check was lost. They are separate now:
+        #   truenas_disk_present         - the disk enumerates at all
+        #   truenas_disk_smart_available - it also answers SMART
         try:
-            disks = [d.get("name") for d in api("/api/v2.0/disk")
-                     if isinstance(d, dict) and d.get("name", "").startswith("sd")]
-            if disks:
-                temps = api("/api/v2.0/disk/temperatures", method="POST", body={"names": disks})
-                for dn, t in (temps or {}).items():
-                    # Skip 0/None: the QEMU virtual disks (sda/sdb) report 0, which would
-                    # otherwise publish as a literal 0 C and look like a frozen drive.
-                    if isinstance(t, (int, float)) and t > 0:
-                        out.append(f'truenas_disk_temperature_celsius{{disk="{esc(dn)}"}} {t}')
+            all_disks = [d for d in api("/api/v2.0/disk")
+                         if isinstance(d, dict) and (d.get("name") or "").startswith("sd")]
+            for d in all_disks:
+                out.append(
+                    'truenas_disk_present{{disk="{}",serial="{}",model="{}"}} 1'.format(
+                        esc(d.get("name") or ""),
+                        esc(d.get("serial") or "unknown"),
+                        esc(d.get("model") or "unknown")))
+            names = [d.get("name") for d in all_disks]
+            temps = api("/api/v2.0/disk/temperatures", method="POST",
+                        body={"names": names}) if names else {}
+            for d in all_disks:
+                dn = d.get("name") or ""
+                t = (temps or {}).get(dn)
+                # Skip 0/None: the QEMU virtual disks (sda/sdb) report 0, which would
+                # otherwise publish as a literal 0 C and look like a frozen drive.
+                reports = isinstance(t, (int, float)) and t > 0
+                if reports:
+                    out.append(f'truenas_disk_temperature_celsius{{disk="{esc(dn)}"}} {t}')
+                # Only spinning disks are expected to answer SMART here; the two
+                # QEMU virtual disks legitimately do not, and must not be counted
+                # as a SMART regression.
+                if (d.get("type") or "") == "HDD":
+                    out.append(
+                        f'truenas_disk_smart_available{{disk="{esc(dn)}"}} {1 if reports else 0}')
         except Exception:
             pass
     

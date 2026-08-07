@@ -47,20 +47,38 @@ spec:
         # D-state. This signal caught it exactly - disk count fell 14 -> 8 - and it
         # leads the TrueNAS-generated alert by ~13 minutes.
         #
-        # Baseline is 14, NOT 16: eight internal WDC + six JBOD Seagate report
-        # temperature; the two QEMU_HARDDISK virtual boot disks do not. UPDATE THIS
-        # THRESHOLD when physical disks are added or removed.
-        #
         # A partial drop (one or two disks) is the more valuable case - it means the
         # link is flaking before it takes the whole vdev, which is the window where
         # intervention is still cheap.
+        #
+        # REWRITTEN 2026-08-06 - this alert previously counted temperature series
+        # (`count(truenas_disk_temperature_celsius) < 14`) as a proxy for presence.
+        # After the JBOD passthrough cutover the six Seagates stopped answering
+        # SAT/SMART (they now present the enclosure's SCSI identity, model "QNAP",
+        # and TrueNAS reports supports_smart=None) while remaining fully present and
+        # serving a scrub. The alert therefore screamed "disks have disappeared from
+        # the OS entirely" about six disks that were right there, and sat CRITICAL
+        # for ~9 hours. A monitoring regression had put on a transport failure's
+        # clothing. Presence and SMART-visibility are now separate metrics.
+        #
+        # Baseline is 16: 8 internal WDC + 6 JBOD Seagate + 2 QEMU_HARDDISK virtual
+        # boot disks. Unlike the old temperature count, this includes the virtual
+        # disks, because truenas_disk_present is about enumeration, not SMART.
+        # UPDATE THIS THRESHOLD when physical disks are added or removed.
+        #
+        # DETECTION-LATENCY CAVEAT: truenas_disk_present comes from disk.query,
+        # which excludes records carrying an expiretime (TrueNAS stamps that when a
+        # disk goes away). This is sound in principle, but the ~13-minute lead over
+        # the TrueNAS-generated alert measured on 2026-08-03 was observed with the
+        # TEMPERATURE signal, not this one. Treat the lead time as unverified for
+        # presence until a real dropout confirms it.
         - alert: TrueNASDiskCountDrop
-          expr: count(truenas_disk_temperature_celsius) < 14
+          expr: count(truenas_disk_present) < 16
           for: 2m
           labels:
             severity: critical
           annotations:
-            summary: "TrueNAS sees only {{ $value }} physical disks (expected 14)"
+            summary: "TrueNAS enumerates only {{ $value }} disks (expected 16)"
             description: >-
               Disks have disappeared from the OS entirely - this is a TRANSPORT
               failure, not drive failure. Check `lsblk` and dmesg for `USB disconnect`
@@ -69,6 +87,48 @@ spec:
               Proxmox host (graceful shutdown HANGS on the D-state tasks a suspended
               pool creates) then power-cycle and `qm start 100`. `zpool clear` while
               devices are absent does nothing. See board SQ-6.
+
+        # The 2026-08-03 dropout was caught by temperature going dark, and that path
+        # is still proven - but only for the 8 internal WDC disks, which are the ones
+        # that still answer SMART. Keeping it as its own alert preserves the measured
+        # early-warning signal for the disks it can still see, instead of discarding
+        # it along with the broken 14-disk threshold.
+        - alert: TrueNASSmartCoverageDrop
+          expr: count(truenas_disk_smart_available == 1) < 8
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Only {{ $value }} disks still report SMART (expected at least 8)"
+            description: >-
+              The internal WDC disks have stopped reporting temperature. This is the
+              signal that led the TrueNAS alert by ~13 minutes during the 2026-08-03
+              enclosure dropout. Check dmesg and `lsblk` before assuming drive death.
+
+        # SQ-39 lives here. This alert exists so the SMART gap stays VISIBLE rather
+        # than being normalised away by lowering a threshold. It is deliberately a
+        # warning, not a critical: nothing is failing, but six 18 TB drives are
+        # currently invisible to predictive-failure monitoring, which means the first
+        # warning of a dying drive will be a read error rather than a rising
+        # reallocated-sector count.
+        #
+        # The fix is NOT `smartoptions` on the TrueNAS side - the middleware rejects
+        # it with `[EINVAL] "-d" is an invalid extra smart option`. The reachable path
+        # is smartctl_exporter on the Proxmox host, which enumerates these drives
+        # natively now that they are host-attached rather than behind whole-controller
+        # passthrough.
+        - alert: TrueNASDiskSmartUnavailable
+          expr: count(truenas_disk_smart_available == 0) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $value }} disks do not report SMART (predictive monitoring blind)"
+            description: >-
+              These disks enumerate and serve I/O normally but do not answer SAT/SMART,
+              so temperature and reallocated-sector trends are unavailable for them.
+              Expected value is 6 (the JBOD Seagates behind scsi-block passthrough)
+              until smartctl_exporter runs on the Proxmox host. See board SQ-39.
 
         # A scrub that stops advancing is what the 2026-08-03 link failure looked like
         # from the metrics side: the scan froze at 1.488% the moment the JBOD hub
