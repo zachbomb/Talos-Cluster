@@ -131,6 +131,55 @@ def stat(title, expr, x, y, w=W_STAT, h=H_STAT, unit="none", desc="",
     }
 
 
+def stat_floor(title, expr, x, y, w=W_STAT, h=H_STAT, warn_below=None,
+               crit_below=None, unit="none", desc="", decimals=0):
+    """Single number where LOW is bad - days remaining, free space, headroom.
+
+    Grafana threshold steps apply from their value upward, so an inverted
+    scale is expressed by starting red and stepping UP into orange then green.
+    Getting this backwards paints a healthy 67-days-remaining tile red, which
+    is worse than no colour at all because it trains people to ignore it.
+    """
+    steps = [{"color": RED, "value": None}]
+    if crit_below is not None:
+        steps.append({"color": ORANGE, "value": crit_below})
+    if warn_below is not None:
+        steps.append({"color": GREEN, "value": warn_below})
+    return {
+        "type": "stat", "title": title, "description": desc, "datasource": DS,
+        "gridPos": {"h": h, "w": w, "x": x, "y": y},
+        "fieldConfig": {"defaults": {
+            "unit": unit, "decimals": decimals,
+            "thresholds": _thresholds(steps),
+            "color": {"mode": "thresholds"}}, "overrides": []},
+        "options": {"colorMode": "background", "graphMode": "none",
+                    "justifyMode": "auto", "textMode": "auto",
+                    "reduceOptions": {"calcs": ["lastNotNull"], "fields": "",
+                                      "values": False}},
+        "targets": [_target(expr)],
+    }
+
+
+def table(title, expr, x, y, w=12, h=H_TS, desc="", exclude=None):
+    """Plain instant table - for 'which ones', where a count is not enough."""
+    ex = {"Time": True, "Value": True, "__name__": True, "endpoint": True,
+          "instance": True, "job": True, "service": True, "container": True,
+          "namespace": True, "pod": True}
+    ex.update(exclude or {})
+    return {
+        "type": "table", "title": title, "description": desc, "datasource": DS,
+        "gridPos": {"h": h, "w": w, "x": x, "y": y},
+        "fieldConfig": {"defaults": {
+            "custom": {"align": "auto", "filterable": True},
+            "thresholds": _thresholds([{"color": GREEN, "value": None}])},
+            "overrides": []},
+        "options": {"showHeader": True},
+        "targets": [_target(expr, fmt="table")],
+        "transformations": [{"id": "organize", "options": {
+            "excludeByName": ex, "indexByName": {}, "renameByName": {}}}],
+    }
+
+
 def gauge(title, expr, x, y, w=W_GAUGE, h=H_GAUGE, warn=0.80, crit=0.90,
           unit="percentunit", desc="", mn=0, mx=1):
     return {

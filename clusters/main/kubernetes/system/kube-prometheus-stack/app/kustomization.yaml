@@ -25,4 +25,3 @@ resources:
   - grafana-dashboard-uptime-kuma.yaml
   - grafana-dashboard-cloudflared.yaml
   - grafana-dashboard-smartctl.yaml
-  - grafana-dashboard-graphite.yaml
