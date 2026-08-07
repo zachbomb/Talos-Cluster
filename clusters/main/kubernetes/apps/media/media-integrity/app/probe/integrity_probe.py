@@ -13,10 +13,10 @@ The entire stack tracks PRESENCE and METADATA; nothing checks CONTENT. No
 dashboard, alert or exporter could have surfaced this, because none of them
 ever opens a file.
 
-TWO FALSE-POSITIVE TRAPS, both hit during discovery
----------------------------------------------------
-Encoded here deliberately, because getting either wrong makes the metric
-worthless in opposite directions.
+FALSE-POSITIVE TRAPS, every one of them hit in practice
+-------------------------------------------------------
+Encoded here deliberately, because getting any of them wrong makes the metric
+worthless - and in opposite directions, which is worse than useless.
 
 1. ffprobe CANNOT demux a filesystem image. `Wonderstruck (2017).iso` (45 GB)
    reported `Invalid data found when processing input` while being perfectly
@@ -29,9 +29,18 @@ worthless in opposite directions.
    "did ffprobe print to stderr" flags working files. The verdict must key on
    whether streams or a duration actually came back.
 
-A third signal - implausibly low bitrate - is reported SEPARATELY and never as
-corruption. 170 min in 0.25 GB is a bad encode, not a broken file, and
-conflating them would bury the files that genuinely cannot be opened.
+3. An AUDIO CD image has no filesystem at all. A raw CD rip legitimately has
+   nothing at 0x8000, so the descriptor check must look for a cuesheet beside
+   it before calling one damaged. `Dick Around + Waterproof UK CD Single.img`
+   was flagged corrupt on exactly that basis.
+
+4. The low-bitrate heuristic is VIDEO-only. 250 kbps is diagnostic for a
+   feature and ordinary for an MP3; running it over music flags every long
+   classical movement and live set.
+
+Implausibly low bitrate is reported SEPARATELY and never as corruption. 170
+min in 0.25 GB is a bad encode, not a broken file, and conflating them would
+bury the files that genuinely cannot be opened.
 
 OUTPUT
 ------
@@ -59,7 +68,26 @@ import threading
 import time
 
 VIDEO_EXT = ("*.mkv", "*.mp4", "*.m4v", "*.avi", "*.mpg", "*.ts", "*.wmv")
-IMAGE_EXT = (".iso", ".img")
+
+# Audio. Their ABSENCE from the first version of this file is the most
+# instructive bug it has had: pointed at three music libraries holding 111,208
+# audio files, it examined 16 of them - the stray video files - and reported
+# `unreadable=0`. A clean bill of health for a population it never opened.
+#
+# That is exactly the failure this whole component exists to prevent, produced
+# by the component itself. A scan that examines nothing is indistinguishable
+# from a healthy library, which is why media_integrity_files_total is exported
+# alongside the defect counts and why the alerting must treat a sudden drop in
+# files_total as suspicious rather than reassuring.
+AUDIO_EXT = ("*.flac", "*.mp3", "*.m4a", "*.ogg", "*.opus", "*.wav",
+             "*.aiff", "*.aif", "*.wma", "*.alac", "*.ape", "*.dsf", "*.wv")
+
+IMAGE_EXT = (".iso", ".img", ".bin")
+
+# A disc image sitting next to one of these is a raw CD image, not a
+# filesystem image. Audio CDs carry NO filesystem at all - no ISO9660, no UDF -
+# so judging one on its volume descriptors condemns a perfectly good rip.
+CUESHEET_EXT = (".cue", ".toc", ".ccd")
 
 # A feature film under this bitrate is very unlikely to be intact video.
 LOW_BITRATE_BPS = 250_000
@@ -84,7 +112,22 @@ def check_disc_image(path):
         return True, "valid ISO9660 volume descriptor"
     if pvd[1:6] == b"BEA01" or udf[1:6] in (b"NSR02", b"NSR03"):
         return True, "valid UDF volume descriptor"
-    return False, "no ISO9660 or UDF volume descriptor at 0x8000"
+    # No filesystem descriptor. Before calling that damage, check for a
+    # cuesheet beside it: an AUDIO CD carries no filesystem at all, so a raw
+    # audio-CD rip legitimately has nothing at 0x8000. The first version of
+    # this check flagged `Dick Around + Waterproof UK CD Single.img` as
+    # corrupt on exactly that basis.
+    stem = os.path.splitext(path)[0]
+    for ext in CUESHEET_EXT:
+        if os.path.exists(stem + ext) or os.path.exists(stem + ext.upper()):
+            return True, ("raw CD image with a %s cuesheet - audio CDs carry "
+                          "no filesystem, so no descriptor is expected" % ext)
+    return False, ("no ISO9660 or UDF volume descriptor at 0x8000 and no "
+                   "cuesheet beside it")
+
+
+def is_audio(path):
+    return path.lower().endswith(tuple(e.lstrip("*") for e in AUDIO_EXT))
 
 
 def check_media(path):
@@ -117,7 +160,12 @@ def check_media(path):
         d = float(dur) if dur else 0.0
     except ValueError:
         d = 0.0
-    if d > MIN_DURATION_FOR_BITRATE:
+    # The low-bitrate heuristic is calibrated for VIDEO and is meaningless
+    # for audio: 250 kbps is diagnostic for a feature film and completely
+    # ordinary for an MP3. Running it over a music library would flag every
+    # long classical movement, live set and DJ mix - a steady stream of
+    # non-defects that trains people to ignore the metric.
+    if not is_audio(path) and d > MIN_DURATION_FOR_BITRATE:
         try:
             bps = os.path.getsize(path) * 8.0 / d
         except OSError:
@@ -140,7 +188,8 @@ def scan(root):
         for fn in filenames:
             low = fn.lower()
             if low.endswith(IMAGE_EXT) or any(
-                    low.endswith(p.lstrip("*")) for p in VIDEO_EXT):
+                    low.endswith(p.lstrip("*"))
+                    for p in VIDEO_EXT + AUDIO_EXT):
                 files.append(os.path.join(dirpath, fn))
 
     for path in files:
