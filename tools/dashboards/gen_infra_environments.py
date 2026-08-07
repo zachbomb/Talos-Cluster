@@ -71,11 +71,26 @@ STORAGE = [
               "being backed up, which looks identical to backups succeeding."),
     stat("VolSync out of sync", "sum(volsync_volume_out_of_sync) or vector(0)",
          8, 14, bad_above=0),
-    stat("TrueNAS scrub progress", "max(truenas_pool_scan_percentage)", 12, 14,
-         unit="percent", decimals=1,
-         desc="A STAT and not a gauge on purpose: this metric reads over 100 "
-              "(101.17 observed) during and after a scrub, and a gauge capped "
-              "at 100 would pin to full-red and imply a fault."),
+    # NEVER AGGREGATE THIS METRIC. Shipped 2026-08-06 as
+    # `max(truenas_pool_scan_percentage)` and it was wrong in a way that looked
+    # completely fine: max() over a per-pool PROGRESS metric systematically
+    # returns whichever pool has the highest value, which is the FINISHED one.
+    # It read 101.17 (Apps, FINISHED) while Pibbs-Horde was mid-scrub at 45.65
+    # - so the panel was structurally incapable of ever showing the scrub
+    # anyone cares about.
+    #
+    # Worse, the 101.17 got rationalised into the code comment below as "this
+    # metric reads over 100 during a scrub", which is not true. A finished
+    # scrub reports slightly over 100; a running one does not. The symptom was
+    # explained away instead of investigated.
+    #
+    # Per-pool bars, never a single number.
+    bargauge("Scrub progress by pool", [
+        ("truenas_pool_scan_percentage", "{{pool}}"),
+    ], 12, 14, w=6, h=4,
+        desc="Per pool, never aggregated. A FINISHED pool sits slightly above "
+             "100; a running one shows real progress. max() across them would "
+             "always report the finished one and hide the running one."),
     stat("TrueNAS vdev errors", "sum(truenas_vdev_errors_total)", 16, 14,
          warn_above=0,
          desc="Errors spread evenly across ALL members of one vdev, with the "

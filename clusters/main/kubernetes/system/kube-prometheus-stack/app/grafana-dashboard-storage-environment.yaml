@@ -669,23 +669,23 @@ data:
           ]
         },
         {
-          "type": "stat",
-          "title": "TrueNAS scrub progress",
-          "description": "A STAT and not a gauge on purpose: this metric reads over 100 (101.17 observed) during and after a scrub, and a gauge capped at 100 would pin to full-red and imply a fault.",
+          "type": "bargauge",
+          "title": "Scrub progress by pool",
+          "description": "Per pool, never aggregated. A FINISHED pool sits slightly above 100; a running one shows real progress. max() across them would always report the finished one and hide the running one.",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
           "gridPos": {
             "h": 4,
-            "w": 4,
+            "w": 6,
             "x": 12,
             "y": 14
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "percent",
-              "decimals": 1,
+              "unit": "none",
+              "decimals": 0,
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
@@ -702,10 +702,9 @@ data:
             "overrides": []
           },
           "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "textMode": "auto",
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true,
             "reduceOptions": {
               "calcs": [
                 "lastNotNull"
@@ -720,9 +719,10 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "max(truenas_pool_scan_percentage)",
+              "expr": "truenas_pool_scan_percentage",
               "refId": "A",
-              "instant": true
+              "instant": true,
+              "legendFormat": "{{pool}}"
             }
           ]
         },
