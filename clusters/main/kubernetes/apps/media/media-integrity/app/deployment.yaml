@@ -130,7 +130,19 @@ spec:
             name: media-integrity-probe
         - name: binshared
           emptyDir: {}
+        # Inline NFS, matching every other media app. `media-nfs-pvc` exists
+        # as a manifest but is COMMENTED OUT of apps/media/kustomization.yaml,
+        # so the claim has never been created - referencing it left this pod
+        # Pending with `persistentvolumeclaim "media-nfs-pvc" not found`.
+        #
+        # A server-side dry run does NOT catch that: the API happily accepts a
+        # reference to a non-existent claim, and only the scheduler rejects it.
+        #
+        # Path is .../media/data/media (one level deeper than tunarr's mount)
+        # so the roots land at /media/movies, /media/tv, /media/music - which
+        # is what the --lib arguments above expect.
         - name: media
-          persistentVolumeClaim:
-            claimName: media-nfs-pvc
+          nfs:
+            server: 192.168.10.123
+            path: /mnt/Pibbs-Horde/media/data/media
             readOnly: true
