@@ -42,6 +42,24 @@ spec:
                 - Pod
               names:
                 - "volsync-src-*"
+              # CREATE only. With operations unset, Kyverno mutates on UPDATE too,
+              # which makes every mover pod PERMANENTLY UNMODIFIABLE: a metadata-only
+              # update (e.g. clearing a stale finalizer) re-triggers these mutations,
+              # and the API server then rejects the whole request because pod spec is
+              # immutable - "pod updates may not change fields other than image...".
+              #
+              # That is not theoretical. On 2026-08-08 five movers (tunarr, calibre,
+              # cwa, nzbget, overseerr) were stuck Failed since 2026-08-05 holding an
+              # orphaned batch.kubernetes.io/job-tracking finalizer. The finalizer
+              # could not be removed - every patch was rejected by this rule firing on
+              # UPDATE - so their -src clone PVCs stayed Terminating, replacement
+              # movers were unschedulable ("PVC is being deleted"), and the
+              # ReplicationSources sat at SyncInProgress. Five apps went 45h with no
+              # backup and VolSync could not self-heal.
+              #
+              # These rules only ever needed to fire at admission of a NEW mover.
+              operations:
+                - CREATE
       mutate:
         patchStrategicMerge:
           spec:
@@ -66,6 +84,9 @@ spec:
                 - Pod
               names:
                 - "volsync-src-*"
+              # CREATE only - see the rule above for why UPDATE wedges backups.
+              operations:
+                - CREATE
       mutate:
         foreach:
           - list: "request.object.spec.containers"
