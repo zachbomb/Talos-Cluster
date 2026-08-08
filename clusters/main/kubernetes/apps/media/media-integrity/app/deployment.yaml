@@ -22,7 +22,23 @@ metadata:
   labels:
     app.kubernetes.io/name: media-integrity
 spec:
-  replicas: 1
+  # SCALED TO ZERO 2026-08-08 — this cannot start, and scaling it down by hand
+  # does not stick because Flux reverts the drift on the next reconcile.
+  #
+  # The probe needs python3 AND ffprobe in ONE container. Every approach tried has
+  # failed, and the container logs the same fatal line on every start:
+  #     FATAL: could not install ffmpeg
+  # because `apk add` requires root and the pod is correctly `runAsNonRoot: true`.
+  # (See the IMAGE note on the container below for the initContainer, static-ffmpeg
+  # and musl-vs-glibc dead ends.)
+  #
+  # It restarted 85 times in 7 hours producing nothing but noise, during an incident
+  # where that noise made a real crash-loop audit harder to read. It stays at 0 until
+  # SQ-48 ships an image with python3 + ffprobe baked in at BUILD time.
+  #
+  # To re-enable: set replicas back to 1 in this file, in the same commit as the
+  # image change. Do not scale it up by hand.
+  replicas: 0
   strategy:
     type: Recreate
   selector:
