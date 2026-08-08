@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-08T07:26:39.428801+00:00",
+ "generated": "2026-08-08T07:33:23.042885+00:00",
  "host": "192.168.10.211",
  "thresholds": {
   "ratio_too_short": 0.55,
@@ -23,6 +23,10 @@
   "runtime_TOO-SHORT": 47,
   "specials_runtime_skipped": 98,
   "no_mediainfo_runtime": 57,
+  "spinoff_families": 5,
+  "spinoff_derived_total": 17,
+  "regional_franchises": 3,
+  "regional_variants_total": 12,
   "same_title_series_groups": 2,
   "same_title_not_distinct": 0,
   "series_uniform_series": 1,
@@ -80,6 +84,251 @@
    ],
    "distinct_tvdb": true,
    "distinct_paths": true
+  }
+ ],
+ "regional_variants": [
+  {
+   "franchise": "top chef",
+   "variants": [
+    {
+     "region": "FR",
+     "title": "Top Chef (FR)",
+     "year": 2010,
+     "tvdbId": 255968,
+     "network": "M6",
+     "files": 86
+    },
+    {
+     "region": "GR",
+     "title": "Top Chef (GR)",
+     "year": 2010,
+     "tvdbId": 409596,
+     "network": "Skai",
+     "files": 0
+    },
+    {
+     "region": "ES",
+     "title": "Top Chef (ES)",
+     "year": 2013,
+     "tvdbId": 275388,
+     "network": "Antena 3",
+     "files": 4
+    },
+    {
+     "region": "SA",
+     "title": "Top Chef (SA)",
+     "year": 2016,
+     "tvdbId": 336557,
+     "network": "MBC Shahid",
+     "files": 0
+    },
+    {
+     "region": "(orig)",
+     "title": "Top Chef",
+     "year": 2006,
+     "tvdbId": 79313,
+     "network": "Bravo",
+     "files": 343
+    }
+   ],
+   "distinct_tvdb": true
+  },
+  {
+   "franchise": "taskmaster",
+   "variants": [
+    {
+     "region": "US",
+     "title": "Taskmaster (US)",
+     "year": 2018,
+     "tvdbId": 344961,
+     "network": "Comedy Central",
+     "files": 8
+    },
+    {
+     "region": "AU",
+     "title": "Taskmaster (AU)",
+     "year": 2023,
+     "tvdbId": 425755,
+     "network": "Network 10",
+     "files": 50
+    },
+    {
+     "region": "NZ",
+     "title": "Taskmaster (NZ)",
+     "year": 2020,
+     "tvdbId": 386002,
+     "network": "TVNZ 2",
+     "files": 60
+    },
+    {
+     "region": "(orig)",
+     "title": "Taskmaster",
+     "year": 2015,
+     "tvdbId": 298905,
+     "network": "Channel 4",
+     "files": 229
+    }
+   ],
+   "distinct_tvdb": true
+  },
+  {
+   "franchise": "come dine with me",
+   "variants": [
+    {
+     "region": "CA",
+     "title": "Come Dine With Me (CA)",
+     "year": 2010,
+     "tvdbId": 219491,
+     "network": null,
+     "files": 0
+    },
+    {
+     "region": "IR",
+     "title": "Come Dine with Me (IR)",
+     "year": 2010,
+     "tvdbId": 419266,
+     "network": "Manoto TV",
+     "files": 0
+    },
+    {
+     "region": "(orig)",
+     "title": "Come Dine with Me",
+     "year": 2005,
+     "tvdbId": 81580,
+     "network": "Channel 4",
+     "files": 799
+    }
+   ],
+   "distinct_tvdb": true
+  }
+ ],
+ "spinoffs": [
+  {
+   "base": "Destination Flavour",
+   "derived": [
+    [
+     "Destination Flavour China",
+     2018,
+     356013,
+     10
+    ],
+    [
+     "Destination Flavour Down Under",
+     2014,
+     284344,
+     10
+    ],
+    [
+     "Destination Flavour Japan",
+     2013,
+     273435,
+     10
+    ],
+    [
+     "Destination Flavour Scandinavia",
+     2016,
+     309541,
+     7
+    ],
+    [
+     "Destination Flavour Singapore",
+     2017,
+     321141,
+     9
+    ]
+   ]
+  },
+  {
+   "base": "Top Chef",
+   "derived": [
+    [
+     "Top Chef Amateurs",
+     2021,
+     403454,
+     12
+    ],
+    [
+     "Top Chef Canada",
+     2011,
+     246941,
+     115
+    ],
+    [
+     "Top Chef Duels",
+     2014,
+     282438,
+     10
+    ],
+    [
+     "Top Chef Suomi",
+     2011,
+     266346,
+     0
+    ],
+    [
+     "Top Chef: Masters",
+     2009,
+     98821,
+     50
+    ]
+   ]
+  },
+  {
+   "base": "Taskmaster",
+   "derived": [
+    [
+     "Taskmaster: Champion of Champions",
+     2017,
+     391042,
+     5
+    ]
+   ]
+  },
+  {
+   "base": "Come Dine with Me",
+   "derived": [
+    [
+     "Come Dine With Me Australia",
+     2010,
+     136441,
+     31
+    ],
+    [
+     "Come Dine With Me New Zealand",
+     2015,
+     296894,
+     39
+    ],
+    [
+     "Come Dine with Me: The Professionals",
+     2022,
+     421529,
+     40
+    ]
+   ]
+  },
+  {
+   "base": "Come Dine With Me",
+   "derived": [
+    [
+     "Come Dine With Me Australia",
+     2010,
+     136441,
+     31
+    ],
+    [
+     "Come Dine With Me New Zealand",
+     2015,
+     296894,
+     39
+    ],
+    [
+     "Come Dine with Me: The Professionals",
+     2022,
+     421529,
+     40
+    ]
+   ]
   }
  ],
  "rows": [

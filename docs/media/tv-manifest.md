@@ -1,6 +1,6 @@
 # TV Identity Manifest
 
-Generated 2026-08-08T07:26:39 from Sonarr at 192.168.10.211.
+Generated 2026-08-08T07:33:23 from Sonarr at 192.168.10.211.
 
 Step 1 of SQ-58 — verify identity AT THE FILE, then propagate upward. This report changes nothing; it never renames, moves or deletes.
 
@@ -273,6 +273,32 @@ Ratio >=1.60 — usually a legitimate double episode or feature-length special. 
 | the kids in the hall | The Kids in the Hall (1989, CBC, 101 files); The Kids in the Hall (2022) (2022, Prime Video, 8 files) | yes | yes |
 
 Distinct on both axes means the split is correct. A **NO** in either column means a revival and its original may be sharing an identity — that is how a 2022 episode ends up filed under a 1989 series.
+
+## Regional variants — same format, DIFFERENT productions
+
+The exact-title check does not catch these: the country suffix makes the titles differ. They are separate productions and must never be merged.
+
+| Franchise | Variants | Distinct tvdbId |
+|---|---|---|
+| top chef | FR 2010 (M6, 86 files); GR 2010 (Skai, 0 files); ES 2013 (Antena 3, 4 files); SA 2016 (MBC Shahid, 0 files); (orig) 2006 (Bravo, 343 files) | yes |
+| taskmaster | US 2018 (Comedy Central, 8 files); AU 2023 (Network 10, 50 files); NZ 2020 (TVNZ 2, 60 files); (orig) 2015 (Channel 4, 229 files) | yes |
+| come dine with me | CA 2010 (None, 0 files); IR 2010 (Manoto TV, 0 files); (orig) 2005 (Channel 4, 799 files) | yes |
+
+## Spinoffs — a shared base title does NOT mean a shared show
+
+| Base series | Derived |
+|---|---|
+| Destination Flavour | Destination Flavour China (2018, 10 files); Destination Flavour Down Under (2014, 10 files); Destination Flavour Japan (2013, 10 files); Destination Flavour Scandinavia (2016, 7 files); Destination Flavour Singapore (2017, 9 files) |
+| Top Chef | Top Chef Amateurs (2021, 12 files); Top Chef Canada (2011, 115 files); Top Chef Duels (2014, 10 files); Top Chef Suomi (2011, 0 files); Top Chef: Masters (2009, 50 files) |
+| Come Dine with Me | Come Dine With Me Australia (2010, 31 files); Come Dine With Me New Zealand (2015, 39 files); Come Dine with Me: The Professionals (2022, 40 files) |
+| Come Dine With Me | Come Dine With Me Australia (2010, 31 files); Come Dine With Me New Zealand (2015, 39 files); Come Dine with Me: The Professionals (2022, 40 files) |
+| Taskmaster | Taskmaster: Champion of Champions (2017, 5 files) |
+
+These are separate shows sharing a franchise name. Merging them, or letting one scrape over the other, mixes unrelated episode numbering.
+
+## Network transfers and syndication — shifts that are NOT misfiles
+
+A series that changed network mid-run, or was re-ordered for syndication, gets renumbered by TVDB relative to release-group numbering. That produces exactly the positional-shift signature while nothing is wrong with the files. Known cases in this library: **Futurama** (Fox to Comedy Central to Hulu), **King of the Hill** (Fox, plus the Hulu revival), **The French Chef** (1960s syndication). Correcting these means re-linking to the right episode record — **never** renaming or moving a file.
 
 ## What must happen next, and in this order
 

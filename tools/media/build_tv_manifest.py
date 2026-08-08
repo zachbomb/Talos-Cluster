@@ -128,6 +128,31 @@ MULTI_EP = (re.compile(r"[Ss]\d+[Ee]\d+[-_ ]?[Ee]\d+"),
 SPECIALS_SEASON = 0
 SERIES_UNIFORM_PCT = 0.70   # >=70% of a series flagged => suspect the metadata
 
+# FOUR identity categories look like duplicates/errors but are DISTINCT WORKS or
+# correct-but-renumbered. Conflating any of them corrupts the library:
+#
+#   REVIVAL/REBOOT     same title, different production era
+#                      Kids in the Hall 1989 CBC vs 2022 Prime; Clone High 2002 vs 2023
+#   REGIONAL VARIANT   same format, different country production. The exact-title
+#                      check MISSES these because the suffix differs:
+#                      Taskmaster (US)/(AU)/(NZ), Top Chef (FR)/(GR)/(ES)/(SA),
+#                      Come Dine with Me /(CA)/(IR)
+#   NETWORK TRANSFER   one series that moved network mid-run and got RENUMBERED by
+#                      TVDB relative to release groups. This produces exactly the
+#                      positional-shift signature while nothing is actually wrong:
+#                      Futurama (Fox -> Comedy Central -> Hulu) 1 shift,
+#                      King of the Hill (Fox -> Hulu revival) 6 shifts.
+#                      Syndication re-ordering does the same: The French Chef, 27.
+#   SPINOFF            shares a base title, adds a qualifier, DIFFERENT show:
+#                      Top Chef vs Top Chef: Masters vs Top Chef Amateurs;
+#                      Destination Flavour vs ...Japan vs ...China
+#   SPECIALS           season 0, unreliable runtimes, excluded from runtime judgement
+#
+# A shift in a network-transfer or syndicated series is a NUMBERING disagreement, not
+# a misfiled file. Fixing it means re-linking to the right episode record, never
+# touching the file.
+REGION_SUFFIX = re.compile(r"\((US|UK|GB|AU|NZ|CA|IE|IR|FR|DE|ES|IT|GR|SA|SE|NO|DK|NL|BE|PL|BR|MX|JP|KR|IN|ZA)\)\s*$", re.I)
+
 
 def key():
     if os.environ.get("SONARR_API"):
@@ -287,6 +312,53 @@ def main():
             "distinct_tvdb": len(ids) == len(group),
             "distinct_paths": len(paths) == len(group),
         })
+    # ---- regional variants: same franchise, different country production ----
+    fran = collections.defaultdict(list)
+    for s2 in series:
+        t = re.sub(r"\s*\(\d{4}\)\s*$", "", (s2.get("title") or "")).strip()
+        m = REGION_SUFFIX.search(t)
+        if m:
+            fran[REGION_SUFFIX.sub("", t).strip().lower()].append((m.group(1).upper(), s2))
+    regionals = []
+    for base, group in fran.items():
+        # include the un-suffixed original if present
+        for s2 in series:
+            t = re.sub(r"\s*\(\d{4}\)\s*$", "", (s2.get("title") or "")).strip()
+            if t.lower() == base and not REGION_SUFFIX.search(t):
+                group = group + [("(orig)", s2)]
+        if len(group) < 2:
+            continue
+        regionals.append({
+            "franchise": base,
+            "variants": [{"region": r, "title": g.get("title"), "year": g.get("year"),
+                          "tvdbId": g.get("tvdbId"), "network": g.get("network"),
+                          "files": (g.get("statistics") or {}).get("episodeFileCount")}
+                         for r, g in group],
+            "distinct_tvdb": len({g.get("tvdbId") for _, g in group}) == len(group),
+        })
+    # ---- spinoffs: shares a base title, adds a qualifier ----
+    def bare(t):
+        t = re.sub(r"\s*\(\d{4}\)\s*$", "", (t or "")).strip()
+        return REGION_SUFFIX.sub("", t).strip()
+    titles = [(bare(s2.get("title")), s2) for s2 in series]
+    spinoffs = collections.defaultdict(set)
+    for a, sa in titles:
+        for b, sb in titles:
+            if sa is sb or not a or not b:
+                continue
+            # b extends a with a qualifier: "Top Chef" -> "Top Chef: Masters"
+            if b.lower().startswith(a.lower()) and len(b) > len(a) + 2:
+                sep = b[len(a):len(a) + 2]
+                if sep[:1] in (":", " ", "-"):
+                    spinoffs[a].add((b, sb.get("year"), sb.get("tvdbId"),
+                                     (sb.get("statistics") or {}).get("episodeFileCount")))
+    spin = [{"base": k, "derived": sorted(v)} for k, v in spinoffs.items() if v]
+    stats["spinoff_families"] = len(spin)
+    stats["spinoff_derived_total"] = sum(len(x["derived"]) for x in spin)
+
+    stats["regional_franchises"] = len(regionals)
+    stats["regional_variants_total"] = sum(len(r["variants"]) for r in regionals)
+
     stats["same_title_series_groups"] = len(collisions)
     stats["same_title_not_distinct"] = sum(
         1 for c in collisions if not (c["distinct_tvdb"] and c["distinct_paths"]))
@@ -315,7 +387,7 @@ def main():
                                          "ratio_normal_hi": RATIO_NORMAL_HI,
                                          "ratio_long_hi": RATIO_LONG_HI,
                                          "abs_floor_s": ABS_FLOOR_S},
-            "stats": dict(stats), "same_title_series": collisions, "rows": rows}
+            "stats": dict(stats), "same_title_series": collisions, "regional_variants": regionals, "spinoffs": spin, "rows": rows}
     json.dump(meta, open(OUT_JSON, "w"), indent=1)
 
     # ---------------- markdown report ----------------
@@ -429,6 +501,44 @@ def main():
         A("Distinct on both axes means the split is correct. A **NO** in either column "
           "means a revival and its original may be sharing an identity — that is how a "
           "2022 episode ends up filed under a 1989 series.\n")
+
+    A("## Regional variants — same format, DIFFERENT productions\n")
+    if not regionals:
+        A("None found.\n")
+    else:
+        A("The exact-title check does not catch these: the country suffix makes the "
+          "titles differ. They are separate productions and must never be merged.\n")
+        A("| Franchise | Variants | Distinct tvdbId |")
+        A("|---|---|---|")
+        for rg in sorted(regionals, key=lambda x: -len(x["variants"])):
+            det = "; ".join("%s %s (%s, %s files)" % (v["region"], v["year"],
+                                                      v["network"], v["files"])
+                            for v in rg["variants"])
+            A("| %s | %s | %s |" % (rg["franchise"], det,
+                                    "yes" if rg["distinct_tvdb"] else "**NO**"))
+        A("")
+
+    A("## Spinoffs — a shared base title does NOT mean a shared show\n")
+    if not spin:
+        A("None found.\n")
+    else:
+        A("| Base series | Derived |")
+        A("|---|---|")
+        for f in sorted(spin, key=lambda x: -len(x["derived"])):
+            A("| %s | %s |" % (f["base"], "; ".join("%s (%s, %s files)" % (d[0], d[1], d[3])
+                                                    for d in f["derived"])))
+        A("")
+        A("These are separate shows sharing a franchise name. Merging them, or letting "
+          "one scrape over the other, mixes unrelated episode numbering.\n")
+
+    A("## Network transfers and syndication — shifts that are NOT misfiles\n")
+    A("A series that changed network mid-run, or was re-ordered for syndication, gets "
+      "renumbered by TVDB relative to release-group numbering. That produces exactly "
+      "the positional-shift signature while nothing is wrong with the files. Known "
+      "cases in this library: **Futurama** (Fox to Comedy Central to Hulu), "
+      "**King of the Hill** (Fox, plus the Hulu revival), **The French Chef** (1960s "
+      "syndication). Correcting these means re-linking to the right episode record — "
+      "**never** renaming or moving a file.\n")
 
     A("## What must happen next, and in this order\n")
     A("1. Triage LONGER results — double episodes and extended cuts are legitimate.")
