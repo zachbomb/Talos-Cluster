@@ -24,6 +24,31 @@ spec:
     cleanupOnFail: true
     remediation:
       retries: 3
+  # Kubernetes auto-injects <SVCNAME>_PORT env vars for every Service in the
+  # namespace. The Service here is called `n8n` in namespace `n8n`, so the kubelet
+  # injects:
+  #     N8N_PORT=tcp://172.17.136.4:80
+  # which COLLIDES with n8n's own config variable of the same name - it expects a
+  # port number, gets a URL, and exits:
+  #     "Invalid number value for N8N_PORT: tcp://172.17.136.4:80"
+  #
+  # This crashed the pod 243 times over two days. It is unrelated to cluster load;
+  # it fires on every start and always has.
+  #
+  # `enableServiceLinks: false` stops the kubelet injecting those legacy
+  # docker-link-style variables entirely. n8n reaches other services by DNS, so
+  # nothing depends on them. The chart does not expose the field, hence the
+  # post-render patch rather than a value.
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: n8n
+            patch: |
+              - op: add
+                path: /spec/template/spec/enableServiceLinks
+                value: false
   values:
     n8n:
       encryption_key: "${TRIPARR_ENCRYPTION_KEY}"
