@@ -182,28 +182,38 @@ spec:
         container:
           env:
             VPN_SERVICE_PROVIDER: nordvpn
-            # AUTH_FAILED since 2026-08-08 10:26 - see SQ-63. NordVPN moved manual/
-            # OpenVPN setup from account username+password to SERVICE CREDENTIALS,
-            # so the NORD_VPN_USER / NORD_VPN_PASS values are rejected and gluetun
-            # sits in an auth-fail -> healthcheck-fail -> restart loop.
-            # (Those names are written as bare words, not as substitution refs: Flux runs
-            #  envsubst over the whole rendered manifest, comments included, so the
-            #  substituted form here would bake the real credentials into the applied
-            #  resource where `kubectl get helmrelease` would expose them.)
-            #
-            # The loop is INVISIBLE to Kubernetes: both containers stay ready=true
-            # with 0 restarts while every torrent stalls. Measured cost: King of the
-            # Hill S15 moved 74.5MB -> 76.2MB in 9h17m while Deluge displayed a
-            # 2.2 M/s rate. An instantaneous rate is not evidence of progress.
-            #
-            # NordVPN also offers NO port forwarding on any protocol, so torrents on
-            # low-seeded material stay unviable here even once auth is fixed.
-            # Options are recorded in SQ-63: service credentials, WireGuard, or a
-            # provider that forwards ports.
             VPN_TYPE: openvpn
             OPENVPN_USER: ${NORD_VPN_USER}
             OPENVPN_PASSWORD: ${NORD_VPN_PASS}
-            SERVER_COUNTRIES: "United States"
+            # NordVPN permits P2P ONLY on its P2P-designated servers. On a standard
+            # server it silently drops peer traffic while leaving HTTP alone - so the
+            # tunnel reports healthy, trackers announce fine, and not one peer
+            # connection ever completes. Nothing surfaces an error.
+            #
+            # Measured 2026-08-08 on a Dallas server chosen by plain
+            # SERVER_COUNTRIES="United States":
+            #     King of the Hill S15   Seeds: 0 (62)   Peers: 1 (10)   Announce OK
+            #     Alien 3                Seeds: 0 (9)    Peers: 0 (0)
+            #     From Up On Poppy Hill  Seeds: 0 (8)    Peers: 0 (0)
+            # Parenthesised = swarm size the tracker reports; bare = actually
+            # connected. 62 seeds available, zero reached. Downloads crawled 1.7MB
+            # in 9h17m while Deluge displayed a 2.2 M/s rate - an instantaneous rate
+            # is not evidence of progress.
+            #
+            # These hostnames come from NordVPN's legacy_p2p group:
+            #   api.nordvpn.com/v1/servers
+            #     ?filters[servers_groups][identifier]=legacy_p2p
+            #     &filters[servers_technologies][identifier]=openvpn_udp
+            # 400 US P2P servers exist; several are pinned here so gluetun can fail
+            # over, and all are present in gluetun's bundled servers.json.
+            # Do NOT revert to SERVER_COUNTRIES - that reintroduces the silent drop.
+            #
+            # Separately: NordVPN offers NO port forwarding on any protocol, so
+            # inbound peer connections are impossible regardless. P2P servers fix
+            # OUTBOUND peering; seeding and hard-to-reach peers stay limited. If
+            # torrents matter long-term, a port-forwarding provider is the real fix.
+            # See SQ-63.
+            SERVER_HOSTNAMES: "us5099.nordvpn.com,us5100.nordvpn.com,us5102.nordvpn.com,us5103.nordvpn.com,us5104.nordvpn.com"
             FIREWALL: "on"
             FIREWALL_OUTBOUND_SUBNETS: "192.168.10.0/24"
             # The chart leaves this "on", which makes gluetun log:
