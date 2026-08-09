@@ -182,12 +182,38 @@ spec:
         container:
           env:
             VPN_SERVICE_PROVIDER: nordvpn
+            # AUTH_FAILED since 2026-08-08 10:26 - see SQ-63. NordVPN moved manual/
+            # OpenVPN setup from account username+password to SERVICE CREDENTIALS,
+            # so the NORD_VPN_USER / NORD_VPN_PASS values are rejected and gluetun
+            # sits in an auth-fail -> healthcheck-fail -> restart loop.
+            # (Those names are written as bare words, not as substitution refs: Flux runs
+            #  envsubst over the whole rendered manifest, comments included, so the
+            #  substituted form here would bake the real credentials into the applied
+            #  resource where `kubectl get helmrelease` would expose them.)
+            #
+            # The loop is INVISIBLE to Kubernetes: both containers stay ready=true
+            # with 0 restarts while every torrent stalls. Measured cost: King of the
+            # Hill S15 moved 74.5MB -> 76.2MB in 9h17m while Deluge displayed a
+            # 2.2 M/s rate. An instantaneous rate is not evidence of progress.
+            #
+            # NordVPN also offers NO port forwarding on any protocol, so torrents on
+            # low-seeded material stay unviable here even once auth is fixed.
+            # Options are recorded in SQ-63: service credentials, WireGuard, or a
+            # provider that forwards ports.
             VPN_TYPE: openvpn
             OPENVPN_USER: ${NORD_VPN_USER}
             OPENVPN_PASSWORD: ${NORD_VPN_PASS}
             SERVER_COUNTRIES: "United States"
             FIREWALL: "on"
             FIREWALL_OUTBOUND_SUBNETS: "192.168.10.0/24"
+            # The chart leaves this "on", which makes gluetun log:
+            #   "keeping the default container nameservers, this will likely leak
+            #    DNS traffic outside the VPN tunnel"
+            # A torrent client behind a kill switch resolving tracker names outside
+            # the tunnel defeats the point of the tunnel. Off = gluetun's own DoT
+            # resolver inside the VPN. Cluster-local traffic is unaffected: the chart
+            # already adds the pod/service CIDRs to FIREWALL_OUTBOUND_SUBNETS.
+            DNS_KEEP_NAMESERVER: "off"
           resources:
             limits:
               truecharts.org/tun: 1
