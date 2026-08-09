@@ -185,34 +185,30 @@ spec:
             VPN_TYPE: openvpn
             OPENVPN_USER: ${NORD_VPN_USER}
             OPENVPN_PASSWORD: ${NORD_VPN_PASS}
-            # NordVPN permits P2P ONLY on its P2P-designated servers. On a standard
-            # server it silently drops peer traffic while leaving HTTP alone - so the
-            # tunnel reports healthy, trackers announce fine, and not one peer
-            # connection ever completes. Nothing surfaces an error.
+            # Pinned to specific US servers rather than SERVER_COUNTRIES purely for
+            # stability - a fixed set gluetun can fail over between. All five are in
+            # gluetun's bundled servers.json.
             #
-            # Measured 2026-08-08 on a Dallas server chosen by plain
-            # SERVER_COUNTRIES="United States":
-            #     King of the Hill S15   Seeds: 0 (62)   Peers: 1 (10)   Announce OK
-            #     Alien 3                Seeds: 0 (9)    Peers: 0 (0)
-            #     From Up On Poppy Hill  Seeds: 0 (8)    Peers: 0 (0)
-            # Parenthesised = swarm size the tracker reports; bare = actually
-            # connected. 62 seeds available, zero reached. Downloads crawled 1.7MB
-            # in 9h17m while Deluge displayed a 2.2 M/s rate - an instantaneous rate
-            # is not evidence of progress.
+            # RETRACTION: an earlier revision of this comment claimed NordVPN
+            # "silently drops peer traffic" on non-P2P servers and presented this
+            # pin as the fix for zero-peer downloads. That was WRONG on both counts.
+            # SQ-64 proved the real cause was a per-torrent save_path of /downloads
+            # (a directory that does not exist and that deluged, uid 568, cannot
+            # create): libtorrent's first write fails, it sets upload_mode=True, and
+            # a torrent in upload_mode never expresses interest in any peer. Fixed
+            # by core.move_storage to /torrents - peers went 0 -> 6 and throughput
+            # 0 -> 688 K/s immediately, with no VPN change at all.
             #
-            # These hostnames come from NordVPN's legacy_p2p group:
-            #   api.nordvpn.com/v1/servers
-            #     ?filters[servers_groups][identifier]=legacy_p2p
-            #     &filters[servers_technologies][identifier]=openvpn_udp
-            # 400 US P2P servers exist; several are pinned here so gluetun can fail
-            # over, and all are present in gluetun's bundled servers.json.
-            # Do NOT revert to SERVER_COUNTRIES - that reintroduces the silent drop.
+            # Also disproven by SQ-64: NordVPN does NOT block P2P here. A standalone
+            # libtorrent session in this same pod, through this same tunnel, pulled
+            # 210 MB in 4 minutes. NordVPN has retired the P2P server category -
+            # "All standard NordVPN servers now support P2P activities"
+            # (support.nordvpn.com/hc/en-us/articles/45840292778897).
             #
-            # Separately: NordVPN offers NO port forwarding on any protocol, so
-            # inbound peer connections are impossible regardless. P2P servers fix
-            # OUTBOUND peering; seeding and hard-to-reach peers stay limited. If
-            # torrents matter long-term, a port-forwarding provider is the real fix.
-            # See SQ-63.
+            # Still true: NordVPN offers no port forwarding on any protocol, so there
+            # is no inbound peer port. That limits seeding and hard-to-reach peers,
+            # but SQ-64 measured downloads at 0.1-2 MB/s without one, so it does not
+            # prevent downloading. See SQ-63 if torrents become a priority.
             SERVER_HOSTNAMES: "us5099.nordvpn.com,us5100.nordvpn.com,us5102.nordvpn.com,us5103.nordvpn.com,us5104.nordvpn.com"
             FIREWALL: "on"
             FIREWALL_OUTBOUND_SUBNETS: "192.168.10.0/24"
