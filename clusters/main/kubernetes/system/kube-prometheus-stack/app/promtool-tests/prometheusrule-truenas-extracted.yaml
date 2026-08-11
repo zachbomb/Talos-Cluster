@@ -1,0 +1,399 @@
+groups:
+  - name: truenas-pool
+    rules:
+      # RECALIBRATED 2026-08-11 (SQ-72). `truenas_pool_healthy == 0` alone is
+      # NOT a device fault: TrueNAS clears `healthy` for permanent (file-level)
+      # errors and keeps it cleared for the whole run of a scrub, so this fired
+      # critical for three days over ONE unrepairable file (zpool ONLINE, all
+      # 12 disks ONLINE, 0/0/0 read/write/cksum, redundancy fully intact) and
+      # then kept firing while the post-repair scrub verified the pool. 15,882
+      # firing samples in 7d - noise that helped bury a real 5-day backup
+      # outage ranked below it.
+      #
+      # critical is now reserved for pool-unhealthy WITH a device fault: some
+      # topology node not ONLINE, or non-zero read/write/cksum counters. The
+      # residual "unhealthy but no device fault" state is TrueNASPoolUnhealthy
+      # below (warning, suppressed while a scan runs).
+      #
+      # COVERAGE NOTE: total device disappearance (the 2026-08-03 JBOD
+      # collapse) can remove the vdev series this gate joins on. That scenario
+      # is owned by TrueNASDiskCountDrop and TrueNASVdevVanished (both
+      # critical), which were built for it and fire earlier than this rule
+      # ever did. Validated live 2026-08-11 against the in-flight post-repair
+      # scrub: old expression firing, both new arms correctly silent.
+      - alert: TrueNASPoolDegraded
+        expr: >-
+          truenas_pool_healthy == 0 and on(pool) (
+
+            (min by (pool) (truenas_vdev_healthy) == 0)
+            or
+            (sum by (pool) (truenas_vdev_errors_total) > 0)
+          )
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS pool {{ $labels.pool }} is NOT healthy and a device fault is present"
+          description: >-
+            Pool {{ $labels.pool }} reports unhealthy AND at least one vdev/disk is not ONLINE or has non-zero read/write/checksum counters. RAIDZ2 redundancy may be partly or fully consumed - if two disks in one vdev are already down, a THIRD failure destroys the entire pool, both vdevs, all data. Check `zpool status` before doing anything physical, and do NOT pull or reseat a drive while redundancy is gone.
+      # The residual arm of the split above: pool reports unhealthy but every
+      # topology node is ONLINE with clean counters - i.e. permanent
+      # (file-level) errors are on record and redundancy is intact. Losing one
+      # already-damaged file is an annoyance, not an outage, so this is
+      # warning.
+      #
+      # Suppressed while a scan is in progress: pool_healthy stays 0 for the
+      # entire run of a scrub, and alerting "unhealthy" at a pool for
+      # verifying itself is exactly the 2-day false-critical this replaces.
+      # Scrub visibility during that window comes from TrueNASScrubStarted/
+      # Progress/Finished; if a device fails mid-scrub, the error counters or
+      # vdev state move and the critical arm fires. When the scan completes
+      # with permanent errors still on record, this fires and stays until the
+      # files are dealt with and `zpool clear` runs.
+      - alert: TrueNASPoolUnhealthy
+        expr: >-
+          truenas_pool_healthy == 0 unless on(pool) (min by (pool) (truenas_vdev_healthy) == 0) unless on(pool) (sum by (pool) (truenas_vdev_errors_total) > 0) unless on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1)
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS pool {{ $labels.pool }} reports unhealthy (no device fault)"
+          description: >-
+            Pool {{ $labels.pool }} reports unhealthy while every vdev/disk is ONLINE with zero error counters - typically permanent (file-level) errors left on record. Redundancy is intact and no device is failing. Run `zpool status -v` for the affected-file list, restore or delete those files, then `zpool clear` and scrub to re-verify.
+      - alert: TrueNASVdevDegraded
+        expr: truenas_vdev_healthy == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS vdev {{ $labels.vdev }} in {{ $labels.pool }} is {{ $labels.status }}"
+          description: >-
+            vdev {{ $labels.vdev }} ({{ $labels.type }}) is {{ $labels.status }}. Verify with SMART + live disk temperature before assuming drive death - transient I/O errors from a link or enclosure glitch look identical here and are cleared with `zpool clear`, not replacement.
+      # EARLIEST possible warning of an enclosure/link dropout. On 2026-08-03 the
+      # TL-R1200C JBOD's internal USB hub fell off the bus at 14:50:53 and took all
+      # six drives with it; the pool went SUSPENDED and NFS/MinIO/dockerd wedged in
+      # D-state. This signal caught it exactly - disk count fell 14 -> 8 - and it
+      # leads the TrueNAS-generated alert by ~13 minutes.
+      #
+      # A partial drop (one or two disks) is the more valuable case - it means the
+      # link is flaking before it takes the whole vdev, which is the window where
+      # intervention is still cheap.
+      #
+      # REWRITTEN 2026-08-06 - this alert previously counted temperature series
+      # (`count(truenas_disk_temperature_celsius) < 14`) as a proxy for presence.
+      # After the JBOD passthrough cutover the six Seagates stopped answering
+      # SAT/SMART (they now present the enclosure's SCSI identity, model "QNAP",
+      # and TrueNAS reports supports_smart=None) while remaining fully present and
+      # serving a scrub. The alert therefore screamed "disks have disappeared from
+      # the OS entirely" about six disks that were right there, and sat CRITICAL
+      # for ~9 hours. A monitoring regression had put on a transport failure's
+      # clothing. Presence and SMART-visibility are now separate metrics.
+      #
+      # Baseline is 16: 8 internal WDC + 6 JBOD Seagate + 2 QEMU_HARDDISK virtual
+      # boot disks. Unlike the old temperature count, this includes the virtual
+      # disks, because truenas_disk_present is about enumeration, not SMART.
+      # UPDATE THIS THRESHOLD when physical disks are added or removed.
+      #
+      # DETECTION-LATENCY CAVEAT: truenas_disk_present comes from disk.query,
+      # which excludes records carrying an expiretime (TrueNAS stamps that when a
+      # disk goes away). This is sound in principle, but the ~13-minute lead over
+      # the TrueNAS-generated alert measured on 2026-08-03 was observed with the
+      # TEMPERATURE signal, not this one. Treat the lead time as unverified for
+      # presence until a real dropout confirms it.
+      - alert: TrueNASDiskCountDrop
+        expr: count(truenas_disk_present) < 16
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS enumerates only {{ $value }} disks (expected 16)"
+          description: >-
+            Disks have disappeared from the OS entirely - this is a TRANSPORT failure, not drive failure. Check `lsblk` and dmesg for `USB disconnect` on the parent hub. Do NOT pull or reseat drives. Recovery is: power-cycle the enclosure, and if the disks do not re-enumerate, `qm stop 100` on the Proxmox host (graceful shutdown HANGS on the D-state tasks a suspended pool creates) then power-cycle and `qm start 100`. `zpool clear` while devices are absent does nothing. See board SQ-6.
+      # The 2026-08-03 dropout was caught by temperature going dark, and that path
+      # is still proven - but only for the 8 internal WDC disks, which are the ones
+      # that still answer SMART. Keeping it as its own alert preserves the measured
+      # early-warning signal for the disks it can still see, instead of discarding
+      # it along with the broken 14-disk threshold.
+      - alert: TrueNASSmartCoverageDrop
+        expr: count(truenas_disk_smart_available == 1) < 8
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Only {{ $value }} disks still report SMART (expected at least 8)"
+          description: >-
+            The internal WDC disks have stopped reporting temperature. This is the signal that led the TrueNAS alert by ~13 minutes during the 2026-08-03 enclosure dropout. Check dmesg and `lsblk` before assuming drive death.
+      # SQ-39 lives here. Predictive-failure blindness on the six JBOD Seagates
+      # (sdk-sdp, behind the ASMedia 174c:55aa USB bridge) is tracked there; the
+      # reachable fix is smartctl_exporter on the Proxmox host, NOT
+      # `smartoptions` on the TrueNAS side (the middleware rejects it with
+      # `[EINVAL] "-d" is an invalid extra smart option`).
+      #
+      # REWRITTEN 2026-08-11 (SQ-72): the previous predicate,
+      # `count(truenas_disk_smart_available == 0) > 0`, was permanently true.
+      # SAT/SMART passthrough does not survive the USB bridge, so those six
+      # disks can NEVER report SMART, and the alert had fired continuously
+      # since 2026-08-08 (13,622 firing samples in 7d). An alert that cannot
+      # clear is noise that buries real signal, not visibility.
+      #
+      # Now self-correcting instead of a hardcoded disk list: fire only for a
+      # disk that DID report SMART within the last 24h and then stopped. Today
+      # that arms the 8 internal WDC disks. After the planned SAS/HBA migration
+      # the Seagates start reporting SMART and are covered automatically with
+      # no rule edit - the requirement that this alert work again post-
+      # migration. The standing "6 disks are SMART-blind" gap stays visible via
+      # SQ-39 and TrueNASSmartCoverageDrop above (raise its threshold 8 -> 14
+      # once the migration lands).
+      #
+      # KNOWN PROPERTY: self-resolves once the 24h lookback slides past the
+      # last SMART-reporting sample. Resolution means the comparison window
+      # expired, NOT that SMART came back - same contract as
+      # TrueNASVdevVanished. TrueNASSmartCoverageDrop (critical) remains the
+      # floor under sustained loss on the internal disks.
+      - alert: TrueNASDiskSmartUnavailable
+        expr: >-
+          truenas_disk_smart_available == 0 and max_over_time(truenas_disk_smart_available[24h]) == 1
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk {{ $labels.disk }} stopped reporting SMART (was reporting within 24h)"
+          description: >-
+            This disk enumerates and serves I/O but no longer answers SAT/SMART, although it did within the last 24h - temperature and reallocated-sector trends have gone dark for it. Check dmesg and `smartctl -a` on the host before assuming drive death; a link or enclosure glitch looks identical. Disks that have never reported SMART (the JBOD Seagates behind USB, see SQ-39) do not fire this.
+      # A scrub that stops advancing is what the 2026-08-03 link failure looked like
+      # from the metrics side: the scan froze at 1.488% the moment the JBOD hub
+      # dropped, and stayed frozen. It complements TrueNASDiskCountDrop - that one
+      # catches devices vanishing, this one catches the scan wedging for any reason
+      # (including a pool that has gone SUSPENDED, where I/O parks forever).
+      #
+      # The `state="SCANNING"` join is NOT optional: a FINISHED scrub also has
+      # delta==0, so without it the Apps pool (whose scrub completed) fires forever.
+      # Verified against live data with a negative control - the inverted expression
+      # matched exactly the one pool that was actively scrubbing.
+      #
+      # severity MUST be warning or critical. `severity: info` is routed to the
+      # "null" receiver in alertmanagerconfig.yaml ("Info - Loki/Grafana annotations
+      # only. No Discord, no Notifiarr.") - an info-level alert here would fire into
+      # a black hole and look like it was working.
+      # The `scan_paused == 0` guard is not optional. A PAUSED scrub still reports
+      # state=SCANNING with a frozen percentage - identical to a wedged one from
+      # the outside. Without this guard the alert false-fired within an hour of
+      # deployment, when the 2026-08-03 scrub was deliberately paused to restore
+      # the media stack. A noisy alert is worse than no alert: this cluster already
+      # had 23 firing instances (11 of them KubeJobFailed) drowning out real signal.
+      # NOTE on expression shape: `truenas_pool_scan_percentage` is deliberately the
+      # LEFT-hand operand. In PromQL, `and` returns the left side's VALUE, so this
+      # makes `{{ $value }}` the scrub percentage rather than the delta — the alert
+      # can then say WHERE it stalled without needing the `query` template function
+      # (which is fragile to quote correctly and runs an extra query at notify time).
+      # The filter set is identical to the previous form; only the reported value
+      # changed. Verified against live data 2026-08-04: returns 20.6341.
+      #
+      # TIER DECISION (2026-08-05): this DELIBERATELY stays `warning` even though
+      # it had 12h of lead time before the 2026-08-04 collapse. A stall alone has
+      # a documented benign mode (metadata traversal; "treat a single firing as
+      # go look") and paging critical on it would erode critical's meaning. The
+      # escalation lives in TrueNASScrubStalledWithVdevErrors below — stall PLUS
+      # climbing errors is the actual collapse signature and pages at critical.
+      - alert: TrueNASScrubStalled
+        expr: >-
+          truenas_pool_scan_percentage and on(pool) (delta(truenas_pool_scan_percentage[20m]) < 0.01) and on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1) and on(pool) (truenas_pool_scan_paused == 0)
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS scrub on {{ $labels.pool }} stuck at {{ $value | printf \"%.2f\" }}% — no progress in 20 minutes"
+          description: >-
+            The scan is still in SCANNING state but percentage is flat. On the JBOD pool this is the signature of the enclosure link dropping - check `count(truenas_disk_temperature_celsius)` (expect 14) and `zpool status` before assuming ZFS is at fault. A scrub CAN legitimately pause during metadata traversal, so treat a single firing as "go look", not "it broke". Scrubs are resumable: `zpool scrub -p` pauses and keeps position.
+      # THE COLLAPSE SIGNATURE. Both incidents (2026-08-03 and 2026-08-04)
+      # followed the same shape: a scrub wedges under load, then vdev error
+      # counters start climbing — enclosure link failing while ZFS keeps issuing
+      # scrub I/O at it. Either half alone is ambiguous (a stall can be benign,
+      # errors can be a one-off glitch); together they are the specific condition
+      # that has preceded controller death twice, and this rule would have fired
+      # hours before operator awareness in both. Filter chain is identical to
+      # TrueNASScrubStalled (same left-operand-is-percentage trick, same
+      # non-optional paused guard) plus the per-pool error-increase join.
+      # Fires ALONGSIDE TrueNASScrubStalled and TrueNASVdevErrors, not instead
+      # of them — the layering is intended.
+      - alert: TrueNASScrubStalledWithVdevErrors
+        expr: >-
+          truenas_pool_scan_percentage and on(pool) (delta(truenas_pool_scan_percentage[20m]) < 0.01) and on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1) and on(pool) (truenas_pool_scan_paused == 0) and on(pool) (sum by (pool) (increase(truenas_vdev_errors_total[1h])) > 0)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS collapse signature on {{ $labels.pool }}: scrub stalled at {{ $value | printf \"%.2f\" }}% AND vdev errors climbing"
+          description: >-
+            A stalled scrub with error counters rising is the exact signature that preceded both the 2026-08-03 and 2026-08-04 pool collapses - the transport is failing while ZFS keeps issuing scrub I/O at it. Act now: pause the scrub (`zpool scrub -p` keeps position), then check `count(truenas_disk_temperature_celsius)` (expect 14) and `zpool status`. Do NOT wait for TrueNASDiskCountDrop - by then the devices are already gone.
+      # Closes the gap that let the 2026-08-02 scheduled scrub skip silently.
+      # `pool.scrub.run(name, threshold)` defaults to threshold=35 DAYS and returns
+      # null - shaped exactly like success - when it declines to run. An INTERRUPTED
+      # scrub still stamps the last-scrub clock, so a scrub that dies at 0.01% buys
+      # 35 days of silence precisely when verification matters most.
+      #
+      # EXPECTED to fire for Pibbs-Horde around mid-September 2026: its scheduled
+      # scrub is deliberately disabled after the Aug 3 JBOD link collapse. That is
+      # the alert doing its job - the pool genuinely is not being verified. Silence
+      # it only by fixing the transport (SAS/HBA) or by running a throttled scrub.
+      - alert: TrueNASScrubOverdue
+        expr: >-
+          (time() - truenas_pool_scan_end_timestamp_seconds > 45 * 86400) and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="FINISHED"} == 1)
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS pool {{ $labels.pool }} has not completed a scrub in over 45 days"
+          description: >-
+            Unverified data. ZFS only detects silent corruption during a scrub, so every day past this is bit rot that could be accumulating undetected. Scrubs are resumable (`zpool scrub -p` pauses and keeps position), so this can be worked through in maintenance windows rather than one run.
+      # Status notifications. severity stays `info` (accurate - nothing is wrong),
+      # and delivery is driven by the `notify: discord` label instead, matched by a
+      # dedicated route in alertmanagerconfig.yaml placed BEFORE the `info -> null`
+      # route. Do NOT relabel these to warning to make them deliver: that erodes the
+      # meaning of warning and buries real alerts in routine chatter.
+      # Periodic progress report while a scrub runs. This is NOT a fault alert — it
+      # is a status feed, which is why severity stays `info` and delivery rides the
+      # `notify: discord` label. Because the alert stays continuously firing for the
+      # duration of the scrub, Alertmanager's `repeatInterval: 24h` on the
+      # notify=discord route turns it into roughly one progress message per day
+      # rather than a stream. Raise or lower that interval to change the cadence;
+      # do NOT add a shorter `for:` here expecting more frequent messages — `for`
+      # controls when it starts firing, not how often it re-notifies.
+      #
+      # `truenas_pool_scan_percentage` is the LEFT operand so `{{ $value }}` is the
+      # percentage (PromQL `and` returns the left side's value). Verified live
+      # 2026-08-04: returns 20.6341 for the in-flight Pibbs-Horde scrub.
+      #
+      # The 2026-08-03/04 scrub is why this exists: it ran for ~17 hours, silently
+      # corrupted 13 blocks, then crawled — and the only way to see any of that was
+      # to query Prometheus by hand. A number in Discord once a day would have
+      # surfaced the slowdown without anyone going looking.
+      - alert: TrueNASScrubProgress
+        expr: >-
+          truenas_pool_scan_percentage and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="SCANNING"} == 1)
+        for: 5m
+        labels:
+          severity: info
+          notify: discord
+        annotations:
+          summary: "TrueNAS scrub on {{ $labels.pool }}: {{ $value | printf \"%.2f\" }}% complete"
+          description: >-
+            Daily progress report for an in-flight scrub. If this number is barely moving between reports, the scrub is degraded rather than merely slow — check `truenas_pool_scan_errors` and compare `scanned` vs `issued` in `zpool status` (scanned climbing while issued is flat means ZFS is queueing work it cannot complete). A paused scrub still reports state=SCANNING, so this keeps reporting while paused; that is intended, since a scrub silently left paused is its own failure mode.
+      - alert: TrueNASScrubStarted
+        expr: >-
+          (time() - truenas_pool_scan_start_timestamp_seconds < 1800) and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="SCANNING"} == 1)
+        for: 2m
+        labels:
+          severity: info
+          notify: discord
+        annotations:
+          summary: "TrueNAS scrub started on {{ $labels.pool }}"
+          description: >-
+            A scrub is underway. On the JBOD-backed pool this is the workload that historically saturates the enclosure link - watch TrueNASDiskCountDrop and TrueNASScrubStalled for the next few hours.
+      # Fires for ~1h after completion rather than continuously: a FINISHED scan
+      # stays FINISHED indefinitely, so a bare state match would alert forever.
+      - alert: TrueNASScrubFinished
+        expr: >-
+          (time() - truenas_pool_scan_end_timestamp_seconds < 3600) and on(pool) (truenas_pool_scan_state_info{function="SCRUB",state="FINISHED"} == 1)
+        for: 2m
+        labels:
+          severity: info
+          notify: discord
+        annotations:
+          summary: "TrueNAS scrub COMPLETED on {{ $labels.pool }}"
+          description: >-
+            Scrub finished. A clean completion is 0 errors. Note this is distinct from truenas_vdev_errors_total: a scrub can surface data errors while every per-device counter reads zero, and the inverse also happens — the 2026-08-03 link failure produced device errors with zero scan errors. Non-zero here means run `zpool status -v` for the affected file list BEFORE `zpool clear`, since clearing erases that record.
+      # PROMOTED warning -> critical after the 2026-08-04 collapse. This was the
+      # FIRST escalation signal — it fired at 20:44, ~84 minutes before the
+      # operator saw anything. A disk accumulating errors under sustained load is
+      # the precursor to the whole cascade: errors -> ZFS marks the disk DEGRADED
+      # -> hot-spare auto-attach -> resilver -> controller death. On this hardware
+      # it is the leading indicator of total pool loss, not "look at it
+      # eventually"; at warning it rode the 12h repeat path alongside
+      # TrueNASPoolFillingUp. Tier pinned by promtool test — do not demote.
+      #
+      # CAUTION: this expression SELF-CANCELS at total failure. When the devices
+      # vanish entirely there are no error counters left to increase, so the
+      # alert resolves exactly when things are at their worst (observed 22:04 on
+      # 2026-08-04 — silence read as recovery). TrueNASVdevVanished below is the
+      # floor under it; do not remove or rework one without the other.
+      - alert: TrueNASVdevErrors
+        expr: increase(truenas_vdev_errors_total[1h]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS {{ $labels.vdev }}: {{ $labels.kind }} errors increasing"
+          description: >-
+            vdev {{ $labels.vdev }} in pool {{ $labels.pool }} accumulated {{ $labels.kind }} errors in the last hour. Recurring errors after a `zpool clear` mean real hardware, not a transient glitch.
+      # The floor under TrueNASVdevErrors. Any alert whose expression can
+      # evaluate to "no data" during the failure it watches needs a companion
+      # that fires on the absence — on 2026-08-04 the vdev error counters
+      # stopped existing at 22:04 because the devices themselves were gone, and
+      # the error alert cleared while the pool was dying.
+      #
+      # Shape: series present 1h ago `unless` present now, collapsed to one
+      # alert per vdev. The `truenas_scrape_success == 1` guard is NOT optional:
+      # the exporter serves last-known values while the TrueNAS API is
+      # unreachable, but a fresh exporter pod that starts while the API is down
+      # has no last-known values — every truenas_* series except
+      # truenas_scrape_success would be absent, and without the guard a routine
+      # pod restart during an API outage would page as "all vdevs vanished".
+      # That state is TrueNASExporterDown's job, not this alert's.
+      #
+      # KNOWN PROPERTY: this self-resolves ~1h after the disappearance (the
+      # offset window slides past). Resolution is NOT evidence of recovery —
+      # the page is the point. A deliberate vdev removal/rename also fires it
+      # for up to that hour; expected, a device leaving the pool is exactly
+      # what it watches.
+      - alert: TrueNASVdevVanished
+        expr: >-
+          (
+
+            count by (pool, vdev) (truenas_vdev_errors_total offset 1h)
+            unless
+            count by (pool, vdev) (truenas_vdev_errors_total)
+          ) and on() (max(truenas_scrape_success) == 1)
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS vdev {{ $labels.vdev }} in {{ $labels.pool }} has VANISHED from metrics"
+          description: >-
+            Error counters for this vdev existed an hour ago and no longer exist, while the exporter is still scraping TrueNAS successfully - the devices have disappeared from ZFS's view entirely. This is WORSE than errors climbing: it is the state in which error-based alerts go silent and silence reads as recovery. Check `zpool status` and the enclosure/transport (dmesg for `USB disconnect`) - see TrueNASDiskCountDrop for the recovery procedure. This alert self-resolves about an hour after the disappearance; treat its resolution as the comparison window expiring, never as the vdev coming back.
+      - alert: TrueNASPoolFillingUp
+        expr: truenas_pool_used_ratio > 0.80
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS pool {{ $labels.pool }} is {{ $value | humanizePercentage }} full"
+          description: >-
+            Ratio is of RAW capacity (parity included), so it is directly comparable across vdev layouts. ZFS performance degrades well before 100%.
+      - alert: TrueNASPoolCritical
+        expr: truenas_pool_used_ratio > 0.90
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS pool {{ $labels.pool }} is {{ $value | humanizePercentage }} full"
+          description: >-
+            Pool is nearly full. Writes will begin failing and ZFS fragmentation becomes hard to reverse.
+      - alert: TrueNASExporterDown
+        expr: truenas_scrape_success == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TrueNAS exporter cannot reach the API"
+          description: >-
+            The exporter is serving LAST-KNOWN values, so pool metrics are stale and a real degradation would look healthy. The monitor must itself be monitored - this is the alert that says "believe nothing above".
+      - alert: TrueNASCriticalAlerts
+        expr: truenas_alerts{level="CRITICAL"} > 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TrueNAS reports {{ $value }} CRITICAL alert(s)"
+          description: >-
+            TrueNAS raised its own CRITICAL alert(s). Check the TrueNAS UI or /api/v2.0/alert/list for detail.

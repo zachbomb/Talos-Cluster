@@ -1,0 +1,23 @@
+groups:
+  - name: crowdsec-availability
+    rules:
+      - alert: CrowdSecLapiDown
+        expr: |
+          kube_deployment_status_replicas_available{namespace="crowdsec", deployment="crowdsec-lapi"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CrowdSec LAPI is down — Traefik bouncer fails closed, all domains 403"
+          description: >-
+            crowdsec-lapi has 0 available replicas. The Traefik CrowdSec bouncer runs in live mode and fails CLOSED: with no LAPI to query it returns 403 for every ingress request, taking down ALL internal domains. Fix: kubectl -n crowdsec scale deploy crowdsec-lapi --replicas=1 (it is drift — git declares LAPI running). Runbook: memory reference_crowdsec_lapi_zero_replica_403.
+      - alert: CrowdSecAgentDown
+        expr: |
+          kube_daemonset_status_number_available{namespace="crowdsec", daemonset="crowdsec-agent"} == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CrowdSec agent is down — no new threat decisions"
+          description: >-
+            crowdsec-agent (DaemonSet) has 0 available pods. Existing ban decisions still enforce, but no new Traefik-log-based detections are made. Often a downstream symptom of LAPI being down (the agent blocks on its wait-for-lapi init container). Check CrowdSecLapiDown first.

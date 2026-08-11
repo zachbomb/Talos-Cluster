@@ -1,0 +1,72 @@
+groups:
+  - name: pvc-capacity
+    rules:
+      - alert: PVCNearFull
+        expr: |
+          kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.15
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} nearly full"
+          description: >-
+            PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has {{ $value | humanizePercentage }} space free. Resize or clear it before it fills — a full PVC wedges the app and can cascade on this single node.
+      - alert: PVCCritical
+        expr: |
+          kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} critically full"
+          description: >-
+            PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has only {{ $value | humanizePercentage }} free — imminent write failure. Resize now.
+  - name: volsync-backups
+    rules:
+      - alert: VolSyncBackupOutOfSync
+        expr: volsync_volume_out_of_sync == 1
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "VolSync backup out of sync: {{ $labels.obj_namespace }}/{{ $labels.obj_name }}"
+          description: >-
+            VolSync ReplicationSource {{ $labels.obj_namespace }}/{{ $labels.obj_name }} has missed its schedule window (out_of_sync=1 for 2h+) — the restic backup to S3 is behind. Check the mover pod + S3 reachability. Runbook: memory reference_volsync_operational_procedures.
+      - alert: VolSyncMetricsAbsent
+        expr: absent(volsync_volume_out_of_sync)
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VolSync metrics absent — backup health is blind"
+          description: >-
+            No volsync_volume_out_of_sync series. The VolSync ServiceMonitor (volsync ns) is missing or its scrape is failing — backup failures cannot be detected. Verify the volsync ServiceMonitor and that its target is up.
+  - name: longhorn-volumes
+    rules:
+      - alert: LonghornVolumeDegraded
+        expr: longhorn_volume_robustness == 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Longhorn volume degraded: {{ $labels.volume }}"
+          description: >-
+            Longhorn volume {{ $labels.volume }} is DEGRADED (robustness=2) — a replica is rebuilding or lost. On this single-node cluster this often precedes an instance-manager cascade. Runbook: memory project_longhorn_1_12_im_liveness_outage_2026_06.
+      - alert: LonghornVolumeFaulted
+        expr: longhorn_volume_robustness == 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Longhorn volume FAULTED: {{ $labels.volume }}"
+          description: >-
+            Longhorn volume {{ $labels.volume }} is FAULTED (robustness=3) — no healthy replica, data at risk / app down. Investigate immediately.
+      - alert: LonghornMetricsAbsent
+        expr: absent(longhorn_volume_robustness)
+        for: 20m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Longhorn metrics absent — volume health is blind"
+          description: >-
+            No longhorn_volume_robustness series. The longhorn-manager /metrics scrape is failing (context-deadline timeout with many volumes) — Longhorn volume health, this cluster's top outage source, cannot be alerted on. Fix the scrape (metrics.serviceMonitor.scrapeTimeout in the longhorn helm-release).

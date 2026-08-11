@@ -7,8 +7,10 @@ runs every fixture in this directory on PRs that touch the alerting stack.
 ## Format
 
 Each fixture is a YAML file with:
-- `rule_files:` — paths to PrometheusRule files to load (use the `.spec` extracts
-  written to `/tmp/rules/` by the CI step, or copy rules inline).
+- `rule_files:` — the `*-extracted.yaml` rule files in this directory. These are
+  the `.spec` of a PrometheusRule CRD, which is what promtool understands; handing
+  it the CRD itself fails with `field apiVersion not found in type rulefmt.RuleGroups`.
+  They are **committed**, so a fixture runs in a plain checkout — see below.
 - `evaluation_interval:` — synthetic evaluation cadence.
 - `tests:` — array of test cases, each with:
   - `interval:` — series sample cadence.
@@ -19,7 +21,34 @@ See https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rule
 
 ## Fixtures here
 
-(none currently)
+| Fixture | Rule file | Source PrometheusRule |
+|---|---|---|
+| `crowdsec-availability-test.yaml` | `prometheusrule-crowdsec-extracted.yaml` | `../prometheusrule-crowdsec.yaml` |
+| `storage-test.yaml` | `prometheusrule-storage-extracted.yaml` | `../prometheusrule-storage.yaml` |
+| `truenas-scrub-test.yaml` | `prometheusrule-truenas-extracted.yaml` | `../../../truenas-exporter/app/prometheusrule.yaml` |
+
+## Why the extracts are committed
+
+They were generated only inside CI until 2026-08-11. That made every fixture
+**silently unrunnable** anywhere else: promtool treats a missing `rule_files:`
+entry as a WARNING, not an error, so it loads zero rules and every
+`alert_rule_test` returns `got:[]`. The run then looks like a set of genuine test
+failures. "The rules are broken" and "the rules never loaded" produce identical
+output — which is exactly the failure class SQ-72 exists to remove from the
+alerting stack, reproduced in the tooling meant to guard it.
+
+Committing generated files trades that for drift risk, so CI pays the other half:
+the `Extracted rule files match their source (drift guard)` step regenerates each
+extract and fails the build if it differs from the committed copy. The comparison
+is semantic — both sides are normalized through the same `yq` — so a formatting
+difference between yq releases does not fail, but any real change to rules,
+expressions, or labels does.
+
+**After editing a PrometheusRule, regenerate its extract and commit it:**
+
+```bash
+yq eval '.spec' <source-prometheusrule>.yaml > <name>-extracted.yaml
+```
 
 > **Note:** `prometheusrule-bgp.yaml` (with the `bgp_flap_active` rule and the
 > `BGPSessionDown` / `BGPSessionFlapping` alerts) was removed 2026-07 alongside
