@@ -14,19 +14,79 @@ spec:
   groups:
     - name: truenas-pool
       rules:
+        # RECALIBRATED 2026-08-11 (SQ-72). `truenas_pool_healthy == 0` alone is
+        # NOT a device fault: TrueNAS clears `healthy` for permanent (file-level)
+        # errors and keeps it cleared for the whole run of a scrub, so this fired
+        # critical for three days over ONE unrepairable file (zpool ONLINE, all
+        # 12 disks ONLINE, 0/0/0 read/write/cksum, redundancy fully intact) and
+        # then kept firing while the post-repair scrub verified the pool. 15,882
+        # firing samples in 7d - noise that helped bury a real 5-day backup
+        # outage ranked below it.
+        #
+        # critical is now reserved for pool-unhealthy WITH a device fault: some
+        # topology node not ONLINE, or non-zero read/write/cksum counters. The
+        # residual "unhealthy but no device fault" state is TrueNASPoolUnhealthy
+        # below (warning, suppressed while a scan runs).
+        #
+        # COVERAGE NOTE: total device disappearance (the 2026-08-03 JBOD
+        # collapse) can remove the vdev series this gate joins on. That scenario
+        # is owned by TrueNASDiskCountDrop and TrueNASVdevVanished (both
+        # critical), which were built for it and fire earlier than this rule
+        # ever did. Validated live 2026-08-11 against the in-flight post-repair
+        # scrub: old expression firing, both new arms correctly silent.
         - alert: TrueNASPoolDegraded
-          expr: truenas_pool_healthy == 0
+          expr: >-
+            truenas_pool_healthy == 0
+            and on(pool) (
+              (min by (pool) (truenas_vdev_healthy) == 0)
+              or
+              (sum by (pool) (truenas_vdev_errors_total) > 0)
+            )
           for: 5m
           labels:
             severity: critical
           annotations:
-            summary: "TrueNAS pool {{ $labels.pool }} is NOT healthy"
+            summary: "TrueNAS pool {{ $labels.pool }} is NOT healthy and a device fault is present"
             description: >-
-              Pool {{ $labels.pool }} reports unhealthy. RAIDZ2 redundancy may be
-              partly or fully consumed - if two disks in one vdev are already down,
-              a THIRD failure destroys the entire pool, both vdevs, all data.
-              Check `zpool status` before doing anything physical, and do NOT pull
-              or reseat a drive while redundancy is gone.
+              Pool {{ $labels.pool }} reports unhealthy AND at least one vdev/disk
+              is not ONLINE or has non-zero read/write/checksum counters. RAIDZ2
+              redundancy may be partly or fully consumed - if two disks in one vdev
+              are already down, a THIRD failure destroys the entire pool, both
+              vdevs, all data. Check `zpool status` before doing anything physical,
+              and do NOT pull or reseat a drive while redundancy is gone.
+
+        # The residual arm of the split above: pool reports unhealthy but every
+        # topology node is ONLINE with clean counters - i.e. permanent
+        # (file-level) errors are on record and redundancy is intact. Losing one
+        # already-damaged file is an annoyance, not an outage, so this is
+        # warning.
+        #
+        # Suppressed while a scan is in progress: pool_healthy stays 0 for the
+        # entire run of a scrub, and alerting "unhealthy" at a pool for
+        # verifying itself is exactly the 2-day false-critical this replaces.
+        # Scrub visibility during that window comes from TrueNASScrubStarted/
+        # Progress/Finished; if a device fails mid-scrub, the error counters or
+        # vdev state move and the critical arm fires. When the scan completes
+        # with permanent errors still on record, this fires and stays until the
+        # files are dealt with and `zpool clear` runs.
+        - alert: TrueNASPoolUnhealthy
+          expr: >-
+            truenas_pool_healthy == 0
+            unless on(pool) (min by (pool) (truenas_vdev_healthy) == 0)
+            unless on(pool) (sum by (pool) (truenas_vdev_errors_total) > 0)
+            unless on(pool) (truenas_pool_scan_state_info{state="SCANNING"} == 1)
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TrueNAS pool {{ $labels.pool }} reports unhealthy (no device fault)"
+            description: >-
+              Pool {{ $labels.pool }} reports unhealthy while every vdev/disk is
+              ONLINE with zero error counters - typically permanent (file-level)
+              errors left on record. Redundancy is intact and no device is
+              failing. Run `zpool status -v` for the affected-file list,
+              restore or delete those files, then `zpool clear` and scrub to
+              re-verify.
 
         - alert: TrueNASVdevDegraded
           expr: truenas_vdev_healthy == 0
@@ -105,30 +165,49 @@ spec:
               signal that led the TrueNAS alert by ~13 minutes during the 2026-08-03
               enclosure dropout. Check dmesg and `lsblk` before assuming drive death.
 
-        # SQ-39 lives here. This alert exists so the SMART gap stays VISIBLE rather
-        # than being normalised away by lowering a threshold. It is deliberately a
-        # warning, not a critical: nothing is failing, but six 18 TB drives are
-        # currently invisible to predictive-failure monitoring, which means the first
-        # warning of a dying drive will be a read error rather than a rising
-        # reallocated-sector count.
+        # SQ-39 lives here. Predictive-failure blindness on the six JBOD Seagates
+        # (sdk-sdp, behind the ASMedia 174c:55aa USB bridge) is tracked there; the
+        # reachable fix is smartctl_exporter on the Proxmox host, NOT
+        # `smartoptions` on the TrueNAS side (the middleware rejects it with
+        # `[EINVAL] "-d" is an invalid extra smart option`).
         #
-        # The fix is NOT `smartoptions` on the TrueNAS side - the middleware rejects
-        # it with `[EINVAL] "-d" is an invalid extra smart option`. The reachable path
-        # is smartctl_exporter on the Proxmox host, which enumerates these drives
-        # natively now that they are host-attached rather than behind whole-controller
-        # passthrough.
+        # REWRITTEN 2026-08-11 (SQ-72): the previous predicate,
+        # `count(truenas_disk_smart_available == 0) > 0`, was permanently true.
+        # SAT/SMART passthrough does not survive the USB bridge, so those six
+        # disks can NEVER report SMART, and the alert had fired continuously
+        # since 2026-08-08 (13,622 firing samples in 7d). An alert that cannot
+        # clear is noise that buries real signal, not visibility.
+        #
+        # Now self-correcting instead of a hardcoded disk list: fire only for a
+        # disk that DID report SMART within the last 24h and then stopped. Today
+        # that arms the 8 internal WDC disks. After the planned SAS/HBA migration
+        # the Seagates start reporting SMART and are covered automatically with
+        # no rule edit - the requirement that this alert work again post-
+        # migration. The standing "6 disks are SMART-blind" gap stays visible via
+        # SQ-39 and TrueNASSmartCoverageDrop above (raise its threshold 8 -> 14
+        # once the migration lands).
+        #
+        # KNOWN PROPERTY: self-resolves once the 24h lookback slides past the
+        # last SMART-reporting sample. Resolution means the comparison window
+        # expired, NOT that SMART came back - same contract as
+        # TrueNASVdevVanished. TrueNASSmartCoverageDrop (critical) remains the
+        # floor under sustained loss on the internal disks.
         - alert: TrueNASDiskSmartUnavailable
-          expr: count(truenas_disk_smart_available == 0) > 0
+          expr: >-
+            truenas_disk_smart_available == 0
+            and max_over_time(truenas_disk_smart_available[24h]) == 1
           for: 30m
           labels:
             severity: warning
           annotations:
-            summary: "{{ $value }} disks do not report SMART (predictive monitoring blind)"
+            summary: "Disk {{ $labels.disk }} stopped reporting SMART (was reporting within 24h)"
             description: >-
-              These disks enumerate and serve I/O normally but do not answer SAT/SMART,
-              so temperature and reallocated-sector trends are unavailable for them.
-              Expected value is 6 (the JBOD Seagates behind scsi-block passthrough)
-              until smartctl_exporter runs on the Proxmox host. See board SQ-39.
+              This disk enumerates and serves I/O but no longer answers SAT/SMART,
+              although it did within the last 24h - temperature and
+              reallocated-sector trends have gone dark for it. Check dmesg and
+              `smartctl -a` on the host before assuming drive death; a link or
+              enclosure glitch looks identical. Disks that have never reported
+              SMART (the JBOD Seagates behind USB, see SQ-39) do not fire this.
 
         # A scrub that stops advancing is what the 2026-08-03 link failure looked like
         # from the metrics side: the scan froze at 1.488% the moment the JBOD hub

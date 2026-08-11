@@ -22,6 +22,19 @@
 #   5. TrueNASScrubStalledWithVdevErrors (the collapse signature) fires only on
 #      the CONJUNCTION: scrub stalled AND errors climbing. Either half alone
 #      must not fire it — that is what distinguishes it from its parents.
+#   6. (SQ-72) TrueNASPoolDegraded is critical ONLY with a device fault present
+#      (a non-ONLINE topology node, or non-zero error counters). A pool that is
+#      merely `healthy == 0` while every device is ONLINE with clean counters —
+#      the permanent-file-error / mid-scrub state that fired critical for ~5
+#      days in Aug 2026 — must NOT page critical.
+#   7. (SQ-72) TrueNASPoolUnhealthy (warning) owns that residual state, but is
+#      suppressed while a scan is SCANNING: a pool verifying itself post-repair
+#      is not an incident. It fires once the scan FINISHES with the pool still
+#      unhealthy.
+#   8. (SQ-72) TrueNASDiskSmartUnavailable fires only for a disk that DID
+#      report SMART within 24h and stopped. A disk that has NEVER reported
+#      (the six USB-bridged JBOD Seagates) must stay silent — the old
+#      `count(== 0) > 0` form was permanently true and un-clearable.
 rule_files:
   - prometheusrule-truenas-extracted.yaml
 evaluation_interval: 1m
@@ -242,3 +255,128 @@ tests:
       - eval_time: 35m
         alertname: TrueNASScrubStalledWithVdevErrors
         exp_alerts: []
+
+  # Pinned behaviour 6, positive half A (SQ-72): pool unhealthy AND a topology
+  # node not ONLINE — a real device fault — pages critical. The warning-tier
+  # residual alert must stay silent while the critical owns the state.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_healthy{pool="Pibbs-Horde"}'
+        values: "0x40"
+      - series: 'truenas_vdev_healthy{pool="Pibbs-Horde", vdev="raidz2-0", type="RAIDZ2", status="DEGRADED"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TrueNASPoolDegraded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS pool Pibbs-Horde is NOT healthy and a device fault is present"
+              description: "Pool Pibbs-Horde reports unhealthy AND at least one vdev/disk is not ONLINE or has non-zero read/write/checksum counters. RAIDZ2 redundancy may be partly or fully consumed - if two disks in one vdev are already down, a THIRD failure destroys the entire pool, both vdevs, all data. Check `zpool status` before doing anything physical, and do NOT pull or reseat a drive while redundancy is gone."
+      - eval_time: 20m
+        alertname: TrueNASPoolUnhealthy
+        exp_alerts: []
+
+  # Pinned behaviour 6, positive half B (SQ-72): every node ONLINE but error
+  # counters are non-zero — the other device-fault arm — also pages critical.
+  # TrueNASVdevErrors stays silent (counters flat, nothing INCREASING), which
+  # is exactly the gap this arm covers: standing errors vs climbing errors.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_healthy{pool="Pibbs-Horde"}'
+        values: "0x40"
+      - series: 'truenas_vdev_healthy{pool="Pibbs-Horde", vdev="raidz2-0", type="RAIDZ2", status="ONLINE"}'
+        values: "1x40"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="checksum"}'
+        values: "3x40"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TrueNASPoolDegraded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS pool Pibbs-Horde is NOT healthy and a device fault is present"
+              description: "Pool Pibbs-Horde reports unhealthy AND at least one vdev/disk is not ONLINE or has non-zero read/write/checksum counters. RAIDZ2 redundancy may be partly or fully consumed - if two disks in one vdev are already down, a THIRD failure destroys the entire pool, both vdevs, all data. Check `zpool status` before doing anything physical, and do NOT pull or reseat a drive while redundancy is gone."
+      - eval_time: 10m
+        alertname: TrueNASVdevErrors
+        exp_alerts: []
+
+  # Pinned behaviour 6 negative + 7 negative (SQ-72): THE AUG 2026 REGRESSION.
+  # Pool reports unhealthy (permanent file-level error on record), every node
+  # ONLINE, counters zero, scrub SCANNING to verify the repair. This exact
+  # state fired critical for ~5 days. Both pool alerts must now stay silent —
+  # scrub visibility during this window is TrueNASScrubStarted/Progress/
+  # Finished's job.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_healthy{pool="Pibbs-Horde"}'
+        values: "0x40"
+      - series: 'truenas_vdev_healthy{pool="Pibbs-Horde", vdev="raidz2-0", type="RAIDZ2", status="ONLINE"}'
+        values: "1x40"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="checksum"}'
+        values: "0x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="SCANNING"}'
+        values: "1x40"
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: TrueNASPoolDegraded
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: TrueNASPoolUnhealthy
+        exp_alerts: []
+
+  # Pinned behaviour 7, positive half (SQ-72): same residual state but the scan
+  # has FINISHED and the pool is still unhealthy — permanent errors remain on
+  # record. The warning tier fires; critical stays silent (no device fault).
+  - interval: 1m
+    input_series:
+      - series: 'truenas_pool_healthy{pool="Pibbs-Horde"}'
+        values: "0x40"
+      - series: 'truenas_vdev_healthy{pool="Pibbs-Horde", vdev="raidz2-0", type="RAIDZ2", status="ONLINE"}'
+        values: "1x40"
+      - series: 'truenas_vdev_errors_total{pool="Pibbs-Horde", vdev="raidz2-0", kind="checksum"}'
+        values: "0x40"
+      - series: 'truenas_pool_scan_state_info{pool="Pibbs-Horde", function="SCRUB", state="FINISHED"}'
+        values: "1x40"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: TrueNASPoolUnhealthy
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pool: Pibbs-Horde
+            exp_annotations:
+              summary: "TrueNAS pool Pibbs-Horde reports unhealthy (no device fault)"
+              description: "Pool Pibbs-Horde reports unhealthy while every vdev/disk is ONLINE with zero error counters - typically permanent (file-level) errors left on record. Redundancy is intact and no device is failing. Run `zpool status -v` for the affected-file list, restore or delete those files, then `zpool clear` and scrub to re-verify."
+      - eval_time: 20m
+        alertname: TrueNASPoolDegraded
+        exp_alerts: []
+
+  # Pinned behaviour 8 (SQ-72): sdc reported SMART for an hour and then went
+  # dark — fires (warning, per-disk). sdk has NEVER reported (USB-bridged JBOD
+  # Seagate) — must not appear in the alert set, ever. The old predicate fired
+  # on sdk's mere existence and was permanently un-clearable. Before sdc's
+  # 30m `for:` elapses, nothing fires at all.
+  - interval: 1m
+    input_series:
+      - series: 'truenas_disk_smart_available{disk="sdc"}'
+        values: "1x60 0x59"
+      - series: 'truenas_disk_smart_available{disk="sdk"}'
+        values: "0x120"
+    alert_rule_test:
+      - eval_time: 50m
+        alertname: TrueNASDiskSmartUnavailable
+        exp_alerts: []
+      - eval_time: 95m
+        alertname: TrueNASDiskSmartUnavailable
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              disk: sdc
+            exp_annotations:
+              summary: "Disk sdc stopped reporting SMART (was reporting within 24h)"
+              description: "This disk enumerates and serves I/O but no longer answers SAT/SMART, although it did within the last 24h - temperature and reallocated-sector trends have gone dark for it. Check dmesg and `smartctl -a` on the host before assuming drive death; a link or enclosure glitch looks identical. Disks that have never reported SMART (the JBOD Seagates behind USB, see SQ-39) do not fire this."
