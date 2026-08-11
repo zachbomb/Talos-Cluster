@@ -157,6 +157,48 @@ while [ "$1" != "///WRAPEND///" ]; do
 done
 shift  # drop the ///WRAPEND/// sentinel now at the front
 
+# pass 3: seed a header-only LIVE subtitle playlist BEFORE exec (SQ-70).
+# Tunarr's readiness gate (waitForStreamReady) polls for every file from
+# getAdditionalRequiredFiles() — which includes the subtitle playlist (subs.m3u8) —
+# with {retries:15, minTimeout:1e3} ≈ 16s, then SIGKILLs the transcode. But ffmpeg's
+# `segment` muxer is packet-driven, not time-driven (SQ-69: no muxer flag makes it
+# emit without packets), so with a sparse .srt the playlist only appears when the
+# first CUE is reached. 85.5% of join points on the measured live program have no cue
+# inside that 16s window → SIGKILL → "No master playlist found" → 404 → resume: the
+# ~18s restart loop, and the channel-10 cold-start 500s. Seeding a valid header up
+# front satisfies the existence check immediately; ffmpeg's segment muxer rewrites
+# the whole file itself when the first real segment lands.
+#
+# Rules:
+#   * the path comes ONLY from the existing `-segment_list <path>` token in argv —
+#     it is per-session, never hardcoded. No token → structural no-op (A/V-only
+#     tunes must pass through untouched).
+#   * LIVE header only, NO #EXT-X-ENDLIST — an endlist tells the client the track is
+#     complete and terminates it.
+#   * NEVER truncate a playlist that already has content (a quick restart may
+#     inherit real segments): non-empty file → leave untouched.
+#   * best-effort and unconditionally non-fatal: a failed seed must never break the
+#     tune it exists to protect.
+seglist=""; _sl_expect=0
+for a in "$@"; do
+  if [ "$_sl_expect" = 1 ]; then
+    _sl_expect=0
+    [ -n "$seglist" ] || seglist="$a"
+  fi
+  [ "$a" = "-segment_list" ] && _sl_expect=1
+done
+seed=nosub
+if [ -n "$seglist" ]; then
+  if [ -s "$seglist" ]; then
+    seed=kept
+  else
+    mkdir -p "$(dirname "$seglist")" 2>/dev/null || true
+    printf '#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXT-X-MEDIA-SEQUENCE:0\n' \
+      > "$seglist" 2>/dev/null || true
+    if [ -s "$seglist" ]; then seed=yes; else seed=fail; fi
+  fi
+fi
+
 # Decision trace. Added 2026-08-04 after the subtitle-timeline fix measured as having
 # NO effect in production while every offline check passed: emission verified against
 # the real captured argv (119/119 tokens in order, 8 injected at the correct
@@ -182,10 +224,10 @@ if [ -w "$(dirname "$_log")" ] 2>/dev/null; then
     tail -c 131072 "$_log" > "$_log.tmp" 2>/dev/null && mv -f "$_log.tmp" "$_log" 2>/dev/null || true
   fi
   {
-    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s args=%s\n' \
+    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s seed=%s args=%s\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)" \
       "${srt_ord:-0}" "${preval:-none}" "${sub_off:-none}" "${sub_burst:-none}" \
-      "$([ -n "$sub_off" ] && echo yes || echo no)" "$#"
+      "$([ -n "$sub_off" ] && echo yes || echo no)" "${seed:-nosub}" "$#"
   } >> "$_log" 2>/dev/null || true
 fi
 
