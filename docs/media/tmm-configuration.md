@@ -37,6 +37,7 @@ Every row below therefore names **one** owner, on measured evidence:
 | TV metadata on disk | **TMM** (`tvshow.nfo` + `<episode>.nfo`) | **Every** Sonarr metadata consumer is disabled (verified `/api/v3/metadata` 2026-08-07) — TMM is the sole producer, so no conflict class exists |
 | Movie artwork | **TMM** | Radarr's enabled consumer has **no image option at all** (verified: `Emby (Legacy)` exposes only `movieMetadata`) — no collision possible |
 | TV artwork | **TMM** | Sonarr writes nothing (above) |
+| Subtitles | **Bazarr** | Bazarr writes external SRT into the same media folders, converts non-SRT via `pysubs2`, and is governed by language profiles (`docs/media/bazarr-pvc-config-record.md`). TMM's subtitle scrapers are now `[]` in **both** files so the constraint is mechanical, not procedural — TMM wrote `Movie.eng.srt` (ISO3T) against Bazarr's 2-letter tags: two producers, two naming conventions, one folder |
 | Gap tracking | **Radarr / Sonarr** | `/wanted/missing` already tracks monitored-but-missing; TMM adds nothing there and is not configured for it |
 
 ### Why Radarr keeps movie metadata (and TMM does not write movie NFOs)
@@ -235,3 +236,17 @@ missing-set-member display off). What TMM *uniquely* adds is the inverse directi
 can be checked against the arrs' databases for unmatched, duplicated, or
 wrongly-identified items (the class Radarr's title-only folders make possible).
 That is the SQ-54 workflow.
+
+### Why subtitles needed a row (added 2026-08-08)
+
+The matrix exists because *two producers writing the same class of file to the same
+folders, with no declared authority* is how this estate accumulated 57 contradictory
+NFO ids and 257 phantom Emby movies. Subtitles were exactly that shape and had no row:
+Bazarr owned them in practice while TMM carried four subtitle scrapers and a different
+language-tag style. Latent rather than active — TMM has no automatic-subtitle-download
+setting, so those scrapers only fire on an explicit user action — but a gap in the
+matrix is a gap regardless of whether it has bitten yet.
+
+Surfaced by the SQ-59 full-settings audit (`docs/media/tmm-settings-audit.md`), which
+walked all 318 keys after a keyword-filtered spot-check had wrongly reported the
+configuration as verified.
