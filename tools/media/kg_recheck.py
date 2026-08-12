@@ -29,13 +29,49 @@ def fold(s):
     s=re.sub(r"\b(the|a|an)\b","",s)
     return re.sub(r"[^a-z0-9]+","",s)
 
+_YEAR=re.compile(r"\b(19|20)\d{2}\b")
+
+def _title_variants(part):
+    """Candidate title strings for one AKA-part of a KG title.
+
+    KG's format is:
+        <Foreign> AKA <English> [tags] <YEAR> <Country> [release.filename]
+    e.g. "Le salaire de la peur AKA The Wages of Fear [BFI 4K] [+Commentaries]
+          1953 France [The.Wages.of.Fear.1953.BDRIP...]"
+
+    The shipped matcher folded each AKA-part WHOLE, so the English title stayed
+    welded to tags, year, country and the release filename:
+    "wagesoffear1953francebdrip..." can never equal the manifest's "wagesoffear".
+    Measured against the 709 known-good pairs, that matched 3.1% — i.e. 96.9% of
+    all comparisons were false negatives, and it was never AKA-specific: Targets,
+    Scarface, Sorcerer and Basquiat all failed too, because EVERY KG title carries
+    the suffix.
+
+    Returns SEVERAL candidates rather than one, because no single cut is right for
+    every title: truncating at the first year destroys "2001: A Space Odyssey" and
+    "Blade Runner 2049". Extra candidates only ADD keys, so they can only turn
+    false negatives into matches — and a wrong match is still caught downstream by
+    the year-agreement check, which reports PRESENT_UNRESOLVED rather than PRESENT.
+    """
+    part=part.strip()
+    out={part}
+    i=part.find("[")                       # first bracketed tag or filename
+    if i>0: out.add(part[:i])
+    m=_YEAR.search(part)                   # 'Basquiat 1996 USA'
+    if m and m.start()>0: out.add(part[:m.start()])
+    ms=list(_YEAR.finditer(part))          # 'Blade Runner 2049 2017 USA'
+    if len(ms)>1: out.add(part[:ms[-1].start()])
+    return {x.strip(" -–—:.") for x in out if x.strip()}
+
 def keys_of(t):
     out=set()
     for p in re.split(r"\s+AKA\s+|\s*/\s*",str(t),flags=re.I):
-        k=fold(p)
-        if len(k)>=4: out.add(k)
-    k=fold(t)
-    if len(k)>=4: out.add(k)
+        for v in _title_variants(p):
+            k=fold(v)
+            if len(k)>=2: out.add(k)
+    for v in _title_variants(str(t)):
+        k=fold(v)
+        if len(k)>=2: out.add(k)
     return out
 
 def main():
