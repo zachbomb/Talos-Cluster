@@ -176,6 +176,34 @@ spec:
                     find /.cache -mindepth 1 -type d -empty -mmin +2 -delete 2>/dev/null
                     find /.local -mindepth 1 -type d -empty -mmin +2 -delete 2>/dev/null
 
+                    # Subtitle-extraction STAGING files (SQ-84). Tunarr extracts each
+                    # candidate track to /tmp/tmp-<worker>-<rand>-.<ext> (srt and ass
+                    # observed) and copies it into the persistent cache only on success.
+                    # A failed or killed extraction orphans the staging file and nothing
+                    # in Tunarr cleans it up: measured 1,574 files before the first manual
+                    # purge.
+                    #
+                    # This is a RAM leak, not disk noise. /tmp here is a MEMORY-backed
+                    # emptyDir (tmpfs, 8Gi, noswap) shared by all three containers, so
+                    # unbounded growth ends in OOM rather than ENOSPC.
+                    #
+                    # +180, NOT +30. Extraction demuxes the WHOLE container to collect
+                    # sparse subtitle packets, so runtime scales with file size, not with
+                    # subtitle size: an 87.7GB remux ran ~25m before failing, an 83.8GB one
+                    # occupied a full hourly batch pass, and a 51.7GB one was still running
+                    # at 37m with its staging files still 0 bytes. A 30m threshold would
+                    # delete those mid-write and reproduce the ENOENT "Failed to copy tmp
+                    # subtitles" race documented above — the very failure this file already
+                    # carries a warning about. 3h clears the longest observed run by ~3x and
+                    # still bounds growth (days to reach 74MB).
+                    #
+                    # Scoped to the exact staging pattern, never a bare tmp-* glob: /tmp is
+                    # shared with codeserver and apk, whose files must not be touched.
+                    # Structurally disjoint from /root/.local/share/tunarr/cache (mounted
+                    # separately as icache) — the persistent extraction cache is NEVER
+                    # purged here.
+                    find /tmp -maxdepth 1 -type f \( -name 'tmp-*-*-.srt' -o -name 'tmp-*-*-.ass' \) -mmin +180 -delete 2>/dev/null
+
                     # ---- ZOMBIE-TRANSCODE REAPER -------------------------------------
                     # 2026-07-30 incident: Tunarr marked a session "stopped" and shut down
                     # its connection tracker, but the ffmpeg kept transcoding at ~82% CPU
