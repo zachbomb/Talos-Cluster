@@ -1,0 +1,85 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+#
+# Traefik front-end for the UDM (the router itself, 192.168.10.1) — NOT a cluster app.
+#
+# WHY THIS EXISTS. `unifi.${BASE_DOMAIN}` already resolved: Pi-hole carries a CNAME to
+# proxy.${BASE_DOMAIN} -> 192.168.10.196 (Traefik), the same record shape every cluster
+# app uses. But nothing ever routed that host, so the name pointed at Traefik and Traefik
+# had nothing to serve — the manager appeared unreachable while the UDM itself answered
+# /network in ~22ms. Verified it was NOT a wildcard: a nonsense host under the same domain
+# gets no answer at all, so the record was created deliberately and the route was simply
+# never built.
+#
+# Modelled on networking/proxmox, the closest analogue: an HTTPS-only appliance outside
+# the cluster presenting a self-signed certificate.
+#
+# insecureSkipVerify is REQUIRED, not laziness. The UDM ships a self-signed cert with
+# CN=unifi.local whose SANs cover only unifi.local, localhost and loopback — neither the
+# LAN IP nor this hostname is in it, so Traefik's backend verification cannot ever succeed
+# against it. The client-facing cert is a real Let's Encrypt one issued by cert-manager,
+# so the browser warning goes away; only the in-cluster hop to 192.168.10.1 is unverified,
+# exactly as for proxmox and on the same trusted LAN segment.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: unifi
+  namespace: networking
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: external-service
+      version: 17.8.0
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  releaseName: unifi
+  values:
+    service:
+      main:
+        enabled: true
+        type: ExternalIP
+        externalIP: 192.168.10.1
+        integrations:
+          traefik:
+            enabled: true
+            insecureSkipVerify: true
+        ports:
+          main:
+            enabled: true
+            # 443 only. Port 80 answers but 301s straight to https://192.168.10.1/, so
+            # proxying it would just bounce the client to the raw IP and defeat the point
+            # of the hostname (and of the valid certificate).
+            protocol: https
+            port: 443
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: unifi.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+            middlewares:
+              - name: internal-secure-chain
+                namespace: traefik
+                expandObjectName: false
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: false
+    # External service - no workload, resources not needed
+    addons:
+      codeserver:
+        enabled: false

@@ -27,4 +27,5 @@ resources:
   - pihole/ks.yaml
   - proxmox/ks.yaml
   - truenas/ks.yaml
+  - unifi/ks.yaml
   - network-policies/ks.yaml
