@@ -108,6 +108,18 @@ spec:
                 capabilities:
                   drop:
                     - ALL
+              # REQUIRED by app-template: a container without this block fails the
+              # render with "Container - Expected non-empty [probes]" and the whole
+              # HelmRelease upgrade is rejected. All three are disabled because
+              # sockpuppetbrowser exposes a websocket, not an HTTP health endpoint;
+              # the main container failing to reach it is the real signal.
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false
               resources:
                 requests:
                   # 512Mi sized against the real in-cluster anchor: triparr-bot/chrome
