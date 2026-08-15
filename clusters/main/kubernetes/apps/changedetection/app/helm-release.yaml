@@ -69,7 +69,58 @@ spec:
                 # deliberate floor — see the lockout/ToS note above. Per-watch
                 # intervals can still be set in the UI.
                 MINIMUM_SECONDS_RECHECK_TIME: "21600"
-                PLAYWRIGHT_DRIVER_URL: ""
+                # Points at the sidecar below. Same pod, so localhost.
+                PLAYWRIGHT_DRIVER_URL: ws://127.0.0.1:3000
+
+            # Real Chrome, required for bot-protected retailers.
+            #
+            # ADDED AFTER MEASURING, not speculatively. B&H Photo returned 403 to the
+            # plain `requests` fetcher on every attempt: with the stock Chrome-87 UA, with
+            # a modern UA, and with a full modern browser header set applied per-watch via
+            # the API. A urllib probe from INSIDE this same pod, same egress IP, with those
+            # same headers got HTTP 200 — so the block is not the headers or the IP, it is
+            # how the requests fetcher presents itself (TLS/JA3 fingerprint and header
+            # ordering). No amount of header tuning fixes that; a real browser does.
+            #
+            # FlareSolverr was considered and rejected: `grep -ri flaresolverr` in the
+            # changedetection image returns ZERO matches. It ships exactly four fetchers
+            # (requests, playwright, puppeteer, webdriver_selenium) and FlareSolverr speaks
+            # its own POST /v1 API, which is none of them. The instance also has 35
+            # restarts.
+            #
+            # NO SYS_ADMIN, deliberately. Upstream's compose suggests cap_add: SYS_ADMIN
+            # and admits "might be too much". triparr-bot/chrome already runs Chrome in
+            # this cluster with capabilities dropped ALL and runAsNonRoot, which is the
+            # proof it is unnecessary. Add it only if Chrome demonstrably fails to start.
+            browser:
+              enabled: true
+              image:
+                repository: dgtlmoon/sockpuppetbrowser
+                tag: latest
+                pullPolicy: IfNotPresent
+              env:
+                SCREEN_WIDTH: "1920"
+                SCREEN_HEIGHT: "1024"
+                SCREEN_DEPTH: "16"
+                MAX_CONCURRENT_CHROME_PROCESSES: "2"
+              securityContext:
+                readOnlyRootFilesystem: false
+                capabilities:
+                  drop:
+                    - ALL
+              resources:
+                requests:
+                  # 512Mi sized against the real in-cluster anchor: triparr-bot/chrome
+                  # runs at a 720Mi working set with a 256Mi request. Browser memory is
+                  # spiky, so the request is set above that container's to avoid eviction
+                  # pressure on a node already near its request ceiling.
+                  memory: 512Mi
+                  cpu: 25m
+                limits:
+                  # Memory ceiling only — no CPU limit, same reasoning as the main
+                  # container. Chrome is bursty and throttling it causes timeouts, not
+                  # savings.
+                  memory: 1536Mi
 
     service:
       main:
