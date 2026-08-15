@@ -118,6 +118,45 @@ data:
             },
         }
 
+    def simple_transform(p: dict) -> dict:
+        """Generic {title, message} -> Notifiarr passthrough, for non-Alertmanager senders.
+
+        WHY A SECOND SHAPE. transform() above requires the Alertmanager v4 payload
+        ({alerts:[...], status, commonLabels}). Anything else — e.g. Apprise's json://,
+        which posts {"version","title","message","attachments"} — parses fine but yields
+        alerts=[], so it emits a content-free "[UNKNOWN] Alert" and still returns HTTP
+        200. Delivered, acknowledged, and useless: the failure is silent, which is the
+        worst kind. Hence a separate route rather than loosening the one above; the
+        Alertmanager contract is left byte-identical so alerting cannot regress.
+
+        Accepts the common spellings so a sender's exact field naming does not matter.
+        """
+        title = str(p.get("title") or p.get("subject") or "Notification").strip()[:200]
+        body = str(
+            p.get("message") or p.get("body") or p.get("text") or p.get("content") or ""
+        ).strip()[:1900]
+        src = str(p.get("source") or p.get("app") or "app").strip()[:40] or "app"
+        # description is required upstream; never send it empty.
+        desc = (body or title)[:1500] or title
+        return {
+            "notification": {
+                "update": False,
+                "name": f"Bridge-{src}",
+                "event": now_iso(),
+            },
+            "discord": {
+                "color": "3399ff",
+                "ids": {
+                    "channel": CHANNEL_ID,
+                },
+                "text": {
+                    "title": title,
+                    "content": body or title,
+                    "description": desc,
+                },
+            },
+        }
+
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, fmt, *args):
             # Use plain stdout so kubectl logs shows it
@@ -134,7 +173,14 @@ data:
             self.end_headers()
 
         def do_POST(self):
-            if not self.path.startswith("/webhook"):
+            # ORDER MATTERS. The generic route must be matched BEFORE the Alertmanager
+            # one: the check below is a prefix match, so /webhook/simple also satisfies
+            # startswith("/webhook") and would silently take the Alertmanager path.
+            if self.path.startswith("/webhook/simple"):
+                mode = "simple"
+            elif self.path.startswith("/webhook"):
+                mode = "alertmanager"
+            else:
                 self.send_response(404)
                 self.end_headers()
                 return
@@ -153,7 +199,7 @@ data:
                 self.wfile.write(b"invalid json")
                 return
 
-            payload = transform(am)
+            payload = simple_transform(am) if mode == "simple" else transform(am)
             req = urllib.request.Request(
                 NOTIFIARR_URL,
                 data=json.dumps(payload).encode(),
@@ -182,7 +228,7 @@ data:
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"upstream_status": code, "upstream_body": body}).encode())
-            print(f"  POST /webhook → notifiarr {code}", flush=True)
+            print(f"  POST {self.path} [{mode}] → notifiarr {code}", flush=True)
 
     if __name__ == "__main__":
         print(f"Notifiarr bridge listening on :8080 → {NOTIFIARR_URL[:60]}...", flush=True)
