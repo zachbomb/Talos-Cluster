@@ -5,6 +5,7 @@ resources:
   - code-server/ks.yaml
   - home
   - media
+  - changedetection/ks.yaml
   - it-tools/ks.yaml
   - kometa/ks.yaml
   - mcpo/ks.yaml

@@ -1,0 +1,172 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+#
+# changedetection.io — price / stock / content watcher with a real setup+monitoring web UI.
+#
+# CHOSEN OVER THE ALTERNATIVES ON EVIDENCE, not features (SQ-85 / SQ-86):
+#   * PriceGhost      — last commit AND last image push both 2026-02-03; stalled.
+#   * streetmerchant  — adding a product means writing a TypeScript store module and
+#                       editing config.ts; its dashboard is ops-only, not setup.
+#   * PriceBuddy      — actively maintained, but its only auth is a static non-refreshing
+#                       cookie, and its documented http-credentials/extra-http-headers
+#                       params are parsed and never applied to the driver (dead code).
+#   * Discount Bandit — no authentication surface at all, and no LICENSE file.
+#
+# NO BROWSER SIDECAR, DELIBERATELY. changedetection.io can drive a Playwright fetcher
+# (dgtlmoon/sockpuppetbrowser) for JS-heavy and LOGIN-GATED sites, and that is the only
+# way to reach B2B/business portals. It is omitted here because:
+#   1. Public product pages do not need it, and it is the entire memory risk — Chromium
+#      routinely wants 500Mi-1Gi on a node already at 86% of memory REQUESTS with ~6.4Gi
+#      of headroom, on a single node, with an incident on record where hitting the
+#      request ceiling caused a Flux rollback deadlock.
+#   2. Browser Steps replays the FULL login on every check (no persistent session), so
+#      authenticated portal tracking multiplies login attempts and carries real
+#      account-lockout risk — and by default it will record a login page as a "price
+#      change" rather than alerting. SQ-87 is measuring the real footprint and
+#      reproducing that failure mode before we decide.
+# Add the fetcher only once SQ-87 reports; do not enable it on the strength of the
+# feature list.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: changedetection
+  namespace: changedetection
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 18.16.9
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    image:
+      # renovate: datasource=docker depName=dgtlmoon/changedetection.io
+      repository: docker.io/dgtlmoon/changedetection.io
+      pullPolicy: IfNotPresent
+      tag: "0.55.8"
+
+    workload:
+      main:
+        podSpec:
+          containers:
+            main:
+              env:
+                # Used to build absolute links inside notifications; without it the
+                # alert body points at a bare container hostname nobody can click.
+                BASE_URL: https://changedetection.${BASE_DOMAIN}
+                # The scheduler default is aggressive for retail sites. 6h is a
+                # deliberate floor — see the lockout/ToS note above. Per-watch
+                # intervals can still be set in the UI.
+                MINIMUM_SECONDS_RECHECK_TIME: "21600"
+                PLAYWRIGHT_DRIVER_URL: ""
+
+    service:
+      main:
+        enabled: true
+        # ClusterIP, NOT LoadBalancer: no CHANGEDETECTION_IP exists in clusterenv, and
+        # this needs no direct L2 address — Traefik fronts it like every other app.
+        type: ClusterIP
+        ports:
+          main:
+            enabled: true
+            port: 5000
+            protocol: http
+            targetPort: 5000
+
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-changedetection"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
+    persistence:
+      datastore:
+        enabled: true
+        size: 2Gi
+        mountPath: /datastore
+        volsync:
+          - name: datastore
+            type: restic
+            credentials: s3
+            dest:
+              # dest disabled: the VolSync mover drops CAP_CHOWN, and this image runs
+              # as root, so a restore would fail on lchown. Same treatment as the other
+              # root-running apps in this cluster.
+              enabled: false
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
+              trigger:
+                schedule: 22 3 * * *
+
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: changedetection.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+            middlewares:
+              - name: internal-secure-chain
+                namespace: traefik
+                expandObjectName: false
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: changedetection
+            description: Price / stock / page-change watcher
+            group: Tools
+            icon: ""
+
+    securityContext:
+      container:
+        readOnlyRootFilesystem: false
+      pod:
+        fsGroup: 568
+        fsGroupChangePolicy: OnRootMismatch
+
+    metrics:
+      main:
+        enabled: false
+    autoscaling:
+      vpa:
+        enabled: false
+    addons:
+      codeserver:
+        enabled: false
+
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 10m
+      limits:
+        # Memory limit only. NO CPU limit — a CPU limit throttles under pressure, and
+        # this cluster has a recorded incident class where CPU starvation trips liveness
+        # probes and kills healthy pods. Requests are set so the pod is never BestEffort.
+        memory: 768Mi
