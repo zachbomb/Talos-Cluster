@@ -1,0 +1,111 @@
+---
+# sockpuppetbrowser — real Chrome, driven over the Playwright websocket protocol.
+#
+# WHY A SEPARATE DEPLOYMENT RATHER THAN A SIDECAR. TrueCharts app-template silently
+# ignores an inline `image:` on an extra container and reuses the chart's main image.
+# Declaring this as a sidecar therefore started a SECOND changedetection.io against the
+# same /datastore, which attempted a fresh install and crash-looped on
+# "PermissionError: [Errno 13] Permission denied: '/datastore/<uuid>'". The existing
+# watches survived only because the second process ran as a different uid and could not
+# write. The chart wants `imageSelector` against a named image map; a plain Deployment
+# avoids that whole class of surprise and is easier to reason about.
+#
+# WHY IT EXISTS AT ALL. B&H Photo returns 403 to changedetection's `requests` fetcher on
+# every attempt — stock Chrome-87 UA, a modern UA, and a full modern browser header set
+# applied per-watch through the API. A urllib probe from inside the app pod, same egress
+# IP, with those same headers returns HTTP 200. So the block is neither the headers nor
+# the address: it is how the requests fetcher presents itself (TLS/JA3 fingerprint and
+# header ordering), which no header tuning can change. Real Chrome can.
+#
+# FlareSolverr was evaluated and rejected: `grep -ri flaresolverr` in the changedetection
+# image returns ZERO matches. It ships exactly four fetchers (requests, playwright,
+# puppeteer, webdriver_selenium); FlareSolverr speaks its own POST /v1 API, which is none
+# of them.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: changedetection-browser
+  namespace: changedetection
+  labels:
+    app.kubernetes.io/name: changedetection-browser
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: changedetection-browser
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: changedetection-browser
+    spec:
+      securityContext:
+        fsGroup: 568
+      containers:
+        - name: browser
+          # renovate: datasource=docker depName=dgtlmoon/sockpuppetbrowser
+          image: docker.io/dgtlmoon/sockpuppetbrowser:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: ws
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: SCREEN_WIDTH
+              value: "1920"
+            - name: SCREEN_HEIGHT
+              value: "1024"
+            - name: SCREEN_DEPTH
+              value: "16"
+            # Bounded so a burst of watches cannot fork Chrome until the node notices.
+            - name: MAX_CONCURRENT_CHROME_PROCESSES
+              value: "2"
+          securityContext:
+            # NO SYS_ADMIN. Upstream's compose suggests cap_add: SYS_ADMIN and concedes
+            # it "might be too much"; triparr-bot/chrome already runs Chrome in this
+            # cluster with capabilities dropped ALL, which is the proof it is not needed.
+            # Add it back only if Chrome demonstrably fails to start.
+            capabilities:
+              drop: ["ALL"]
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          resources:
+            requests:
+              # Sized against the real in-cluster anchor rather than a guess:
+              # triparr-bot/chrome runs a 720Mi working set on a 256Mi request. Browser
+              # memory is spiky, so this requests above that to avoid adding eviction
+              # pressure on a node already near its request ceiling.
+              memory: 512Mi
+              cpu: 25m
+            limits:
+              # Memory ceiling only. NO CPU limit — Chrome is bursty and throttling it
+              # produces fetch timeouts rather than savings, and this cluster has an
+              # incident class where CPU starvation trips liveness probes.
+              memory: 1536Mi
+          volumeMounts:
+            # Chrome needs real shared memory; the 64Mi container default causes tab
+            # crashes on content-heavy retail pages. Memory-backed, counted against the
+            # pod, hence modest.
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: changedetection-browser
+  namespace: changedetection
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: changedetection-browser
+  ports:
+    - name: ws
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
