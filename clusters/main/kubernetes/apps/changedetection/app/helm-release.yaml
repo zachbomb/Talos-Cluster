@@ -12,20 +12,24 @@
 #                       params are parsed and never applied to the driver (dead code).
 #   * Discount Bandit — no authentication surface at all, and no LICENSE file.
 #
-# NO BROWSER SIDECAR, DELIBERATELY. changedetection.io can drive a Playwright fetcher
-# (dgtlmoon/sockpuppetbrowser) for JS-heavy and LOGIN-GATED sites, and that is the only
-# way to reach B2B/business portals. It is omitted here because:
-#   1. Public product pages do not need it, and it is the entire memory risk — Chromium
-#      routinely wants 500Mi-1Gi on a node already at 86% of memory REQUESTS with ~6.4Gi
-#      of headroom, on a single node, with an incident on record where hitting the
-#      request ceiling caused a Flux rollback deadlock.
-#   2. Browser Steps replays the FULL login on every check (no persistent session), so
-#      authenticated portal tracking multiplies login attempts and carries real
-#      account-lockout risk — and by default it will record a login page as a "price
-#      change" rather than alerting. SQ-87 is measuring the real footprint and
-#      reproducing that failure mode before we decide.
-# Add the fetcher only once SQ-87 reports; do not enable it on the strength of the
-# feature list.
+# BROWSER FETCHER: PRESENT, BUT AS A SEPARATE DEPLOYMENT (browser.yaml), NOT A SIDECAR.
+# SQ-87 reported and the decision landed in two halves:
+#   * UNAUTHENTICATED fetching — ENABLED. B&H (and retail generally) returns 403 to the
+#     `requests` fetcher no matter what headers are set; a urllib probe from this same
+#     pod and egress IP with identical headers returns 200, so the block is the fetcher's
+#     TLS/JA3 fingerprint and header ordering, which header tuning cannot change. Real
+#     Chrome is the only fix. `html_webdriver` is therefore also the GLOBAL default
+#     fetch backend, so a retail URL pasted into the UI works without a per-watch toggle.
+#   * AUTHENTICATED / B2B-portal fetching — REJECTED, and this is the load-bearing half.
+#     Browser Steps do log in successfully, but when the credential later fails,
+#     changedetection records the LOGIN PAGE TEXT as the new value with
+#     `last_error: false` and fires the same notification a genuine price move fires.
+#     The documented `conditions` safeguard makes it worse, converting silent-wrong into
+#     silent-fail (frozen price, healthy-looking watch, no staleness alarm). Do not add
+#     credentialed watches here. The correct answer for B2B pricing is cXML PunchOut /
+#     OCI / EDI 832; the barrier there is commercial, not technical.
+# Memory was measured, not guessed: app 257.8Mi + browser 342.8Mi peak (cgroup v2
+# memory.peak), sized against the in-cluster anchor triparr-bot/chrome-cdp at 720Mi.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -56,6 +60,26 @@ spec:
       pullPolicy: IfNotPresent
       tag: "0.55.8"
 
+    # RUNTIME SETTINGS THAT ARE *NOT* IN GIT. Only the env vars below are declarative.
+    # The rest of the app's configuration lives in /datastore/changedetection.json and
+    # is reachable ONLY through the /settings HTML form: there is no settings API
+    # endpoint (flask_app.py registers watch/tag/import/search/notifications/systeminfo
+    # /full-spec and nothing else), and hand-editing the JSON is futile because the
+    # running app holds it in memory and rewrites the file wholesale on its next save.
+    # Driving that form means GET /settings for the flask_wtf CSRF token + session
+    # cookie, then POSTing back EVERY control at its current value with only the target
+    # field changed — WTForms populates from the POST body alone, so any field you omit
+    # is set to empty/False rather than left alone.
+    #
+    # Currently set that way, and what to restore if the datastore is ever rebuilt:
+    #   notification_urls  json://notifiarr-bridge.notifiarr-bridge.svc.cluster.local:8080/webhook/simple
+    #                      (the bridge's generic route; the Alertmanager route on plain
+    #                      /webhook would parse this fine and emit a content-free
+    #                      "[UNKNOWN] Alert" with HTTP 200 — delivered and useless)
+    #   notification_format  text   — 'htmlcolor' emits <span style=…> that reaches
+    #                                 Discord as literal markup
+    #   fetch_backend        html_webdriver  — see the browser note above
+    # This is covered by the VolSync snapshot below, which is the actual backup of it.
     workload:
       main:
         podSpec:
