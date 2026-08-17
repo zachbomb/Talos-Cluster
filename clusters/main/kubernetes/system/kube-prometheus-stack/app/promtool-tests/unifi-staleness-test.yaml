@@ -1,0 +1,133 @@
+# Unit tests for the unifi-telemetry-health group in prometheusrule-network.yaml.
+# CI (.github/workflows/prometheus-rules-ci.yaml) regenerates the committed
+# prometheusrule-network-extracted.yaml from that rule's .spec and drift-guards it.
+# exp_annotations MUST match the rule's folded (>-) annotations byte-for-byte.
+#
+# The load-bearing case is the DEGRADED one: it replays the measured shape of the
+# 2026-08-17 UniFi Network application outage (uptime delta ~602 per 15m vs ~900
+# healthy — degraded, NOT frozen; up{job="unpoller"} stayed 1 throughout). If that
+# case stops firing, the rule no longer catches the incident it was written for.
+# It doubles as the positive control: if the rule file failed to load, promtool
+# would return got:[] here and the fixture would fail loudly.
+#
+# The input series deliberately uses the real device name with its Unicode right
+# single quotation mark (U+2019, "Pibb’s UDM") to prove the rule's type="udm"
+# selector never depends on that label's exact bytes.
+rule_files:
+  - prometheusrule-network-extracted.yaml
+evaluation_interval: 1m
+tests:
+  # ---- Healthy: uptime advances 60s/min (delta over 15m ~900). Nothing fires.
+  - interval: 1m
+    input_series:
+      - series: 'unpoller_device_uptime_seconds{name="Pibb’s UDM", site_name="Default (default)", type="udm"}'
+        values: "800000+60x60"
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: UnifiTelemetryStale
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: UDMRebooted
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: UnifiTelemetryAbsent
+        exp_alerts: []
+
+  # ---- REGRESSION TEST for the 2026-08-17 incident (and positive control).
+  # Uptime advances 40s/min = 600s per 15m window, the measured mid-outage
+  # figure (602.14: ~1 in 3 collection cycles failing, snapshot re-served for
+  # the rest). 600 < 765 threshold -> UnifiTelemetryStale must fire once the
+  # 20m `for:` has elapsed. No reset occurs, so UDMRebooted stays silent.
+  - interval: 1m
+    input_series:
+      - series: 'unpoller_device_uptime_seconds{name="Pibb’s UDM", site_name="Default (default)", type="udm"}'
+        values: "800000+40x60"
+    alert_rule_test:
+      # 10m in: condition is true but still pending (for: 20m) — no flap on
+      # short degradation such as an unpoller pod restart blip.
+      - eval_time: 10m
+        alertname: UnifiTelemetryStale
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: UnifiTelemetryStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: "Pibb’s UDM"
+              site_name: "Default (default)"
+              type: udm
+            exp_annotations:
+              summary: "UniFi telemetry is stale — unpoller is re-serving old controller data"
+              description: "UDM uptime advanced less than 765s over 15m (measured: ~900 healthy, 602 during the 2026-08-17 Network application outage this rule exists to catch). The UniFi Network application is failing some or all of unpoller's collection cycles while unpoller re-serves its last good snapshot, so up stays 1 and dashboards keep rendering stale numbers. Observability degradation ONLY - the router is still routing and the internet is fine. Check the Network application on the UDM; last time this was a UniFi OS application update mid-install."
+      - eval_time: 40m
+        alertname: UDMRebooted
+        exp_alerts: []
+
+  # ---- Reboot: climb 10m, stale-flat 15m (device going down = controller
+  # down, since the Network application runs ON the UDM), then uptime resets
+  # to 30 and climbs normally. Without the resets() gate the flat+negative
+  # delta would satisfy `< 765` continuously for ~24m and false-fire the
+  # staleness alert around t=32m. With the gate, the reboot surfaces only as
+  # UDMRebooted (info), which auto-resolves once the reset leaves the window.
+  - interval: 1m
+    input_series:
+      - series: 'unpoller_device_uptime_seconds{name="Pibb’s UDM", site_name="Default (default)", type="udm"}'
+        values: "800000+60x10 800600x14 30+60x34"
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: UDMRebooted
+        exp_alerts:
+          - exp_labels:
+              severity: info
+              name: "Pibb’s UDM"
+              site_name: "Default (default)"
+              type: udm
+            exp_annotations:
+              summary: "UDM rebooted — uptime counter reset"
+              description: "unpoller-reported UDM uptime decreased within the last 15m, i.e. the router restarted. Auto-resolves once the reset leaves the 15m window. While this fires, UnifiTelemetryStale is deliberately suppressed; if telemetry stays degraded after the reboot it will fire on its own."
+      # The deliberate reboot exclusion: staleness does NOT fire even though
+      # delta stayed below threshold long enough to satisfy for: 20m.
+      - eval_time: 38m
+        alertname: UnifiTelemetryStale
+        exp_alerts: []
+      # Reset left the 15m window at t=41m; reboot alert auto-resolves.
+      - eval_time: 45m
+        alertname: UDMRebooted
+        exp_alerts: []
+
+  # ---- Silent gap: series missing entirely while unpoller's own scrape
+  # health is GREEN (up == 1 — exactly why up{job="unpoller"} is not the
+  # detector). delta() over a missing series returns nothing and the
+  # staleness rule can never fire, so the absent() companion must.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="unpoller"}'
+        values: "1x60"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: UnifiTelemetryAbsent
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: UnifiTelemetryAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              type: udm
+            exp_annotations:
+              summary: "UniFi UDM telemetry series is missing entirely"
+              description: "No unpoller_device_uptime_seconds series with type=\"udm\" at all. Either unpoller is down or unscraped, or the device labels changed. Staleness detection is blind until this clears. Observability only - no evidence of user impact by itself."
+
+  # ---- unpoller pod restart (43 restarts in 9 days): a 2-sample scrape gap
+  # while real uptime keeps advancing. delta over the window still ~900;
+  # nothing fires.
+  - interval: 1m
+    input_series:
+      - series: 'unpoller_device_uptime_seconds{name="Pibb’s UDM", site_name="Default (default)", type="udm"}'
+        values: "800000+60x15 _x2 801080+60x22"
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: UnifiTelemetryStale
+        exp_alerts: []
+      - eval_time: 35m
+        alertname: UnifiTelemetryStale
+        exp_alerts: []

@@ -1,5 +1,6 @@
 ---
-# Network path alerting: Traefik, Blocky, MetalLB, Cloudflared, CoreDNS.
+# Network path alerting: Traefik, Blocky, MetalLB, Cloudflared, CoreDNS,
+# UniFi/unpoller.
 #
 # WHY THIS EXISTS: an audit on 2026-08-06 counted the alerting rules covering
 # each domain. Storage had 38. The ENTIRE network path had 3 - and all three
@@ -24,6 +25,8 @@
 #   blocky list refresh age    8,315 s (~2.3 h)
 #   coredns SERVFAIL rate      0
 #   traefik 5xx rate           0
+#   unpoller UDM uptime delta over 15m: 899.99 healthy, 602.14 during the
+#   2026-08-17 UniFi Network application outage (see unifi-telemetry-health)
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -186,3 +189,89 @@ spec:
               All external access through the tunnel is down. Internal access
               via Traefik is unaffected, so this can go unnoticed from inside
               the network entirely.
+
+    - name: unifi-telemetry-health
+      rules:
+        # 2026-08-17: a UDM firmware/application update took the UniFi Network
+        # application down for ~2h (~21:20Z-23:20Z). unpoller could not
+        # re-authenticate (502 from /proxy/network/status) but kept serving its
+        # last good snapshot, so up{job="unpoller"} stayed 1 the entire time,
+        # nothing alerted, and dashboards showed confident, partly-stale
+        # numbers. A scrape-health alert is structurally blind to this failure
+        # mode - the exporter is healthy, its UPSTREAM is not.
+        #
+        # Detector: unpoller_device_uptime_seconds for the UDM advances 1s/s
+        # while data is live. Measured against real Prometheus data,
+        # delta(...[15m]) was 899.99 healthy (~900 = 100% of wall clock) and
+        # 602.14 mid-outage (~67% - roughly 1 in 3 collection cycles failing).
+        # The snapshot was DEGRADED, not frozen, so `== 0` or
+        # `changes() == 0` detectors would have missed the incident entirely.
+        # The threshold must sit between 602 and 900; 765 fires below 85% of
+        # wall clock. Do NOT "tidy" this to == 0 - that silently reverts it to
+        # a detector proven to miss the real incident.
+        #
+        # Selector: type="udm", NOT the name label - the device name contains
+        # a Unicode right single quotation mark (U+2019), so an exact name
+        # match is a churn trap. Verified live 2026-08-17: {type="udm"}
+        # returns exactly one series.
+        #
+        # The resets() gate deliberately excludes device reboots: a reboot
+        # resets uptime, driving the delta hugely negative for the 15m the
+        # reset stays in the window. That is a different event with different
+        # meaning, so it gets its own alert (UDMRebooted below) instead of
+        # false-firing this one. If telemetry stays degraded after the reset
+        # leaves the window, this rule fires on its own.
+        - alert: UnifiTelemetryStale
+          expr: >-
+            delta(unpoller_device_uptime_seconds{type="udm"}[15m]) < 765
+            and
+            resets(unpoller_device_uptime_seconds{type="udm"}[15m]) == 0
+          for: 20m
+          labels:
+            severity: warning
+          annotations:
+            summary: "UniFi telemetry is stale — unpoller is re-serving old controller data"
+            description: >-
+              UDM uptime advanced less than 765s over 15m (measured: ~900
+              healthy, 602 during the 2026-08-17 Network application outage
+              this rule exists to catch). The UniFi Network application is
+              failing some or all of unpoller's collection cycles while
+              unpoller re-serves its last good snapshot, so up stays 1 and
+              dashboards keep rendering stale numbers. Observability
+              degradation ONLY - the router is still routing and the internet
+              is fine. Check the Network application on the UDM; last time
+              this was a UniFi OS application update mid-install.
+
+        # A reboot is worth knowing about (brief connectivity blip, and it
+        # suppresses UnifiTelemetryStale while the uptime reset is in-window),
+        # but it is not stale telemetry, so it gets its own alert and text
+        # rather than false-firing the staleness rule on a negative delta.
+        # info severity: expected during planned firmware updates.
+        - alert: UDMRebooted
+          expr: resets(unpoller_device_uptime_seconds{type="udm"}[15m]) > 0
+          labels:
+            severity: info
+          annotations:
+            summary: "UDM rebooted — uptime counter reset"
+            description: >-
+              unpoller-reported UDM uptime decreased within the last 15m,
+              i.e. the router restarted. Auto-resolves once the reset leaves
+              the 15m window. While this fires, UnifiTelemetryStale is
+              deliberately suppressed; if telemetry stays degraded after the
+              reboot it will fire on its own.
+
+        # If unpoller stops exporting the UDM series altogether, delta()
+        # returns no samples and UnifiTelemetryStale silently never fires -
+        # the same silent-gap class this group exists to close.
+        - alert: UnifiTelemetryAbsent
+          expr: absent(unpoller_device_uptime_seconds{type="udm"})
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "UniFi UDM telemetry series is missing entirely"
+            description: >-
+              No unpoller_device_uptime_seconds series with type="udm" at
+              all. Either unpoller is down or unscraped, or the device labels
+              changed. Staleness detection is blind until this clears.
+              Observability only - no evidence of user impact by itself.
