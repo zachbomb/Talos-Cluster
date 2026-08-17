@@ -11,6 +11,7 @@ resources:
   - mcpo/ks.yaml
   - n8n/ks.yaml
   - neo4j/ks.yaml
+  - node-red/ks.yaml
   - ollama/ks.yaml
   - paperless-ngx/ks.yaml
   - searxng/ks.yaml

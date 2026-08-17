@@ -1,0 +1,173 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+#
+# Node-RED — glue/search layer for used-gear price hunting (Reverb + eBay Browse API
+# polling → notifiarr-bridge). Complements changedetection.io, which URL-watches
+# new-gear retailers; Node-RED covers the API-driven SEARCH side of the market.
+#
+# CHOSEN OVER THE ALTERNATIVES ON LICENSE AND FOOTPRINT (SQ-90, deliberate):
+#   * n8n      — Sustainable Use license, wants 2GB and its own SQLite/Postgres.
+#   * Windmill — AGPLv3, 2-4GB, requires Postgres.
+#   * Huginn   — ~1GB plus Postgres + Redis + Sidekiq.
+# Node-RED is Apache-2.0, runs in 128-256Mi, and persists flows to a JSON file in
+# /data — NO new stateful service. That is the load-bearing reason on a SINGLE node
+# sitting near its memory-request ceiling with a recorded Flux rollback-deadlock
+# incident from hitting it. Do not swap this for a "more featureful" engine without
+# re-running that comparison.
+#
+# NO FLOWS SHIPPED HERE, DELIBERATELY. The Reverb/eBay flows need user-generated API
+# credentials (free Reverb Personal Access Token; eBay developer app for Browse API
+# client credentials). Flow authoring is a follow-up ticket once those exist.
+#
+# NO clusterenv/SOPS ENTRY, DELIBERATELY. Node-RED auto-generates its credential
+# encryption key (.config.runtime.json) into /data on first start, and /data is backed
+# up by VolSync — that is sufficient. Do not "fix" this by adding a CREDENTIAL_SECRET
+# to clusterenv; it would be a SOPS change for no operational gain.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: node-red
+  namespace: node-red
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 18.16.12
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+      interval: 15m
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    image:
+      # renovate: datasource=docker depName=nodered/node-red
+      repository: docker.io/nodered/node-red
+      pullPolicy: IfNotPresent
+      tag: "5.0.4"
+
+    service:
+      main:
+        enabled: true
+        # ClusterIP, NOT LoadBalancer: no NODERED_IP exists in clusterenv, and this
+        # needs no direct L2 address — Traefik fronts it like every other app.
+        type: ClusterIP
+        ports:
+          main:
+            enabled: true
+            port: 1880
+            protocol: http
+            targetPort: 1880
+
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-node-red"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+
+    persistence:
+      # Short entry name on purpose: TrueCharts concatenates persistence names into a
+      # single <=63-byte label.
+      data:
+        enabled: true
+        size: 2Gi
+        mountPath: /data
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            dest:
+              # dest ENABLED: the VolSync mover drops CAP_CHOWN, which breaks restore
+              # only for root-running images. This image was verified against the
+              # 5.0.4 config blob to run as USER node-red (uid 1000), same situation
+              # as triparr-bot — restore works.
+              enabled: true
+              cacheCapacity: 2Gi
+            src:
+              enabled: true
+              cacheCapacity: 2Gi
+              trigger:
+                # 04:48 — VolSync sources are deliberately staggered 00:00-04:48
+                # after the midnight-storm cascade (35 sources at 00:00 caused an
+                # I/O storm and lost leases). This slot was verified free against
+                # every schedule in the repo at the time of writing; check before
+                # reusing minute 48 of hour 4 elsewhere.
+                schedule: 48 4 * * *
+
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: node-red.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+            middlewares:
+              # internal-secure-chain: the Node-RED editor ships with NO auth of its
+              # own (adminAuth unset), so LAN-only exposure via the internal chain is
+              # the security boundary. Do not switch to the public chain without
+              # first configuring adminAuth in /data/settings.js.
+              - name: internal-secure-chain
+                namespace: traefik
+                expandObjectName: false
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: node-red
+            description: Flow automation — used-gear search (Reverb/eBay)
+            group: Tools
+            icon: ""
+
+    securityContext:
+      container:
+        # Match the image's baked-in USER node-red (uid 1000, verified against the
+        # image config) instead of the TrueCharts default 568 — /usr/src/node-red is
+        # owned by 1000 and npm installs of palette nodes write there.
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        readOnlyRootFilesystem: false
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+
+    metrics:
+      main:
+        enabled: false
+    autoscaling:
+      vpa:
+        enabled: false
+    addons:
+      codeserver:
+        enabled: false
+
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 10m
+      limits:
+        # Memory limit only. NO CPU limit — a CPU limit throttles under pressure, and
+        # this cluster has a recorded incident class where CPU starvation trips
+        # liveness probes and kills healthy pods. Requests are set so the pod is
+        # never BestEffort.
+        memory: 512Mi
