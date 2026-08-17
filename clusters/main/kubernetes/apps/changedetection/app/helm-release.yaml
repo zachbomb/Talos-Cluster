@@ -18,8 +18,15 @@
 #     `requests` fetcher no matter what headers are set; a urllib probe from this same
 #     pod and egress IP with identical headers returns 200, so the block is the fetcher's
 #     TLS/JA3 fingerprint and header ordering, which header tuning cannot change. Real
-#     Chrome is the only fix. `html_webdriver` is therefore also the GLOBAL default
-#     fetch backend, so a retail URL pasted into the UI works without a per-watch toggle.
+#     Chrome is the only fix — but it is set PER WATCH, not globally. SQ-88 measured the
+#     retailers from inside this pod: Guitar Center (the only one that reliably works)
+#     serves 200 to plain requests on all 11 products and needs no Chrome, while
+#     Sweetwater (PerimeterX) and Perfect Circuit (Cloudflare) refuse BOTH fetchers, so a
+#     browser buys nothing there either. That leaves only B&H genuinely needing Chrome.
+#     With 2 Chrome slots and the node at 88% memory REQUESTS, a global browser default
+#     would have every watch contending for the slots B&H depends on; a wrong-fetcher 403
+#     sets last_error and shows red in the UI, so it fails VISIBLY with a one-click fix.
+#     Global default is therefore html_requests. Do not "helpfully" change it back.
 #   * AUTHENTICATED / B2B-portal fetching — REJECTED, and this is the load-bearing half.
 #     Browser Steps do log in successfully, but when the credential later fails,
 #     changedetection records the LOGIN PAGE TEXT as the new value with
@@ -78,7 +85,15 @@ spec:
     #                      "[UNKNOWN] Alert" with HTTP 200 — delivered and useless)
     #   notification_format  text   — 'htmlcolor' emits <span style=…> that reaches
     #                                 Discord as literal markup
-    #   fetch_backend        html_webdriver  — see the browser note above
+    #   fetch_backend        html_requests   — see the browser note above; B&H watches
+    #                                 carry an explicit PER-WATCH html_webdriver instead
+    #   base_url             https://changedetection.${BASE_DOMAIN}
+    # Watches use the `restock_diff` processor, which reads schema.org Product/Offer as
+    # JSON-LD *or* Microdata (Thomann ships microdata only, no ld+json) rather than
+    # diffing raw page text — so banner/recommendation churn cannot fire a false
+    # "price changed". changedetection's two shipped DEMO watches (Hacker News, its own
+    # CHANGELOG) are muted: with a global notification URL set they would otherwise
+    # deliver several junk Discord messages a day.
     # This is covered by the VolSync snapshot below, which is the actual backup of it.
     workload:
       main:
