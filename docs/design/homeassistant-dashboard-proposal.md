@@ -5,6 +5,14 @@
 `/api/config`) and WebSocket (`lovelace/*`, `config/*_registry/list`, `energy/get_prefs`) calls.
 Nothing was modified. Landscape facts carry source links and were gathered 2026-08-17.
 
+**Revised by SQ-113 (same day):** the information architecture is revised to the operator's
+four-axis model — **Overview · Room-based · Topic-based · Exterior** (§6). The research, card
+sketches, and prerequisites of the original stand; §2.5, §6, §7.6–§7.9, §8 and parts of §5.4/§9
+are new or amended. A second read-only `/api/states` pull was taken for the revision (baseline:
+3,439 states, 620 unavailable, 700 unknown, watchman 38) and **every entity ID added by the
+revision was verified live against it**; the original's 57 working entity IDs were re-confirmed
+in the same pull (its documented-broken refs are still broken, unchanged).
+
 This is a **design document**. Nothing in it has been applied. Every entity ID that appears in a YAML
 sketch was verified to exist AND to be in a working (not `unavailable`/`unknown`) state at measurement
 time, except where explicitly marked otherwise.
@@ -27,14 +35,24 @@ time, except where explicitly marked otherwise.
   form away from existing: `energy/get_prefs` returned completely empty, while a Sense whole-home
   monitor exports a valid `total`/`energy`-class grid sensor and ~195 working per-device energy
   sensors, plus a Droplet water meter with a valid `water`-class total sensor (§5.3, §7.4).
-- A fully room-centric dashboard is **not currently buildable**: only 375/1188 devices (32%) have an
-  area. The design routes around this with a **groups-first, status-first** approach: 13 pre-existing
-  light group entities and a media group already summarize the house without needing area data.
-  Area assignment is an explicit, *optional*, scoped prerequisite (§5.4) — and a gift to SQ-107.
-- Recommended end state: **three purposeful dashboards** (Home, Energy, House Ops) plus the existing
-  Map, with the empty media dashboard deleted and 6 of 10 registered frontend resources removed
-  (§6). An incremental, evening-sized roadmap is in §8; item 1 alone (dead refs + duplicate mushroom
-  + cats-view repair) makes the current Overview honest in about 90 minutes.
+- A fully room-centric dashboard system is **not currently buildable**: only 375/1188 devices (32%)
+  have an area. **The key structural insight of the four-axis revision: topic dashboards need NO
+  area assignment.** They bind to entities by what they *are* (cats, network, energy, security), not
+  where they live — which is exactly how the 813 area-less devices (68%) become usable **without
+  first doing 813 assignments**. Room views cover the ~375 placed devices; topic views cover
+  everything. The two axes are complementary, and this is precisely why the original's "scoped area
+  triage" prerequisite (§5.4) is **deferred rather than blocking**: ship topic views first (zero
+  prerequisites), then room views incrementally as areas get populated, starting with the areas that
+  are already rich. Groups-first still holds: 13 pre-existing light groups and a media group
+  summarize the house with no area data at all.
+- Recommended end state (revised, §6): **four axes** — an **Overview** landing (rework of the
+  existing `lovelace` Home view), **topic dashboards** (Energy, Cats, Security & Doors,
+  Network & Infra, House Ops), **room views** for the ~6 areas rich enough to carry one, and one
+  **Exterior** view over the existing Outside floor. The prior three-dashboard shape (Home / Energy
+  / House Ops) survives intact as a subset: Home is the overview axis; Energy and House Ops are two
+  of the topic views. Still: delete the empty media dashboard, remove 6 of 10 registered frontend
+  resources (§2.3). The roadmap in §8 is re-ordered so topic views land first; item 1 (dead refs +
+  duplicate mushroom + cats-view rescue) still makes the current Overview honest in ~90 minutes.
 
 ---
 
@@ -142,6 +160,77 @@ So of 10 resources: **2 keep** (mushroom, flightradar24-card), **1 keep-for-SQ-1
   `input_boolean.pihole_blocking`, proxmoxve/nut/pi_hole sensors. Uptime Kuma binary sensors exist
   but are **all unavailable right now** (SQ-100 is restoring Uptime Kuma) — design for them, gate
   them behind visibility conditions until SQ-100 lands.
+
+### 2.5 The spatial model and the topic clusters (SQ-113 measurement, 2026-08-17)
+
+The four-axis IA (§6) is grounded in two live measurements taken for the revision.
+
+**Spatial model** (area/device registries, pulled live):
+
+| Floor (3) | Areas (19) with device counts |
+|---|---|
+| First Floor | Living Room 70 · Bedroom 47 · Liz's Office 37 · Kitchen 26 · Guest Bedroom 11 · Hallway 7 · Stairs 7 · Main Bathroom 2 |
+| Ground Floor | **Garage 120** · Gym 16 · Downstairs Bedroom 3 · GF Living Room 3 · GF Hallway 1 |
+| Outside | Entrance 14 · Backyard 9 · Roof 2 |
+| *(no floor)* | Gym TV 0 · Main Bedroom 0 · Server Room 0 |
+
+Devices with **no area: 813 of 1,188 (68%)**. Three readings that shape the design:
+
+1. **"Outside" already exists as a floor** (Entrance/Backyard/Roof, 25 devices) — the exterior
+   axis has real structure, just thin. Nothing needs creating.
+2. **Garage (120 devices) is the single largest area and is an infrastructure dump, not a room.**
+   Rendered as a room view it would be a wall of noise; §6 routes it to the Network & Infra topic
+   view instead, with its few *physical-garage* signals (house-door lock, Droplet water meter)
+   surfacing on the Security and Home views.
+3. **Registry problems to resolve (flagged, not fixed — this audit is read-only):**
+   **"Main Bedroom" is empty and floorless while "Bedroom" holds 47 devices** — almost certainly a
+   duplicate or an incomplete rename. Same shape: **"Gym TV" (0) alongside "Gym" (16)**, and
+   **"Server Room" (0)**. Which of each pair is canonical is *ambiguous from the registry alone*
+   (e.g. "Main Bedroom" may be the intended final name mid-rename, or an abandoned duplicate) —
+   the operator should pick; §5.4 step 1 describes the mechanics either way. Floorless empty areas
+   cannot appear on any floor-organised view, and SQ-107's 3D model will bake area names in, so
+   resolving them early is cheap insurance.
+
+**Topic clusters** (second `/api/states` pull, entities matched on entity_id/friendly-name
+patterns; "live" = neither `unavailable` nor `unknown`). The operator has asked for the topic
+axis to be derived from what the instance actually tracks — "networks or cats or plants or any
+of the topics tracked in HA" — so the clustering was measured, not assumed:
+
+| Topic cluster | Matched | Live | Verdict for a topic view |
+|---|---|---|---|
+| Energy & power (sense/PDU/outlets) | 535 | 461 | **Yes** — native Energy dashboard (§5.3) + Ops rack-power section (§7.4) |
+| Security & doors (locks/doors/cameras/alarms) | 357 | 227 | **Yes** (§7.7) — curated; camera bulk is unavailable UniFi Protect |
+| **Cats** (feeder/litter/cat-cameras/petkit) | 274 | 183 | **Yes** (§7.3) — bigger than any room; the house's most-instrumented subject |
+| Presence BLE (bermuda/ibeacon) | 492 | 216 | **Section, not dashboard** — person-level signal is 2 area sensors (on badges); the rest is per-beacon distance noise; mesh *health* lives on Ops (§7.5) |
+| Network & UniFi gear (unifi/slzb/switches) | 175 | 120 | **Yes** (§7.8) — plus 321 `device_tracker` client entities (113 `home` / 135 `not_home` / 73 other) that must NOT be enumerated (see ghost caveat below) |
+| Media (players/TVs/speakers) | 140 | 98 (27 live `media_player`) | **Section, not dashboard** — conditional "Now playing" on Home (§7.1); dedicated media dashboard stays rejected (§9) |
+| Deliveries (mail_and_packages) | 174 | 84 | **Section** — tile(s) on Home; `sensor.imap_gmail_com_mail_packages_in_transit` verified live this pull (=1), upgrading §7.1's caveat |
+| Climate & air | 69 | 58 | **Section** — one thermostat does not carry a dashboard; Home §7.1 covers it |
+| Infra compute (proxmox/pihole/uptime/watchman) | 222 | 90 | **Yes, as House Ops** (§7.5) — the admin meta-topic |
+| Water (Droplet) | 35 | 35 | **Folds into Energy** (§5.3) + alert tiles on Home/Security |
+| Flights (FR24) | 20 | 11 | **Section** — the Ops toy corner (§7.5) |
+| **Plants** (openplantbook/miflora) | 3 | 3 | **NOT BUILDABLE — do not design it.** See below. |
+
+**Plants is a hardware/onboarding gap, not a dashboard.** All three matches are infrastructure
+shells: `openplantbook.search_result` (=0), `update.openplantbook_update`,
+`update.better_miflora_card_update`. There are **zero plant sensors** — the OpenPlantbook
+integration and the `better-miflora-card` resource are installed with nothing reporting. This
+confirms §2.3's "resources with no possible data source" finding. The operator evidently intended
+plant monitoring and never completed it (or the sensors died). To light it up: actual plant
+sensors (e.g. BLE Mi Flora / Xiaomi HHCC devices, or any integration exposing `plant.*` /
+moisture-class sensors) must exist first — then a plants topic view becomes a candidate. Until
+then a plants view would render empty, which is exactly the failure mode this audit exists to
+prevent.
+
+**PetKit caveat (SQ-104):** only 3/32 PetKit registry entities work and the integration's last
+release is ~15 months old; in this pull only `update.petkit_update` and
+`device_tracker.petkit_d4` are live by name. The Cats view is therefore powered by the verified
+Litter-Robot, PetLibro, and Eufy cat-camera entities — **no PetKit entities are placed** (§7.3).
+
+**UniFi ghost caveat (SQ-94):** ~172 UniFi client entities are stale (long-departed devices).
+With 135 trackers reading `not_home` at measurement, a network view that enumerates clients would
+be mostly ghosts. §7.8 therefore shows *infrastructure* devices individually and *clients* only
+as counts (and, optionally, an `entity-filter` restricted to `state: home`).
 
 ---
 
@@ -297,13 +386,18 @@ Settings → Dashboards → Energy:
 **Effort: 30–60 min, then a 24 h wait for long-term statistics to fill the graphs.**
 No solar/battery/gas sources exist; leave those unset.
 
-### 5.4 P3 (optional, scoped) — Area assignment triage
+### 5.4 P3 (optional, scoped, **deferred**) — Area assignment triage
 
 Full assignment of 813 area-less devices is days of tedium and **is not required by this design**.
-The scoped version that pays:
-1. Fix the three floorless areas: merge **Gym TV → Gym**, **Main Bedroom → Bedroom** (or delete if
-   truly unused), give **Server Room** the ground floor and make it real by moving rack gear into it
-   (~30 min).
+The SQ-113 revision makes the deferral structural, not just permissible: the topic axis (§6)
+needs no area data at all, so nothing in roadmap items 1–5 waits on this section. Do it when the
+room axis starts expanding (roadmap item 7+). The scoped version that pays:
+1. Resolve the three empty, floorless areas — **Main Bedroom (0) vs Bedroom (47)**, **Gym TV (0)
+   vs Gym (16)**, **Server Room (0)**. Each empty area is almost certainly a duplicate or an
+   incomplete rename, but *which name is canonical is ambiguous from the registry alone* — the
+   operator should decide (keep-and-merge, or delete the empty one). Whatever the choice, end
+   state: no empty floorless areas, and Server Room (if kept) gets the ground floor and the rack
+   gear that currently pollutes Garage (~30 min).
 2. Split `garage` (640 entities): keep vehicle/door/physical-garage devices; move rack/network/server
    devices to Server Room. Even done coarsely at the *device* level for the ~50 devices that matter,
    this is ~1–2 h.
@@ -315,20 +409,93 @@ Payoff: honest per-area badges, the free auto-generated Areas dashboard becomes 
 
 ---
 
-## 6. Information architecture: which dashboards exist and why
+## 6. Information architecture: four axes (revised by SQ-113)
 
-| Dashboard | Audience | Job | Verdict |
+The operator's stated IA has four axes: **(1) Overview · (2) Room-based · (3) Topic-based ·
+(4) Exterior areas**. The original proposal's three dashboards are not discarded — they slot in
+as a subset: *Home* is the overview axis; *Energy* and *House Ops* are two topic views. What
+changes is that the topic axis becomes plural and first-class, and the exterior axis gets its own
+surface instead of being a folded-away section.
+
+**The spine of the revision (why the ordering works):** topic views bind entities by what they
+are, not where they live, so they need **no area assignment** — they are how the 813 area-less
+devices (68%, §2.5) become usable *today*. Room views need populated areas, so they land
+*incrementally*, richest areas first. Ship the topic axis first; nothing blocks it.
+
+### 6.1 Axis 1 — Overview (rework existing `lovelace` Home view)
+
+Status-first landing for the household, exactly as designed in §7.1: needs-attention (the house's
+only proactive operator channel — zero automations call notify), presence badges, climate, light
+groups, conditional now-playing, cats summary, house vitals. Every other axis is one tap away
+(topic tabs, room subviews). Verdict: **rework in place**.
+
+### 6.2 Axis 3 — Topic-based dashboards (ship these first; no prerequisites)
+
+Derived from the measured clusters in §2.5, not from a generic list. A topic earns a view only
+when enough *live* entities exist to fill it; live counts are given so the operator can judge.
+
+| Topic view | Live entities (cluster) | Content | Status |
 |---|---|---|---|
-| **Home** (rework existing `lovelace`) | Household | Status-first landing: needs-attention, presence, climate, lights (groups), now-playing, cats, energy snapshot. Drilldown subviews: Living Room, Bedroom, Kitchen, Office, Outside, Cats. Thin views (Entrance, Guest Bedroom) fold into sections of Home/Outside; **Network view moves to House Ops**. | Rework in place |
-| **Energy** (native) | Household | Consumption, per-device breakdown, water. Zero YAML after §5.3. | Configure |
-| **House Ops** (new, `require_admin`) | Zach | The 2 AM dashboard: infra health, watchman, 26 pending updates, Uptime Kuma (when SQ-100 lands), UPS/PDU power, Pi-hole controls, automation liveness ("what is actually running" — 41 automations, 22 dormant), Bermuda mesh health, FR24 toy. | Build new |
-| **Map** | Household | Where is everyone. Ships free. | Keep |
-| media (`dashboard-media`) | — | Empty stub. Media control lives as a conditional Home section + room subviews; a dedicated media dashboard duplicates the remotes people actually use. | **Delete** |
-| *(future)* Wall/iPad 3D | Wall | SQ-107's SweetHome3D + ha-floorplan surface. | Out of scope here (§10) |
+| **Energy** (native dashboard) | 461 energy/power + 35 water | Grid via Sense `sensor.daily_usage_2`, honest per-device outlets, Droplet water | Configure, §5.3 — zero YAML |
+| **Cats** | 183 | Feeder, Litter-Robot, the two Eufy cat cameras (guard mode, crying/pet detection), litter automations. **Absorbs the orphaned untitled `path: ""` view** — its rescue (§5.2) now lands here rather than as separate cleanup | Sketch §7.3 (extended) |
+| **Security & Doors** | 227 matched; ~15 curated | Locks, door-open sensors, cat-camera alarm panels, water alerts. Surfaces the **garage house-door lock stuck `unknown`** (live SQ-109 finding, battery reading −100) on day one | Sketch §7.7 (new) |
+| **Network & Infra** | 120 gear + client counts | UDM, switches (entrance/backyard/roof), SLZB-06 Zigbee, Pi-hole stats, Proxmox Backup Server. **This is where Garage's 120 infra devices belong** — the "Garage is not a room" answer. Client `device_tracker`s appear only as counts (ghost caveat, §2.5) | Sketch §7.8 (new) |
+| **House Ops** (admin meta-topic, `require_admin`) | 90 infra-compute + watchman/updates | HA health, 26 pending updates, Uptime Kuma (visibility-gated until SQ-100), rack power (§7.4), automation liveness (SQ-109's list), Bermuda mesh health, FR24 toy | Sketch §7.5 |
 
-Opinionated call: **do not** build one view per the 19 areas. Eight areas have <35 working entities;
-Entrance is 124 entities but only 37 working. Views exist where there is something to *do* (Living
-Room, Bedroom, Kitchen, Office), not to mirror the floor plan — that's SQ-107's job.
+Topics that are **sections, not dashboards** (real but too thin or already homed): Climate & air
+(one thermostat → Home §7.1), Media (conditional Now-playing → Home; dedicated dashboard stays
+rejected §9), Deliveries (tile(s) on Home), Presence (person-level = 2 badge sensors on Home;
+mesh health on Ops — the 400+ per-beacon distance sensors are infrastructure, not content, though
+the bermuda/ibeacon estate is clearly under-exposed and is worth a later look once SQ-112's
+coverage work lands). Topic that is a **gap, not a view**: Plants (§2.5 — zero sensors; report to
+operator as unfinished onboarding, do not build).
+
+### 6.3 Axis 2 — Room-based views (incremental, richest first)
+
+Only ~6 areas can carry a real room view today: **Living Room 70 · Bedroom 47 · Liz's Office 37 ·
+Kitchen 26 · Gym 16 · Guest Bedroom 11**. These become `subview: true` drilldowns reached from
+the Overview (nav bar stays ~4 tabs). Existing thin room views on the Overview consolidate per
+roadmap item 7. Exemplar sketch: §7.9.
+
+**Rooms that do NOT get their own view** (1–7 devices each), and where they surface instead:
+
+| Area (devices) | Surfaces as |
+|---|---|
+| Hallway (7) | Thermostat card (§7.1 climate section — the thermostat *is* the hallway) + hallway light-group tile in the Lights section |
+| Stairs (7) | Light tiles folded into the Overview Lights section |
+| Main Bathroom (2) | Nothing dedicated — its devices join Bedroom's view if relevant, else Overview |
+| Downstairs Bedroom (3), GF Living Room (3), GF Hallway (1) | One compact "Ground floor" section (native `area` cards) appended to the **Gym** room view — the only rich Ground Floor room |
+| **Garage (120)** | **Not a room view.** Infra contents → Network & Infra topic (§7.8); physical-garage signals (house-door lock, Droplet meter/alerts) → Security (§7.7) and Home needs-attention (§7.1) |
+| Gym TV (0), Main Bedroom (0), Server Room (0) | Nowhere — empty and floorless; resolve per §5.4 step 1 (ambiguity flagged in §2.5) |
+
+This kills the "19 stub dashboards" failure mode while giving every area a stated home.
+
+### 6.4 Axis 4 — Exterior (one view over the existing Outside floor)
+
+"Outside" **already exists as a floor** (Entrance 14 · Backyard 9 · Roof 2 — 25 devices; §2.5).
+Do not create anything; give it one consolidated **Outside** view (sketch §7.10): entrance +
+backyard + outside light groups and bulbs, the sun-driven entrance automations, doorbell tiles
+visibility-gated until UniFi Protect returns, and gate/entry status. Roof's two devices are a
+UniFi switch (→ Network view) and the FR24 antenna (→ Ops toy corner) — the Roof "area" needs no
+surface of its own. Thin but real; one view, not three.
+
+### 6.5 Dashboard inventory after the revision
+
+| Dashboard | Axis | Audience | Verdict |
+|---|---|---|---|
+| **Home** (`lovelace`) | Overview + hosts room/exterior subviews | Household | Rework in place |
+| **Energy** (native) | Topic | Household | Configure (§5.3) |
+| **Cats** | Topic | Household | Extend the rescued view (§7.3) |
+| **Security & Doors** | Topic | Household | Build (§7.7) |
+| **Network & Infra** | Topic | Zach | Build (§7.8) — may merge into House Ops as a second view if a separate dashboard feels heavy |
+| **House Ops** (`require_admin`) | Topic (admin meta) | Zach | Build (§7.5) |
+| **Map** | — | Household | Keep |
+| media (`dashboard-media`) | — | — | **Delete** (empty stub; §9) |
+| *(future)* Wall/iPad 3D | — | Wall | SQ-107 (§10) |
+
+Note on SQ-112 (network coverage gap, in flight): its output — newly-adopted devices and possibly
+new areas — slots into the Network & Infra topic view (new gear tiles) and, if it populates
+areas, accelerates the room axis. Nothing here blocks on it.
 
 ---
 
@@ -560,11 +727,9 @@ sections:
         name: Packages inbound
 ```
 
-> Entity note: `sensor.imap_gmail_com_mail_packages_in_transit` is the one entity above taken from
-> the mail_and_packages family without an individually captured state sample (the integration's 158
-> entities were verified as a family, per-carrier counts confirmed working). Verify its exact ID in
-> Developer Tools before pasting; the per-carrier `…_mail_usps_packages` sensors are confirmed
-> alternatives.
+> Entity note: `sensor.imap_gmail_com_mail_packages_in_transit` was originally the one entity above
+> without an individually captured state sample. **Resolved by the SQ-113 pull:** verified live
+> (state `1` at measurement). No caveat remains.
 
 ### 7.2 Pattern: making unavailability invisible
 
@@ -587,7 +752,14 @@ Rule of thumb applied in this doc: **controls** (lights, locks, thermostat) stay
 unavailable — a greyed tile is honest signal that a device fell over. **Informational** cards
 (Uptime Kuma rows, alerts) hide when unavailable so the dashboard never looks broken by default.
 
-### 7.3 Repairing the cats view (currently the untitled `path: ""` view)
+### 7.3 The Cats topic view (absorbs the untitled `path: ""` orphan)
+
+Cats are the house's most-instrumented subject — 183 live entities (§2.5), more than any single
+room. This is a first-class **topic view**, not pet-corner cleanup: the §5.2 rescue of the
+orphaned untitled view folds into building this, rather than being a separate task. Powered by
+Litter-Robot 4 + PetLibro + the two Eufy cat cameras; **no PetKit entities are placed** (3/32
+working, §2.5 caveat). Note `sensor.living_room_cat_feeder_battery_level` read `low` at the
+SQ-113 pull — the battery tile below is already earning its slot.
 
 ```yaml
 type: sections
@@ -646,7 +818,7 @@ sections:
   - type: grid
     cards:
       - type: heading
-        heading: Cameras
+        heading: Cameras & guard
         icon: mdi:cctv
       - type: picture-entity
         entity: camera.camera_cat_room
@@ -654,11 +826,47 @@ sections:
       - type: picture-entity
         entity: camera.camera_living_room_cat_feeder_camera
         camera_view: auto
+      - type: tile
+        entity: alarm_control_panel.camera_cat_room
+        name: Cat room guard
+      - type: tile
+        entity: alarm_control_panel.camera_living_room_cat_feeder_camera
+        name: Feeder cam guard
+      # Detection events surface only when firing — silent otherwise:
+      - type: tile
+        entity: binary_sensor.camera_cat_room_crying_detected
+        name: Crying detected
+        color: red
+        visibility:
+          - {condition: state, entity: binary_sensor.camera_cat_room_crying_detected, state: "on"}
+      - type: tile
+        entity: binary_sensor.camera_cat_room_pet_detected
+        name: Pet spotted
+        visibility:
+          - {condition: state, entity: binary_sensor.camera_cat_room_pet_detected, state: "on"}
+  # ── Litter automations (SQ-109 companion) ──────────────────────────
+  # All four are currently OFF. SQ-109 recommends deleting the three
+  # duplicate light-alert automations and replacing "CLAUDE 2.0" with a
+  # notification, plus adding a "litter waste ≥80%" alert. Keeping their
+  # states visible here means the eventual cleanup is observable, and a
+  # re-enabled survivor is obvious.
+  - type: grid
+    cards:
+      - type: heading
+        heading: Litter automations
+        icon: mdi:robot
+      - type: entities
+        entities:
+          - automation.new_litter_box
+          - automation.claude_litter_box
+          - automation.claude_litter_box_light
+          - automation.claude_2_0_litter_box_waste_level_light_alert
 ```
 
 > Domain note: `button.living_room_cat_feeder_manual_feed` reads `unknown` until first pressed —
 > that is normal for the stateless `button` domain, not a broken entity (its device and siblings are
-> verified live).
+> verified live). The four automation entities above were verified present (all `off`) at the
+> SQ-113 pull; after SQ-109's cleanup lands, prune this list to the survivors.
 
 ### 7.4 Energy: configuration first, then one optional view
 
@@ -833,24 +1041,369 @@ comes from its docs at build time; the integration and its sensors are verified 
 rule-based "all disabled automations" list is wanted instead of a maintained list, HACS
 `auto-entities` is the one justified new dependency — decide at build time, not before.
 
+### 7.6 Verification note for the SQ-113 additions
+
+Every entity ID in §7.7–§7.10 (and the §7.3 extensions) was verified against the SQ-113
+`/api/states` pull of 2026-08-17: present, and live unless the sketch explicitly gates or marks
+it (the doorbell entities and the bedroom fan are the deliberate exceptions, per the §7.2
+honesty rule). Where a live value was itself the finding, it is quoted (garage lock `unknown`,
+feeder battery `low`, PBS memory 91.5%).
+
+### 7.7 Security & Doors topic view (new)
+
+The curation of the 227-live security cluster (§2.5): locks + door sensors + cat-cam guard +
+water alerts. UniFi Protect cameras/doorbell are all unavailable today, so they are
+visibility-gated, not omitted — they light up when Protect returns. The **garage house-door lock
+is stuck `unknown`** (SQ-109's live find, battery reporting −100): per the §7.2 rule the lock
+tile stays visible (greyed = honest), and a red alert tile names the condition explicitly.
+
+```yaml
+type: sections
+title: Security
+icon: mdi:shield-home
+path: security
+max_columns: 3
+sections:
+  # ── Attention ──────────────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Attention
+        icon: mdi:alert-circle-outline
+      - type: tile
+        entity: lock.device_lock_garage_house_door_lock
+        name: Garage house-door lock unresponsive
+        color: red
+        visibility:
+          - {condition: state, entity: lock.device_lock_garage_house_door_lock, state: unknown}
+      - type: tile
+        entity: binary_sensor.garage_droplet_f8ec_high_flow_alert
+        name: Water — high flow
+        color: red
+        visibility:
+          - {condition: state, entity: binary_sensor.garage_droplet_f8ec_high_flow_alert, state: "on"}
+      - type: tile
+        entity: binary_sensor.garage_droplet_f8ec_unusual_flow_alert
+        name: Water — unusual flow
+        color: amber
+        visibility:
+          - {condition: state, entity: binary_sensor.garage_droplet_f8ec_unusual_flow_alert, state: "on"}
+  # ── Locks (controls stay visible even when dead — §7.2 rule) ───────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Locks
+        icon: mdi:lock
+      - type: tile
+        entity: lock.device_lock_front_door_lock
+        name: Front door
+      - type: tile
+        entity: lock.device_lock_front_gate_lock
+        name: Front gate
+      - type: tile
+        entity: lock.device_lock_garage_house_door_lock   # unknown today; greyed = honest
+        name: Garage house door
+  # ── Doors & gates ──────────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Doors
+        icon: mdi:door
+      - type: tile
+        entity: binary_sensor.device_lock_front_door_lock_open
+        name: Front door
+      - type: tile
+        entity: binary_sensor.device_lock_front_gate_lock_open
+        name: Front gate
+      - type: tile
+        entity: binary_sensor.device_lock_garage_house_door_lock_open
+        name: Garage house door
+  # ── Camera guard (the two working cameras; Protect gated below) ────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Cameras
+        icon: mdi:cctv
+      - type: tile
+        entity: alarm_control_panel.camera_cat_room
+        name: Cat room guard
+      - type: tile
+        entity: alarm_control_panel.camera_living_room_cat_feeder_camera
+        name: Feeder cam guard
+      # UniFi Protect doorbell — appears only once the integration recovers:
+      - type: tile
+        entity: binary_sensor.device_camera_doorbell_doorbell_2
+        name: Doorbell
+        visibility:
+          - {condition: state, entity: binary_sensor.device_camera_doorbell_doorbell_2, state_not: unavailable}
+      - type: tile
+        entity: binary_sensor.device_camera_doorbell_person_detected
+        name: Person at door
+        visibility:
+          - {condition: state, entity: binary_sensor.device_camera_doorbell_person_detected, state_not: unavailable}
+```
+
+### 7.8 Network & Infra topic view (new)
+
+Where the Garage-the-infra-dump's 120 devices actually belong (§6.3). Infrastructure devices get
+individual tiles; **clients appear only as counts** — with ~172 stale UniFi client entities
+(SQ-94) and 135 trackers reading `not_home` at measurement, enumerating clients renders ghosts.
+Live oddity worth carrying to the view: Pi-hole's ads-blocked percentage read **0** while
+`input_boolean.pihole_blocking` is `on` — the stats tiles below make that contradiction visible
+instead of hiding it. PBS memory was at **91.5%** at measurement; its tile gets a color.
+
+```yaml
+type: sections
+title: Network & Infra
+icon: mdi:lan
+path: network
+max_columns: 4
+sections:
+  # ── Gateway ────────────────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Gateway
+        icon: mdi:router-network
+      - type: tile
+        entity: sensor.pibbs_udm_state
+        name: UDM state
+      - type: tile
+        entity: sensor.pibbs_udm_cpu_utilization
+        name: UDM CPU
+        features: [{type: trend-graph}]
+      - type: tile
+        entity: sensor.pibbs_udm_memory_utilization
+        name: UDM memory
+      - type: markdown
+        title: Clients
+        content: >-
+          {% set t = states.device_tracker | list %}
+          **{{ t | selectattr('state','eq','home') | list | count }} home** /
+          {{ t | count }} tracked
+          (stale-client cleanup pending — SQ-94)
+  # ── Switches (the exterior trio doubles as Outside-floor infra) ────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Switches
+        icon: mdi:switch
+      - type: tile
+        entity: sensor.device_network_network_switch_entrance_network_switch_state
+        name: Entrance switch
+      - type: tile
+        entity: sensor.device_network_network_switch_backyard_network_switch_state
+        name: Backyard switch
+      - type: tile
+        entity: sensor.roof_switch_flex_state
+        name: Roof switch
+  # ── Zigbee coordinator ─────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Zigbee (SLZB-06)
+        icon: mdi:zigbee
+      - type: tile
+        entity: binary_sensor.slzb_06_internet
+        name: Internet
+      - type: tile
+        entity: binary_sensor.slzb_06_ethernet
+        name: Ethernet
+      - type: tile
+        entity: sensor.slzb_06_core_chip_temp
+        name: Core temp
+        features: [{type: trend-graph}]
+  # ── DNS (stats; the control tiles live on House Ops §7.5) ──────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Pi-hole
+        icon: mdi:pi-hole
+      - type: tile
+        entity: sensor.server_service_pi_hole_dns_queries
+        name: DNS queries today
+      - type: tile
+        entity: sensor.server_service_pi_hole_ads_percentage_blocked
+        name: Blocked %
+      - type: tile
+        entity: sensor.server_service_pi_hole_seen_clients_2
+        name: Clients seen
+  # ── Backup server ──────────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Proxmox Backup Server
+        icon: mdi:server
+      - type: tile
+        entity: binary_sensor.proxmox_backup_server_status
+        name: PBS up
+      - type: tile
+        entity: sensor.proxmox_backup_server_cpu_usage
+        name: PBS CPU
+      - type: tile
+        entity: sensor.proxmox_backup_server_memory_usage_percentage
+        name: PBS memory
+        color: amber          # 91.5% at measurement — worth watching
+        features: [{type: trend-graph}]
+```
+
+If a separate Network dashboard feels heavy in practice, this lands unchanged as a second view on
+House Ops (`require_admin` already matches the audience) — the section content is identical
+either way.
+
+### 7.9 Room-view exemplar: Bedroom (the pattern for the ~6 rich rooms)
+
+One worked example for the room axis; Living Room / Office / Kitchen / Gym / Guest Bedroom follow
+the same shape from their own verified inventories. Rooms get: their light group, their climate
+signals, their media, their oddities — and nothing imported from other rooms.
+
+```yaml
+type: sections
+title: Bedroom
+icon: mdi:bed
+path: bedroom
+subview: true
+max_columns: 3
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Comfort
+        icon: mdi:thermometer
+      - type: tile
+        entity: sensor.device_sensor_presence_bedroom_ecobee_presence_sensor_temperature
+        name: Temperature
+      - type: tile
+        entity: sensor.device_sensor_air_quality_bedoom_awair_pm2_5
+        name: PM2.5
+        features: [{type: trend-graph}]
+      # fan.device_climate_fan_bedroom_fan is a real bedroom control that is
+      # unavailable today (documented broken ref, §2.2). Per the §7.2 rule it
+      # MAY be placed greyed-out as honest signal; placed here commented-out
+      # so the view starts clean — uncomment when the fan is fixed.
+      # - type: tile
+      #   entity: fan.device_climate_fan_bedroom_fan
+      #   name: Ceiling fan
+  - type: grid
+    cards:
+      - type: heading
+        heading: Lights
+        icon: mdi:lightbulb-group
+      - type: tile
+        entity: light.group_light_bedroom_lights
+        name: Bedroom lights
+        features: [{type: light-brightness}]
+  - type: grid
+    cards:
+      - type: heading
+        heading: Media
+        icon: mdi:television
+      - type: tile
+        entity: media_player.bedroom_sony
+        name: TV
+        features: [{type: media-player-playback}]
+      - type: tile
+        entity: media_player.bedroom_kef
+        name: KEF speakers
+        features: [{type: media-player-volume-slider}]
+      - type: tile
+        entity: media_player.home_bedroom_media_player_appletv
+        name: Apple TV
+```
+
+### 7.10 Exterior axis: the Outside view (new)
+
+One view over the existing Outside floor (Entrance 14 · Backyard 9 · Roof 2). Roof's two devices
+route elsewhere (switch → §7.8, FR24 → §7.5), so this view is Entrance + Backyard + the outside
+light groups, with the dead UniFi Protect doorbell gated until it returns.
+
+```yaml
+type: sections
+title: Outside
+icon: mdi:tree
+path: outside
+max_columns: 3
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Lights
+        icon: mdi:outdoor-lamp
+      - type: tile
+        entity: light.group_light_entrance_entrance_lights
+        name: Entrance
+        features: [{type: light-brightness}]
+      - type: tile
+        entity: light.group_light_backyard_backyard_lights
+        name: Backyard
+        features: [{type: light-brightness}]
+      - type: tile
+        entity: light.group_light_outside_outside_lights
+        name: All outside
+      - type: tile
+        entity: light.home_outside_entrance_device_light_overhead_bulb_1
+        name: Entrance bulb 1
+      - type: tile
+        entity: light.home_outside_entrance_device_light_overhead_bulb_2_2
+        name: Entrance bulb 2
+      - type: tile
+        entity: light.home_outside_backyard_device_light_flood_light_2
+        name: Backyard flood
+  - type: grid
+    cards:
+      - type: heading
+        heading: Gate & door
+        icon: mdi:gate
+      - type: tile
+        entity: lock.device_lock_front_gate_lock
+        name: Front gate lock
+      - type: tile
+        entity: binary_sensor.device_lock_front_gate_lock_open
+        name: Gate open
+      # UniFi Protect doorbell — gated until the integration recovers:
+      - type: tile
+        entity: binary_sensor.device_camera_doorbell_doorbell_2
+        name: Doorbell
+        visibility:
+          - {condition: state, entity: binary_sensor.device_camera_doorbell_doorbell_2, state_not: unavailable}
+  - type: grid
+    cards:
+      - type: heading
+        heading: Schedules
+        icon: mdi:sun-clock
+      - type: tile
+        entity: switch.automation_backyard_on_off
+        name: Backyard schedule
+      - type: entities
+        title: Entrance sun automations
+        entities:
+          - automation.entrance_on_sun
+          - automation.entrance_off_sun
+          - automation.trigger_entrance_lights_switch
+```
+
 ---
 
-## 8. Ranked, incremental roadmap
+## 8. Ranked, incremental roadmap (revised: topic views first)
 
-Each item is deliberately evening-sized. Order matters; nothing later blocks on more than one earlier
-item.
+Each item is deliberately evening-sized. The revision's ordering rule: **the topic axis (items
+1–5) has zero prerequisites beyond item 1's hygiene and needs no area data; the room axis (item
+7+) lands incrementally as areas are populated.** Item 1 stays first not as a blocker to the
+topic views (they are native-card-only) but because 90 minutes of hygiene stops the current
+Overview lying.
 
-| # | Evening | Work | Payoff |
-|---|---|---|---|
-| 1 | ~90 min | **§5.1 mushroom dedupe** + **§5.2 dead-ref cleanup** + name/path the cats view (repair per §7.3 while in there) + delete the empty `dashboard-media` stub | Overview stops lying; mushroom becomes deterministic; the pets view becomes reachable |
-| 2 | 30–60 min | **§5.3 Energy dashboard config** (+ 24 h passive wait) | Highest-value new surface on the instance, ~zero YAML |
-| 3 | 2–3 h | **§7.1 Home landing rebuild** (badges kept, six sections) | The daily-driver view; the house finally has an attention channel |
-| 4 | 15 min | Resource cleanup: remove the 6 dead resources from §2.3 (keep mushroom, flightradar24-card, ha-floorplan) | Less rot; faster loads; no zombie cards to trip over later |
-| 5 | 2–3 h | **§7.5 House Ops dashboard**; retire the Overview "Network" stub | Admin concerns leave the family dashboard; SQ-100/SQ-109 outputs get a home |
-| 6 | 1–2 h | Room-subview consolidation: keep Living Room / Bedroom / Kitchen / Office as `subview: true`; fold Entrance + Guest Bedroom + Outside content into Home/Outside sections | Nav bar shrinks from 10 tabs to ~4 |
-| 7 | 1–2 h | **§5.4 area triage** steps 1–2 (floorless areas, garage split) | Honest areas; unblocks the free auto-Areas dashboard; SQ-107 groundwork |
-| 8 | ongoing | §5.4 step 3 + Sense device naming as Energy data accumulates | Compounding accuracy |
-| — | deferred | Kiosk/wall-panel (SQ-107), Bubble/Minimalist/button-card adoption (rejected §3.5), travel-time + trash-card revival (blocked on integrations that don't exist), full 813-device area assignment | — |
+| # | Evening | Axis | Work | Payoff |
+|---|---|---|---|---|
+| 1 | ~90 min | hygiene | **§5.1 mushroom dedupe** + **§5.2 dead-ref cleanup** + delete the empty `dashboard-media` stub + rescue the untitled cats view into the **Cats topic view (§7.3)** | Overview stops lying; mushroom becomes deterministic; the biggest topic (183 live entities) gets its surface the same evening |
+| 2 | 30–60 min | topic | **§5.3 Energy dashboard config** (+ 24 h passive wait) | Highest-value new surface on the instance, ~zero YAML, no prerequisites |
+| 3 | 2–3 h | topic | **§7.7 Security & Doors** + **§7.10 Outside** views | The garage-lock `unknown` problem becomes visible on day one; the exterior axis exists; both are pure verified-native-card builds |
+| 4 | 2–3 h | overview | **§7.1 Home landing rebuild** (badges kept, six sections) | The daily-driver view; the house finally has an attention channel |
+| 5 | 2–3 h | topic | **§7.5 House Ops** + **§7.8 Network & Infra** (as one dashboard with two views, or two dashboards — §7.8 note); retire the Overview "Network" stub | Admin concerns leave the family dashboard; Garage's 120 infra devices get their real home; SQ-100/SQ-109/SQ-112 outputs get somewhere to land |
+| 6 | 15 min | hygiene | Resource cleanup: remove the 6 dead resources from §2.3 (keep mushroom, flightradar24-card, ha-floorplan) | Less rot; faster loads; no zombie cards to trip over later |
+| 7 | 1–2 h each | room | Room views incrementally, richest first: Living Room → Bedroom (§7.9 exemplar) → Office → Kitchen, as `subview: true`; fold thin-room content per §6.3's table; nav bar settles at ~4 tabs | The room axis grows only where there is something to show — no stub views, ever |
+| 8 | 1–2 h | spatial | **§5.4 area triage** steps 1–2 (resolve the empty/floorless trio per operator's canonical-name call, garage split) | Honest areas; unblocks the free auto-Areas dashboard; the area-name contract SQ-107 needs |
+| 9 | ongoing | — | §5.4 step 3 + Sense device naming as Energy data accumulates; Gym + Guest Bedroom room views when worth it | Compounding accuracy |
+| — | deferred | — | Kiosk/wall-panel (SQ-107), Bubble/Minimalist/button-card adoption (rejected §3.5), travel-time + trash-card revival (blocked on integrations that don't exist), full 813-device area assignment, plants view (blocked on hardware that doesn't exist, §2.5), standalone Presence view (under-exposed BLE estate; revisit after SQ-112) | — |
 
 ---
 
@@ -869,6 +1422,16 @@ item.
   the conditional "Now playing" section covers the dashboard-shaped need. Delete the stub.
 - **trash-card / travel-time-card / better-miflora-card revival** — each is missing its data source
   entirely (no calendars, no travel sensors, no plants). Cards don't create data.
+- **A Plants topic view** — explicitly requested territory, honestly not buildable: zero plant
+  sensors exist; the three matching entities are integration shells (§2.5). Reported to the
+  operator as a hardware/onboarding gap with what would light it up, rather than shipped as a
+  guaranteed-empty view.
+- **Enumerating network clients on the Network view** — ~172 stale UniFi client entities (SQ-94)
+  and 135 `not_home` trackers at measurement mean a client list is mostly ghosts. Counts +
+  infrastructure tiles only (§7.8) until the stale-client cleanup happens.
+- **A room view for Garage** — 120 devices, single largest area, and an infrastructure dump. Its
+  contents are topic material (§7.8); its physical-garage signals surface on Security (§7.7) and
+  Home (§7.1).
 - **mushroom-strategy auto-generation** — auto-generated dashboards from 32%-assigned areas would
   enumerate exactly the garbage this proposal exists to curate away.
 
@@ -900,3 +1463,15 @@ entities / 621 unavailable / 694 unknown; 12,641 registry entities; 1,188 device
 19 areas, 3 floors; 3 dashboards; 10 Lovelace resources; energy prefs empty; watchman missing = 39;
 pending updates = 26. Re-measure before executing roadmap items 3+ if more than a few weeks pass —
 entity IDs on this instance have a demonstrated habit of drifting (the feeder renames of §2.2).
+
+**SQ-113 re-measurement (2026-08-17, second read-only `/api/states` pull):** 3,439 states / 620
+unavailable / 700 unknown; watchman = 38; pending updates = 26; 41 automations (34 on); 27 live
+`media_player` entities. Topic-cluster counts in §2.5 come from this pull. All 57 working entity
+IDs from the original doc re-verified working; every entity ID added by the revision (§7.3
+extensions, §7.7–§7.10) verified present with the states quoted. The spatial model in §2.5
+(floors/areas/device counts, 813/1188 area-less) was measured the same day via the WS registry
+endpoints. Notable live states captured: `lock.device_lock_garage_house_door_lock` = `unknown`,
+`sensor.living_room_cat_feeder_battery_level` = `low`,
+`sensor.proxmox_backup_server_memory_usage_percentage` = 91.5,
+`sensor.server_service_pi_hole_ads_percentage_blocked` = 0 (while
+`input_boolean.pihole_blocking` = `on` — flagged on §7.8, not diagnosed here).
