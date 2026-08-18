@@ -56,7 +56,12 @@ spec:
 
     tlsOptions:
       default:
-        minVersion: VersionTLS12
+        # TLS 1.3 minimum is deliberate hardening (0e2785883). This block is the
+        # single source of truth for the `default` TLSOption — the standalone
+        # tls-options.yaml CRD was removed because two managers (helm-controller
+        # and kustomize-controller) fighting over the same object produced an
+        # unintended SSA-merged spec on the live cluster.
+        minVersion: VersionTLS13
         maxVersion: VersionTLS13
         sniStrict: true
 
@@ -74,6 +79,16 @@ spec:
       default:
         defaultCertificate:
           secretName: certificate-issuer-wethecommon-wildcard-cert
+        # Also register the wildcard cert as a NAMED store certificate so its
+        # SANs (wethecommon.com, *.wethecommon.com) enter the SNI match pool.
+        # cloudflared presents originServerName=wethecommon.com for every tunnel
+        # hostname; with sniStrict the default certificate is never used as a
+        # fallback, so without this entry every tunnel request died in the TLS
+        # handshake ("tls: unrecognized name", broken since 2026-08-14 22:56Z).
+        # This keeps sniStrict enforcement intact — no default-cert fallback for
+        # unknown SNI — while making the tunnel's already-certified name match.
+        certificates:
+          - secretName: certificate-issuer-wethecommon-wildcard-cert
 
     ports:
       traefik:
