@@ -87,11 +87,32 @@ spec:
             type: restic
             credentials: s3
             dest:
-              # dest ENABLED: the VolSync mover drops CAP_CHOWN, which breaks restore
-              # only for root-running images. This image was verified against the
-              # 5.0.4 config blob to run as USER node-red (uid 1000), same situation
-              # as triparr-bot — restore works.
-              enabled: true
+              # dest DISABLED — and NOT for the usual lchown reason.
+              #
+              # The lchown analysis was right: the VolSync mover drops CAP_CHOWN, which
+              # breaks restore only for ROOT-running images, and this image was verified
+              # against the 5.0.4 config blob to run as USER node-red (uid 1000). So a
+              # restore would work — for an app that ALREADY HAS a backup.
+              #
+              # It deadlocks a FIRST deploy. With dest enabled, TrueCharts gives the main
+              # PVC a `dataSourceRef` pointing at the ReplicationDestination, so the PVC
+              # will not provision until VolSync produces a `latestImage`. A brand-new app
+              # has no restic snapshot in S3, so latestImage never appears:
+              #     VolSyncPopulatorReplicationDestinationNoLatestImage:
+              #     Unable to populate volume, waiting for replicationdestination to
+              #     have latestImage
+              # The pod then sits Pending on "unbound immediate PersistentVolumeClaims"
+              # until the HelmRelease times out at 5m. Observed live on this very deploy,
+              # 2026-08-17.
+              #
+              # `kubectl kustomize` and `helm template` CANNOT catch this — it is a
+              # runtime ordering property, not a rendering error. That is why the ticket's
+              # render-only verification passed while the deploy still failed.
+              #
+              # src stays enabled, so backups still run nightly. Recovery is then the
+              # documented manual VolSync restore — the same path every other
+              # dest-disabled app in this repo already relies on.
+              enabled: false
               cacheCapacity: 2Gi
             src:
               enabled: true
