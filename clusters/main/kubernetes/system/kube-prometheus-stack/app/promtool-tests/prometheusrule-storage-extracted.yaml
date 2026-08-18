@@ -70,3 +70,64 @@ groups:
           summary: "Longhorn metrics absent — volume health is blind"
           description: >-
             No longhorn_volume_robustness series. The longhorn-manager /metrics scrape is failing (context-deadline timeout with many volumes) — Longhorn volume health, this cluster's top outage source, cannot be alerted on. Fix the scrape (metrics.serviceMonitor.scrapeTimeout in the longhorn helm-release).
+  # Home Assistant backup freshness. Added 2026-08-18 (SQ-108) out of the SQ-98
+  # HA audit, which established that NOTHING outside Home Assistant would say
+  # anything if its nightly backup stopped. HA's own backup page is the only
+  # place that failure surfaces, and nobody opens it until they need a restore.
+  #
+  # Why this group lives in the STORAGE file and not the HA/meta one: what it
+  # detects is a backup failure, which is the failure class volsync-backups
+  # above already owns — "the backup silently stopped running and the board
+  # stayed green". Grouping by subject keeps the one file an operator opens to
+  # ask "are my backups running?" complete. HA *telemetry* health (is HA itself
+  # reachable / integrated) stays in prometheusrule-meta.yaml; do not split
+  # backup freshness across both.
+  #
+  # The metric carries a Unix TIMESTAMP, not an age, so the age is
+  # time() - <value>. Live-verified against Prometheus 2026-08-18: the selector
+  # returns EXACTLY ONE series (domain="sensor", job="homeassistant",
+  # instance="192.168.10.191:8123"), value 1786969003 → 15.3h old, i.e. healthy.
+  # max() guards against the series appearing more than once — without it a
+  # duplicate series makes time() - <vector> return one result per series.
+  - name: homeassistant-backups
+    rules:
+      # 36h = one tolerated miss. Backups run daily (~12:16Z / ~05:16 PT). The
+      # obvious "one day plus slack" choice of ~26h fires on a single slow or
+      # skipped run, which is the fastest way to teach an operator to ignore
+      # this alert. 36h means TWO consecutive nights failed — a real problem
+      # worth a notification. `for: 1h` on top absorbs a restart or a scrape
+      # blip landing on the boundary.
+      #
+      # `unless on() (up == 0)` rather than `and on() (up == 1)`: both suppress
+      # while the HA scrape is known-down (a scrape outage is not a missed
+      # backup), but `unless` still fires when the up series itself disappears
+      # — i.e. the whole scrape target was deleted — which `and up == 1` would
+      # silently swallow. That is the same silent-gap class this group exists
+      # to close, so do not "simplify" it to `and`.
+      - alert: HomeAssistantBackupStale
+        expr: >-
+          (time() - max(homeassistant_sensor_timestamp_seconds{entity="sensor.backup_last_successful_automatic_backup"}) > 129600) unless on() (up{job="homeassistant"} == 0)
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Home Assistant has not completed an automatic backup in over 36h"
+          description: >-
+            Last successful automatic Home Assistant backup was {{ $value | humanizeDuration }} ago against a daily schedule, so two nights in a row have now failed. The house is fine — this is the backup job, not the automation. Check Settings → System → Backups in Home Assistant and that the backup target (TrueNAS 192.168.10.122) is reachable.
+      # If HA stops exporting the sensor at all — integration removed, entity
+      # renamed, backup add-on uninstalled — then time() - <nothing> evaluates
+      # to nothing and HomeAssistantBackupStale silently never fires again.
+      # That is the EXACT failure this group exists to close, so the staleness
+      # rule is paired with an absent() companion, same shape as
+      # VolSyncMetricsAbsent above and UnifiTelemetryAbsent in
+      # prometheusrule-network.yaml.
+      - alert: HomeAssistantBackupSensorAbsent
+        expr: >-
+          absent(homeassistant_sensor_timestamp_seconds{entity="sensor.backup_last_successful_automatic_backup"}) unless on() (up{job="homeassistant"} == 0)
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Home Assistant backup timestamp sensor has disappeared"
+          description: >-
+            No homeassistant_sensor_timestamp_seconds series for sensor.backup_last_successful_automatic_backup, while the Home Assistant scrape is not reporting itself down. The entity was renamed or removed, or the backup integration is broken. Backup staleness detection is blind until this clears — HomeAssistantBackupStale cannot fire on a series that does not exist.

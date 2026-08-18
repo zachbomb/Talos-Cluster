@@ -1,0 +1,204 @@
+# Unit tests for the `homeassistant-backups` group in prometheusrule-storage.yaml
+# (SQ-108). Rules are loaded from the committed prometheusrule-storage-extracted.yaml;
+# regenerate it with `yq eval '.spec' ../prometheusrule-storage.yaml > prometheusrule-storage-extracted.yaml`
+# after editing the source, or the CI drift guard fails. exp_annotations must match
+# the rule's rendered output byte-for-byte.
+#
+# Reading the fixtures: promtool's synthetic clock starts at epoch 0, so at
+# `eval_time: 90m` the expression `time()` evaluates to 5400. The rule measures
+# backup age as `time() - <timestamp value>`, so a backup that is N seconds old at
+# eval time T is written as the constant series value `T - N` — which is NEGATIVE
+# for any realistic age. That is deliberate, not a typo. Each series is also given
+# enough samples to still be inside Prometheus' 5m staleness window at eval time;
+# a short series silently goes stale and every assertion collapses to got:[].
+#
+# Each case pins `up{job="homeassistant"}` explicitly, because both rules are gated
+# on it. The gate is `unless on() (up == 0)`, NOT `and on() (up == 1)`: see the
+# "up series missing entirely" case below for the behaviour that distinguishes them.
+rule_files:
+  - prometheusrule-storage-extracted.yaml
+evaluation_interval: 1m
+tests:
+  # ---------------------------------------------------------------------------
+  # Healthy: backup completed 6h ago, HA scraping fine → both rules silent.
+  #
+  # The promql_expr_test block is the fixture's own positive control. A rule whose
+  # entity selector matched NOTHING would still "pass" the two alert assertions
+  # below (no series → staleness silent, and the absent arm is asserted elsewhere),
+  # so an empty match looks identical to a healthy system. These two assertions
+  # fail loudly if the series the rules select ever stops existing in the fixture.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      # 5400 - 21600 = -16200 → 6h old at eval_time 90m.
+      - series: 'homeassistant_sensor_timestamp_seconds{domain="sensor", entity="sensor.backup_last_successful_automatic_backup", friendly_name="Backup Last successful automatic backup", instance="192.168.10.191:8123", job="homeassistant"}'
+        values: "-16200x95"
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "1x95"
+    promql_expr_test:
+      - expr: count(homeassistant_sensor_timestamp_seconds{entity="sensor.backup_last_successful_automatic_backup"})
+        eval_time: 90m
+        exp_samples:
+          - labels: "{}"
+            value: 1
+      - expr: count(up{job="homeassistant"})
+        eval_time: 90m
+        exp_samples:
+          - labels: "{}"
+            value: 1
+      - expr: time() - max(homeassistant_sensor_timestamp_seconds{entity="sensor.backup_last_successful_automatic_backup"})
+        eval_time: 90m
+        exp_samples:
+          - labels: "{}"
+            value: 21600
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: HomeAssistantBackupStale
+        exp_alerts: []
+      - eval_time: 90m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts: []
+
+  # ---------------------------------------------------------------------------
+  # THE REGRESSION TEST: two nights missed (40h old), HA scraping fine → fires.
+  # 5400 - 144000 = -138600 → 40h old at eval_time 90m.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'homeassistant_sensor_timestamp_seconds{domain="sensor", entity="sensor.backup_last_successful_automatic_backup", friendly_name="Backup Last successful automatic backup", instance="192.168.10.191:8123", job="homeassistant"}'
+        values: "-138600x95"
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "1x95"
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: HomeAssistantBackupStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Home Assistant has not completed an automatic backup in over 36h"
+              description: "Last successful automatic Home Assistant backup was 1d 16h 0m 0s ago against a daily schedule, so two nights in a row have now failed. The house is fine — this is the backup job, not the automation. Check Settings → System → Backups in Home Assistant and that the backup target (TrueNAS 192.168.10.122) is reachable."
+      # The absent companion must stay quiet while the series exists — otherwise
+      # every "it fired" result below would be ambiguous between the two arms.
+      - eval_time: 90m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts: []
+
+  # ---------------------------------------------------------------------------
+  # Threshold + `for:` boundary, pinned to the minute. Series value -129000 means
+  # age crosses 129600s (36h) at t=600s, so the rule goes PENDING at t=660s and
+  # only FIRES 1h later, at t=4260s (71m).
+  #
+  # This pair is what makes the numbers 129600 and 1h load-bearing: change either
+  # one and exactly one of these two assertions breaks. A single "stale → fires"
+  # case would still pass if someone dropped the threshold to 1s.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'homeassistant_sensor_timestamp_seconds{domain="sensor", entity="sensor.backup_last_successful_automatic_backup", friendly_name="Backup Last successful automatic backup", instance="192.168.10.191:8123", job="homeassistant"}'
+        values: "-129000x75"
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "1x75"
+    alert_rule_test:
+      # 70m: over threshold but only for 59m → still pending, must NOT fire.
+      - eval_time: 70m
+        alertname: HomeAssistantBackupStale
+        exp_alerts: []
+      # 72m: over threshold for 61m → fires. Age here is 4320 + 129000 = 133320s.
+      - eval_time: 72m
+        alertname: HomeAssistantBackupStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Home Assistant has not completed an automatic backup in over 36h"
+              description: "Last successful automatic Home Assistant backup was 1d 13h 2m 0s ago against a daily schedule, so two nights in a row have now failed. The house is fine — this is the backup job, not the automation. Check Settings → System → Backups in Home Assistant and that the backup target (TrueNAS 192.168.10.122) is reachable."
+
+  # ---------------------------------------------------------------------------
+  # Sensor gone while HA is still being scraped successfully → the absent arm
+  # fires. This is the silent-gap case the whole group exists for: with no series,
+  # `time() - <nothing>` yields nothing and the staleness rule can never fire.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "1x40"
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              entity: sensor.backup_last_successful_automatic_backup
+            exp_annotations:
+              summary: "Home Assistant backup timestamp sensor has disappeared"
+              description: "No homeassistant_sensor_timestamp_seconds series for sensor.backup_last_successful_automatic_backup, while the Home Assistant scrape is not reporting itself down. The entity was renamed or removed, or the backup integration is broken. Backup staleness detection is blind until this clears — HomeAssistantBackupStale cannot fire on a series that does not exist."
+      - eval_time: 31m
+        alertname: HomeAssistantBackupStale
+        exp_alerts: []
+      # 29m: absent() has been true for under `for: 30m` → still pending.
+      - eval_time: 29m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts: []
+
+  # ---------------------------------------------------------------------------
+  # `up` series MISSING ENTIRELY (scrape target deleted from Prometheus, not just
+  # failing) with the sensor also gone → the absent arm STILL fires.
+  #
+  # This is the case that justifies `unless on() (up == 0)` over the more obvious
+  # `and on() (up == 1)`. With `and`, there is no up==1 sample to match against,
+  # so the alert would be silently swallowed — losing HA backup visibility in
+  # exactly the scenario where the monitoring was torn out. If someone "tidies"
+  # the expression to `and`, this case fails.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="dummy"}'
+        values: "1x40"
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              entity: sensor.backup_last_successful_automatic_backup
+            exp_annotations:
+              summary: "Home Assistant backup timestamp sensor has disappeared"
+              description: "No homeassistant_sensor_timestamp_seconds series for sensor.backup_last_successful_automatic_backup, while the Home Assistant scrape is not reporting itself down. The entity was renamed or removed, or the backup integration is broken. Backup staleness detection is blind until this clears — HomeAssistantBackupStale cannot fire on a series that does not exist."
+
+  # ---------------------------------------------------------------------------
+  # HA scrape DOWN with a 40h-old timestamp → both rules stay silent. A scrape
+  # outage is not a missed backup, and mislabelling one as the other is how an
+  # HA restart turns into a false "your backups stopped" notification.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'homeassistant_sensor_timestamp_seconds{domain="sensor", entity="sensor.backup_last_successful_automatic_backup", friendly_name="Backup Last successful automatic backup", instance="192.168.10.191:8123", job="homeassistant"}'
+        values: "-138600x95"
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "0x95"
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: HomeAssistantBackupStale
+        exp_alerts: []
+      - eval_time: 90m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts: []
+
+  # ---------------------------------------------------------------------------
+  # HA scrape DOWN and the sensor gone with it (the normal consequence of an HA
+  # outage, once the series ages past the 5m staleness window) → the absent arm
+  # stays silent too. Without this gate, every HA reboot would page as a lost
+  # backup sensor.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "0x40"
+    alert_rule_test:
+      - eval_time: 31m
+        alertname: HomeAssistantBackupSensorAbsent
+        exp_alerts: []
+      - eval_time: 31m
+        alertname: HomeAssistantBackupStale
+        exp_alerts: []
