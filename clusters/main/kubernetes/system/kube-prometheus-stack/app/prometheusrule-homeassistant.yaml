@@ -1,0 +1,276 @@
+---
+# Home Assistant battery alerting.
+#
+# WHY THIS EXISTS (SQ-119): the garage lock's battery sensor reached -100% with
+# nothing ever notifying anyone. The physical batteries had been removed and
+# the `lock.` entity dropped off the state machine entirely, silent the whole
+# way down. The Front Door Lock Battery is walking the identical decline path
+# (measured 2026-08-18 at 31%) with the same lack of alerting in front of it.
+# Neither HA's own low-battery notification nor any Prometheus rule covered
+# this before now.
+#
+# ROUTE CHOSEN: Prometheus, not an HA-native automation. Argued in
+# docs/design/homeassistant-battery-alerting.md — short version: this repo's
+# entire alerting posture (meta-monitoring, Alertmanager routing, Notifiarr/
+# HITL delivery, the ScrapeTargetDown/absent() pairing discipline from SQ-108/
+# SQ-118) already lives here, and an HA automation has no equivalent of any of
+# it (no dead-man's-switch if the HA automation engine itself misbehaves, no
+# GitOps deploy path — HA `/config` is not managed by Flux). The cost is that
+# this rule goes dark if the `homeassistant` scrape target is down; every rule
+# below is gated `unless on() (up{job="homeassistant"} == 0)` for exactly that
+# reason, same shape as HomeAssistantBackupStale in prometheusrule-storage.yaml
+# (SQ-108) and ScrapeTargetDown in prometheusrule-meta.yaml (SQ-118) covers the
+# scrape-target-down case itself.
+#
+# VERIFIED BEFORE DESIGNING (per the ticket's explicit instruction not to
+# assume the exporter carries every entity): queried
+# `count by (__name__) ({job="homeassistant"})` directly against Prometheus
+# 2026-08-18 and confirmed `homeassistant_sensor_battery_percent` exists with
+# 17 active series. Cross-checked against the full HA `/api/states` census
+# (27 entities with `device_class: battery`) — the gap between 27 and 17 is
+# exactly the entities currently `unknown`/`unavailable`, which HA's
+# Prometheus exporter never emits a numeric sample for. That gap is precisely
+# why the LOW rules below and the UNAVAILABLE rule below are separate: a
+# missing sample is not a zero, and the metric-based LOW rules structurally
+# cannot fire on an entity that isn't reporting a number.
+#
+# RETIREMENT LIST (per the contract — do this first, before any threshold).
+# Cross-referenced against SQ-120's registry-hygiene plan
+# (tk_msy6gb3d_c2a0a4b7) and the orchestrator's 2026-08-18 re-measurement.
+# Every entity below is EXCLUDED from every rule in this file:
+#   - sensor.device_lock_garage_house_door_lock_battery — the garage lock.
+#     SQ-120 §1.9: the August device and its battery/open sensors are still
+#     reachable (42/42 available over 20.5d) — do NOT read this as "the
+#     device is gone." What's gone is the `lock.`/`_operator`/`_wake`
+#     entities; the battery sensor is technically "available" but the value
+#     it reports (-100) is nonsense left over from the physical battery
+#     removal. Excluding it here is a value-sanity decision, not a
+#     retirement-of-hardware decision — SQ-120 owns the latter.
+#   - sensor.living_room_cat_feeder_battery_ac,
+#     binary_sensor.living_room_cat_feeder_battery_status — PetKit Living
+#     Room feeder (SQ-120 P7). Operator has moved to PetLibro; these read
+#     0%/off and restored:true. Do NOT exclude the whole `petkit` integration
+#     — the litter-box side (cat_*_set_weight) is live and out of this
+#     ticket's scope.
+#   - sensor.bluetooth_bbq_thermometer_{8d39f9,f25909,cf24af,70c189,b2b164,
+#     3660dc}_h5055_batt (6) + sensor.service_data_3971fa_servicedata_batt (1)
+#     — 7 total. This is the ticket's "7 out-of-range Govee thermometers":
+#     Govee H5055 BBQ probes discovered over Theengs/MQTT BLE (SQ-120 P11,
+#     confirmed dead 0/42 over 20.5d). They report `unknown`, not a numeric
+#     out-of-range value, today — excluded anyway as defense-in-depth in case
+#     a flaky BLE read ever produces a garbage percent before the integration
+#     entry is removed.
+#   - sensor.home_house_first_floor_living_room_device_switch_wall_switch_wall_module_entry_module_battery_2
+#     — orphan `_2` MQTT-rediscovery duplicate (SQ-120 P10); the non-`_2`
+#     sibling (`entry_dimmer_battery`) is the live entity.
+#
+# CLASS DESIGN (contract: per-class thresholds, not one global number).
+# Personal rechargeables (phones, Zach's Watch, Max Jr's collar) are
+# DELIBERATELY OUT OF SCOPE, not merely unclassified — they cycle through
+# "low" every day on a charging schedule a human already manages by hand;
+# alerting on them here would just be daily noise with no IoT-hardware
+# failure behind it. They stay out of both the class regexes AND the
+# catch-all below (see the exclusion regex).
+#
+#   - Locks (front door, front gate — garage excluded above): the
+#     highest-consequence class in the house — a dead lock battery is a
+#     physical-access failure, and this is the exact class the ticket exists
+#     to protect. Warn <=35%, critical <=15%. The wide warning margin is
+#     deliberate: lock batteries decline over weeks, so 35% still gives a
+#     long runway, and the cost of a false-early warning here is far lower
+#     than the cost of a missed one. Front Door Lock Battery at 31% fires the
+#     warning immediately on deploy — that is intentional: it is the live
+#     incident this ticket was filed for, not a fixture artifact.
+#   - Zigbee/RF control accessories (dimmers, wall modules, remotes, the
+#     surviving Theengs curtain motor): losing one degrades a light or blind
+#     control, not security. Warn <=15%, critical <=5% — tighter thresholds
+#     because these devices are numerous, batteries are cheap/easy to swap,
+#     and a wide warning band here would just be more numbers to ignore.
+#   - Default/catch-all: anything with a numeric battery_percent sample that
+#     matches neither class above and isn't in the exclusion list. Warn
+#     <=20%, critical <=10%. Exists so a battery sensor added to HA in the
+#     future is never silently uncovered just because nobody updated this
+#     file's class regexes — the ticket's own "verify, don't assume" lesson
+#     applies to every future entity too, not just today's census.
+#
+# UNAVAILABLE vs LOW — kept in separate rules/groups per the contract
+# (#4): HomeAssistantBatteryUnavailable fires on `homeassistant_entity_available
+# == 0` for a battery-named entity, sustained for `for: 4h` to survive an HA
+# restart (SQ-120 measured PetKit taking >10h to recover from one, so a short
+# `for:` would misfire on every restart — 4h is a deliberate compromise: long
+# enough to clear a typical restart/mesh-reroute blip, short enough not to
+# sit on a genuinely offline device for most of a day before saying anything).
+# It is a DIFFERENT rule, with a DIFFERENT `for:`, matched against a DIFFERENT
+# metric than the LOW rules — they cannot share firing state because they
+# never evaluate the same expression.
+#
+# DISAPPEARANCE is a third failure mode, distinct from "unavailable" (entity
+# present with a 0/unknown value) — it is "the entity stops existing in HA's
+# state machine and its metric series vanishes from Prometheus entirely,"
+# which is what actually happened to the garage lock's `lock.` entity.
+# `absent()` over a multi-entity regex only fires when EVERY matched series is
+# gone — one lock disappearing while another survives would be silently
+# swallowed, which is exactly the class of gap SQ-108/SQ-118 exist to close
+# elsewhere in this component. So HomeAssistantLockBatteryDisappeared uses a
+# hardcoded expected count (2: front door + front gate) instead. If a lock is
+# added or removed, update BOTH the count and the class regex in the same
+# change, or this rule silently stops meaning what it says.
+#
+# RATE LIMITING (contract #5): `for:` on each rule (see above) plus this
+# repo's existing Alertmanager routing already provides it — warning-severity
+# alerts repeat at most every 12h, critical every 4h
+# (alertmanagerconfig.yaml), so a battery hovering exactly at a threshold
+# cannot produce more than one notification per repeat window even if it
+# flaps firing/resolved across evaluations. No additional rate-limiting layer
+# was added here — the existing one already does the job and a second layer
+# would just be redundant state to keep in sync.
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: homeassistant-battery
+  namespace: kube-prometheus-stack
+spec:
+  groups:
+    - name: homeassistant-battery-low
+      rules:
+        # ---- Locks: warn <=35%, critical <=15%. Garage excluded (retired
+        # hardware, nonsense -100 reading — see file header).
+        - alert: HomeAssistantLockBatteryLow
+          expr: >-
+            (homeassistant_sensor_battery_percent{entity=~"sensor\\.device_lock_.*_battery", entity!~"sensor\\.device_lock_garage_house_door_lock_battery"} <= 35)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.friendly_name }} is at {{ $value }}% — replace soon"
+            description: >-
+              A door/gate lock battery has been at or below 35% for 6h straight. Lock batteries
+              decline gradually, so this is an early warning with weeks of runway, not an
+              emergency — but a dead lock battery is a physical-access failure, so don't let it
+              slide. Replace the battery in {{ $labels.friendly_name }}.
+
+        - alert: HomeAssistantLockBatteryCritical
+          expr: >-
+            (homeassistant_sensor_battery_percent{entity=~"sensor\\.device_lock_.*_battery", entity!~"sensor\\.device_lock_garage_house_door_lock_battery"} <= 15)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.friendly_name }} is at {{ $value }}% — replace now"
+            description: >-
+              A door/gate lock battery has been at or below 15% for 1h straight. This is the
+              class this ticket exists to protect: the garage lock's battery reached -100% with
+              nothing having ever alerted on its way down. Replace the battery in
+              {{ $labels.friendly_name }} before it fails.
+
+        # ---- Zigbee/RF control accessories: warn <=15%, critical <=5%.
+        - alert: HomeAssistantControlBatteryLow
+          expr: >-
+            (homeassistant_sensor_battery_percent{entity=~"sensor\\.device_remote.*|sensor\\.device_remotes.*|sensor\\..*dimmer.*_battery.*|sensor\\..*module.*_battery.*|sensor\\.curtain_2_3_5fb59b_w070160x_batt|sensor\\.0x001788010cc1d8af_battery", entity!~"sensor\\.home_house_first_floor_living_room_device_switch_wall_switch_wall_module_entry_module_battery_2"} <= 15)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.friendly_name }} is at {{ $value }}% — replace soon"
+            description: >-
+              A Zigbee/RF control accessory (dimmer, wall module, remote, or curtain motor)
+              battery has been at or below 15% for 6h straight. Losing this degrades a light or
+              blind control, not security — replace at your convenience.
+
+        - alert: HomeAssistantControlBatteryCritical
+          expr: >-
+            (homeassistant_sensor_battery_percent{entity=~"sensor\\.device_remote.*|sensor\\.device_remotes.*|sensor\\..*dimmer.*_battery.*|sensor\\..*module.*_battery.*|sensor\\.curtain_2_3_5fb59b_w070160x_batt|sensor\\.0x001788010cc1d8af_battery", entity!~"sensor\\.home_house_first_floor_living_room_device_switch_wall_switch_wall_module_entry_module_battery_2"} <= 5)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 2h
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.friendly_name }} is at {{ $value }}% — replace now"
+            description: >-
+              A Zigbee/RF control accessory battery has been at or below 5% for 2h straight and
+              is about to stop responding. Replace {{ $labels.friendly_name }}'s battery.
+
+        # ---- Catch-all: anything numeric that isn't excluded and isn't
+        # already classified above. Warn <=20%, critical <=10%. Keeps a
+        # future battery sensor from being silently uncovered.
+        - alert: HomeAssistantBatteryLow
+          expr: >-
+            ((homeassistant_sensor_battery_percent{entity!~"sensor\\.device_lock_garage_house_door_lock_battery|sensor\\.living_room_cat_feeder_battery_ac|sensor\\.device_phone_.*|sensor\\.max_jr_battery_level|sensor\\.home_house_first_floor_living_room_device_switch_wall_switch_wall_module_entry_module_battery_2|sensor\\.bluetooth_bbq_thermometer_.*_batt|sensor\\.service_data_3971fa_servicedata_batt"} unless homeassistant_sensor_battery_percent{entity=~"sensor\\.device_lock_.*_battery"} unless homeassistant_sensor_battery_percent{entity=~"sensor\\.device_remote.*|sensor\\.device_remotes.*|sensor\\..*dimmer.*_battery.*|sensor\\..*module.*_battery.*|sensor\\.curtain_2_3_5fb59b_w070160x_batt|sensor\\.0x001788010cc1d8af_battery"}) <= 20)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.friendly_name }} is at {{ $value }}% — replace soon"
+            description: >-
+              An unclassified Home Assistant battery sensor has been at or below 20% for 6h
+              straight. This entity doesn't match the lock or control-accessory class regexes in
+              prometheusrule-homeassistant.yaml — worth adding it to a class next time this file
+              is touched, but the catch-all threshold covers it in the meantime.
+
+        - alert: HomeAssistantBatteryCritical
+          expr: >-
+            ((homeassistant_sensor_battery_percent{entity!~"sensor\\.device_lock_garage_house_door_lock_battery|sensor\\.living_room_cat_feeder_battery_ac|sensor\\.device_phone_.*|sensor\\.max_jr_battery_level|sensor\\.home_house_first_floor_living_room_device_switch_wall_switch_wall_module_entry_module_battery_2|sensor\\.bluetooth_bbq_thermometer_.*_batt|sensor\\.service_data_3971fa_servicedata_batt"} unless homeassistant_sensor_battery_percent{entity=~"sensor\\.device_lock_.*_battery"} unless homeassistant_sensor_battery_percent{entity=~"sensor\\.device_remote.*|sensor\\.device_remotes.*|sensor\\..*dimmer.*_battery.*|sensor\\..*module.*_battery.*|sensor\\.curtain_2_3_5fb59b_w070160x_batt|sensor\\.0x001788010cc1d8af_battery"}) <= 10)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 2h
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.friendly_name }} is at {{ $value }}% — replace now"
+            description: >-
+              An unclassified Home Assistant battery sensor has been at or below 10% for 2h
+              straight. Replace {{ $labels.friendly_name }}'s battery.
+
+    - name: homeassistant-battery-unavailable
+      rules:
+        # Separate rule/metric/`for:` from the LOW group above by design —
+        # contract #4. Matches any battery-named entity (not just the ones
+        # with a numeric class above) so binary_sensor battery-status
+        # entities are covered too. Retirement-excluded entities are dropped
+        # here too, or this would immediately re-fire forever on the PetKit
+        # feeder and the same "mute it before it ever reports something
+        # real" trap the ticket warns about.
+        - alert: HomeAssistantBatteryUnavailable
+          expr: >-
+            (homeassistant_entity_available{entity=~".*battery.*"} == 0 unless on(entity) homeassistant_entity_available{entity=~"sensor\\.device_lock_garage_house_door_lock_battery|sensor\\.living_room_cat_feeder_battery_ac|binary_sensor\\.living_room_cat_feeder_battery_status|sensor\\.bluetooth_bbq_thermometer_.*_batt|sensor\\.service_data_3971fa_servicedata_batt|sensor\\.home_house_first_floor_living_room_device_switch_wall_switch_wall_module_entry_module_battery_2"})
+            unless on() (up{job="homeassistant"} == 0)
+          for: 4h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.friendly_name }} battery sensor has been unavailable for 4h+"
+            description: >-
+              {{ $labels.friendly_name }} has reported no usable battery value for at least 4h —
+              long enough to rule out a routine HA restart. This is a device that has left the
+              mesh, not a low battery — check whether it's reachable before assuming a battery
+              swap will fix it.
+
+    - name: homeassistant-battery-disappeared
+      rules:
+        # Disappearance is a THIRD failure mode, distinct from "unavailable"
+        # above: the entity's metric series stops existing in Prometheus at
+        # all, rather than reporting available=0. This is what actually
+        # happened to the garage lock's `lock.` entity. Hardcoded count (2:
+        # front door + front gate) rather than absent() over the class regex
+        # — see file header for why absent() over multiple entities is the
+        # wrong tool here. Update the count AND the regex together if a lock
+        # is added or removed.
+        - alert: HomeAssistantLockBatteryDisappeared
+          expr: >-
+            (count(homeassistant_sensor_battery_percent{entity=~"sensor\\.device_lock_.*_battery", entity!~"sensor\\.device_lock_garage_house_door_lock_battery"} or homeassistant_entity_available{entity=~"sensor\\.device_lock_.*_battery", entity!~"sensor\\.device_lock_garage_house_door_lock_battery"}) < 2)
+            unless on() (up{job="homeassistant"} == 0)
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "A tracked lock battery sensor has disappeared from Home Assistant"
+            description: >-
+              Fewer than 2 of the tracked lock battery sensors (front door, front gate) are
+              present in Home Assistant's state machine — one has dropped out entirely rather
+              than reporting a value. This is the garage-lock failure mode: the entity stops
+              existing rather than reading low. Check Settings → Devices in Home Assistant for a
+              removed or renamed lock device.

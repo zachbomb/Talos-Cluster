@@ -29,6 +29,7 @@ See https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rule
 | `unifi-staleness-test.yaml` | `prometheusrule-network-extracted.yaml` | `../prometheusrule-network.yaml` |
 | `ha-backup-staleness-test.yaml` | `prometheusrule-storage-extracted.yaml` | `../prometheusrule-storage.yaml` (SQ-108: `homeassistant-backups` group) |
 | `scrape-target-down-test.yaml` | `prometheusrule-meta-extracted.yaml` | `../prometheusrule-meta.yaml` (SQ-118: `ScrapeTargetDown` job-set audit) |
+| `battery-staleness-test.yaml` | `prometheusrule-homeassistant-extracted.yaml` | `../prometheusrule-homeassistant.yaml` (SQ-119: battery low/unavailable/disappeared alerting) |
 
 ## Why the extracts are committed
 
