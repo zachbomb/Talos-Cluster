@@ -36,7 +36,29 @@ spec:
             enabled: true
             certificateIssuer: wethecommon-prod-cert
           homepage:
-            enabled: false
+            # Verified by `helm template` against external-service 17.8.0: the
+            # common-library ingress integration renders all gethomepage.dev/*
+            # annotations (incl. widget.*) for this chart, same as for app charts.
+            enabled: true
+            name: Home Assistant
+            group: Lifestyle & Home
+            description: Home Automation
+            # Explicit icon: empty/omitted falls back to the generic TrueCharts
+            # external-service chart icon, not a Home Assistant one.
+            icon: homeassistant.png
+            widget:
+              enabled: true
+              # TrueCharts defaults widget type to the chart name
+              # ("externalservice"), which Homepage does not recognize —
+              # must be set explicitly (same gotcha as apps/media/cwa).
+              type: homeassistant
+              custom:
+                # HA runs outside the cluster; point the widget straight at it
+                # (same host as service.main.externalIP below).
+                url: http://192.168.10.191:8123
+                # Long-lived HA access token, substituted by Flux from the
+                # SOPS-encrypted cluster-secrets Secret (flux-system).
+                key: ${HOMEASSISTANT_API}
     service:
       main:
         enabled: true
