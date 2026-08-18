@@ -23,6 +23,11 @@
 #     specific exporter is down while Prometheus itself is healthy. Routes
 #     through the warning channel (Notifiarr) so it's visible without
 #     paging.
+#
+#   - homeassistant-telemetry-health: catches the CONSUMER end of the
+#     watchdog dying — uptime-kuma healthy and monitoring correctly, but
+#     Home Assistant no longer receiving any of it. Added 2026-08-17
+#     (SQ-100). See the group comment below.
 
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
@@ -67,3 +72,67 @@ spec:
               Job {{ $labels.job }} on instance {{ $labels.instance }} has been
               unreachable for 5+ minutes. Other rules depending on this job's
               metrics may be silent.
+
+    # 2026-08-17 (SQ-100): every binary_sensor.uptimekuma_* entity in Home
+    # Assistant had been `unavailable` for at least 21 days — the entire
+    # Prometheus retention window — and nothing alerted. The uptime-kuma pod
+    # was 1/1 Running the whole time and all 56 of its monitors were executing
+    # and recording heartbeats correctly, so every pod-level and scrape-level
+    # signal was green. The break was one layer up: HA's config entry held a
+    # revoked uptime-kuma API key, /metrics returned 401, and HA parks that in
+    # `setup_retry` — it retries forever and never surfaces a reauth prompt.
+    #
+    # This is the same failure CLASS as unifi-telemetry-health in
+    # prometheusrule-network.yaml (the exporter is healthy, its link to the
+    # data is not), but the opposite end of the pipe: there the producer was
+    # serving stale data, here the consumer is receiving none. `up` cannot see
+    # either one.
+    #
+    # It cost three days on 2026-08-14: uptimekuma_cloudflared_tunnel,
+    # uptimekuma_cloudflare_tunnel_external and uptimekuma_home_assistant are
+    # the monitors that should have caught public access breaking, and all
+    # three were among the dark entities.
+    #
+    # The signal was already in Prometheus and simply never queried. The
+    # `homeassistant` ScrapeConfig (scrapeconfigs.yaml) collects HA's
+    # /api/prometheus, which exports homeassistant_entity_available for every
+    # entity. Measured live 2026-08-18: 56 uptimekuma binary_sensors, all 0.
+    - name: homeassistant-telemetry-health
+      rules:
+        # Scoped deliberately to the uptimekuma entities. ~640 of Home
+        # Assistant's 3437 entities are `unavailable` at any given moment
+        # (dead Zigbee nodes, unreachable buttons), so a blanket
+        # "an HA entity is unavailable" rule is unusable — do NOT widen this.
+        #
+        # max(...) == 0 rather than count(... == 0) > N: it fires only when
+        # the WHOLE integration is dark, which is the 401 signature, and is
+        # immune to a single uptime-kuma monitor being deleted or paused.
+        #
+        # The absent() arm covers the integration being removed outright
+        # (series vanish, so max() returns no data and cannot fire). It is
+        # gated on up{job="homeassistant"} == 1 so an HA outage — which also
+        # makes the series disappear — does not false-fire this as a
+        # telemetry-link failure. That is a different event and belongs to a
+        # different alert.
+        - alert: UptimeKumaHAIntegrationDown
+          expr: |
+            max(homeassistant_entity_available{entity=~"binary_sensor\\.uptimekuma_.*"}) == 0
+            or
+            (
+              absent(homeassistant_entity_available{entity=~"binary_sensor\\.uptimekuma_.*"})
+              and on() up{job="homeassistant"} == 1
+            )
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Home Assistant has lost the uptime-kuma integration — the watchdog is blind"
+            description: >-
+              Every binary_sensor.uptimekuma_* entity has been unavailable for
+              15m while the Home Assistant scrape target is still up, so this is
+              the HA-to-uptime-kuma link — not an HA outage and not an
+              uptime-kuma outage. uptime-kuma keeps monitoring correctly
+              throughout, so no other signal reveals it. Last time this was a
+              revoked API key returning 401 on /metrics, which HA retries
+              forever without ever prompting. Runbook:
+              docs/runbooks/homeassistant-uptime-kuma-integration.md
