@@ -157,6 +157,78 @@ while [ "$1" != "///WRAPEND///" ]; do
 done
 shift  # drop the ///WRAPEND/// sentinel now at the front
 
+# pass 2b: strip QsvPipelineBuilder's hardcoded `fps=24` from -filter_complex (SQ-123/125).
+#
+# WHY: Tunarr's `getNumericFrameRateOrDefault()` (MediaStream.ts:178-199) is a provable
+# constant 24 for EVERY input - the parseInt result is computed and then never used on
+# the success path, and the isNaN fallback is unreachable because the numerator is a
+# prefix of the same string. QsvPipelineBuilder.ts:179-205 then appends `fps=<that>`
+# unconditionally, so every QSV channel is pinned to exactly 24.000. Verified in the
+# deployed SEA binary, not just upstream source.
+#
+# That is a frame-rate CONVERSION, not a passthrough: a 29.97 source loses ~6 frames/sec
+# UNEVENLY and 23.976 is resampled to 24.000. The judder is baked into the transcode and
+# no client-side setting can undo it. Measured on ch13: every source file is 24000/1001
+# or 30000/1001, delivered was 24/1.
+#
+# VaapiPipelineBuilder never adds this filter and those 13 channels have run without it
+# indefinitely - that is the live evidence that removing it is tolerable here.
+#
+# UPSTREAM INTENT: the filter exists for tunarr#1431, whose body asks to set the rate "to
+# the same as the content" - i.e. it was meant to MATCH the source, and the parser defect
+# makes it land on the exact default it was written to avoid. Stripping it restores the
+# intended behaviour rather than defeating it. REVERT THIS PASS once upstream fixes the
+# parser. Note a Math.round(num/den) fix upstream would NOT suffice: it cannot express
+# 24000/1001.
+#
+# ⚠️ COUPLED TO A CLIENT-SIDE DEFECT. Restoring true frame rates means QSV channels will
+# modeset on tune/boundary once the client's `refreshrate.auto_switch` is re-enabled, and
+# that client's HDMI sink unreliably re-trains - losing picture OR sound depending on the
+# attempt. auto_switch is currently FALSE, which is the only reason this is safe to ship.
+# DO NOT re-enable auto_switch until the sink fault is fixed. That rule predates this
+# change (the 13 VAAPI channels already deliver true rates); this widens it to 26.
+#
+# SCOPE GUARD: only removes `fps=` when it is a STANDALONE filter - preceded by a chain
+# separator (`,` `;` `[` `]`) or string start. Deliberately does NOT touch an `fps=` that
+# is a sub-option of another filter (e.g. `minterpolate=fps=50`), which is legitimate.
+#
+# NO-OP when absent: VAAPI chains pass through byte-for-byte unchanged.
+#
+# Validated against a REAL production chain recovered from /.local/share/tunarr/logs/tunarr.log:
+#   before: [0:0]hwdownload,format=nv12,setpts=PTS-STARTPTS,fps=24[v];[0:1]aresample=...
+#   after:  [0:0]hwdownload,format=nv12,setpts=PTS-STARTPTS[v];[0:1]aresample=...
+# Separator and label counts preserved; audio and upload chains untouched. Safe because
+# `fps=24` sits AFTER hwdownload,format=nv12 - it runs in software, and `[v]` feeds only
+# `format=nv12,hwupload,vpp_qsv`, a format conversion that does not depend on frame rate.
+# Nothing downstream consumes the filter.
+fps_pend=0
+set -- "$@" "///WRAPEND2///"
+while [ "$1" != "///WRAPEND2///" ]; do
+  a="$1"; shift
+  if [ "$fps_pend" = 1 ]; then
+    fps_pend=0
+    case "$a" in
+      *[],\;[]fps=[0-9]*|fps=[0-9]*)
+        # NOTE the bracket expression is  []; []  ==  ']' ';' '['  - ']' MUST come first
+        # inside a BRE class. An earlier draft used [;[] and silently failed the
+        # `[0:0]fps=24,...` chain-start case, because the character before `fps=` there is
+        # ']' (the end of the pad label), not '['. Caught by unit tests; it would otherwise
+        # have shipped as a PARTIAL fix - stripping mid-chain, missing chain-start - which
+        # is worse than none, because the inconsistency reads as a different bug.
+        a=$(printf '%s' "$a" | sed \
+          -e 's/,fps=[0-9][0-9.]*//g' \
+          -e 's/\([];[]\)fps=[0-9][0-9.]*,/\1/g' \
+          -e 's/^fps=[0-9][0-9.]*,//' \
+          -e 's/\([];[]\)fps=[0-9][0-9.]*\([];[]\)/\1\2/g')
+        ;;
+    esac
+    set -- "$@" "-filter_complex" "$a"; continue
+  fi
+  if [ "$a" = "-filter_complex" ]; then fps_pend=1; continue; fi
+  set -- "$@" "$a"
+done
+shift  # drop the ///WRAPEND2/// sentinel
+
 # pass 3: seed a header-only LIVE subtitle playlist BEFORE exec (SQ-70).
 # Tunarr's readiness gate (waitForStreamReady) polls for every file from
 # getAdditionalRequiredFiles() — which includes the subtitle playlist (subs.m3u8) —
