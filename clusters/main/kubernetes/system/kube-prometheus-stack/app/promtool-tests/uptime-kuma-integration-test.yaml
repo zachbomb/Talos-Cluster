@@ -1,0 +1,109 @@
+# Unit tests for the homeassistant-telemetry-health group in
+# prometheusrule-meta.yaml (SQ-100).
+#
+# The failure this guards against is specifically NOT visible to `up` or to any
+# pod-level check: uptime-kuma stays 1/1 Running with all its monitors green
+# while Home Assistant receives nothing from it. So the tests below pin the two
+# things that make the rule worth having — that it fires on a total blackout of
+# the uptimekuma entities, and that it does NOT fire on the three lookalikes
+# that would otherwise make it noise: a partial blackout, a Home Assistant
+# outage, and a healthy integration.
+#
+# Run locally:
+#   promtool test rules clusters/main/kubernetes/system/kube-prometheus-stack/app/promtool-tests/uptime-kuma-integration-test.yaml
+
+rule_files:
+  - prometheusrule-meta-extracted.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # Healthy — every uptimekuma sensor reporting available. Must stay silent.
+  - interval: 1m
+    input_series:
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_plex",job="homeassistant"}'
+        values: "1+0x40"
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_cloudflared_tunnel",job="homeassistant"}'
+        values: "1+0x40"
+      - series: 'up{job="homeassistant"}'
+        values: "1+0x40"
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts: []
+
+  # The real incident: revoked API key, 401 on /metrics, every uptimekuma
+  # entity unavailable while Home Assistant itself is perfectly reachable.
+  # Silent through `for: 15m`, then fires.
+  - interval: 1m
+    input_series:
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_plex",job="homeassistant"}'
+        values: "0+0x40"
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_cloudflared_tunnel",job="homeassistant"}'
+        values: "0+0x40"
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_home_assistant",job="homeassistant"}'
+        values: "0+0x40"
+      - series: 'up{job="homeassistant"}'
+        values: "1+0x40"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Home Assistant has lost the uptime-kuma integration — the watchdog is blind"
+              description: "Every binary_sensor.uptimekuma_* entity has been unavailable for 15m while the Home Assistant scrape target is still up, so this is the HA-to-uptime-kuma link — not an HA outage and not an uptime-kuma outage. uptime-kuma keeps monitoring correctly throughout, so no other signal reveals it. Last time this was a revoked API key returning 401 on /metrics, which HA retries forever without ever prompting. Runbook: docs/runbooks/homeassistant-uptime-kuma-integration.md"
+
+  # Partial blackout — one monitor deleted or paused in uptime-kuma while the
+  # integration is fine. This is routine and must NOT alert. It is the reason
+  # the expression is max(...) == 0 and not count(... == 0) > N.
+  - interval: 1m
+    input_series:
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_plex",job="homeassistant"}'
+        values: "1+0x40"
+      - series: 'homeassistant_entity_available{entity="binary_sensor.uptimekuma_dizquetv",job="homeassistant"}'
+        values: "0+0x40"
+      - series: 'up{job="homeassistant"}'
+        values: "1+0x40"
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts: []
+
+  # Home Assistant itself is down: the entity series disappear entirely, which
+  # trips absent(). That is an HA outage, not a broken telemetry link, and it
+  # has its own alert — the up{job="homeassistant"} == 1 gate is what keeps
+  # this rule from claiming otherwise. Must NOT fire.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant"}'
+        values: "0+0x40"
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts: []
+
+  # Integration removed from Home Assistant outright while HA is up: no series
+  # at all, so max() has nothing to evaluate and only absent() can catch it.
+  # Without this arm, deleting the integration would be indistinguishable from
+  # a healthy cluster.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant"}'
+        values: "1+0x40"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: UptimeKumaHAIntegrationDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Home Assistant has lost the uptime-kuma integration — the watchdog is blind"
+              description: "Every binary_sensor.uptimekuma_* entity has been unavailable for 15m while the Home Assistant scrape target is still up, so this is the HA-to-uptime-kuma link — not an HA outage and not an uptime-kuma outage. uptime-kuma keeps monitoring correctly throughout, so no other signal reveals it. Last time this was a revoked API key returning 401 on /metrics, which HA retries forever without ever prompting. Runbook: docs/runbooks/homeassistant-uptime-kuma-integration.md"
