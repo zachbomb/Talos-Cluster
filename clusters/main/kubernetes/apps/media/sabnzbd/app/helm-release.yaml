@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: sabnzbd
-      version: 25.6.0
+      version: 25.6.1
       sourceRef:
         kind: HelmRepository
         name: truecharts
@@ -28,7 +28,7 @@ spec:
     image:
       repository: ghcr.io/home-operations/sabnzbd
       pullPolicy: IfNotPresent
-      tag: 5.1.0
+      tag: 5.1.1
     TZ: America/Los_Angeles
     credentials:
       s3:
