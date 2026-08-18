@@ -1,0 +1,98 @@
+groups:
+  - name: meta-monitoring
+    interval: 30s
+    rules:
+      # Watchdog — fires continuously while Prometheus + Alertmanager are healthy.
+      # AM forwards each evaluation to uptime-kuma push endpoint.
+      # If heartbeats stop reaching uptime-kuma for ≈3 cycles (~3min), uptime-kuma
+      # alerts via the sink-independent Pushover/ntfy channel.
+      - alert: Watchdog
+        expr: vector(1)
+        for: 0s
+        labels:
+          severity: info
+          watchdog: "true"
+        annotations:
+          summary: Cluster alerting pipeline is healthy
+          description: |
+            Synthetic always-firing alert. uptime-kuma should be receiving these
+            heartbeats every ~1 minute. If heartbeats stop, uptime-kuma fires the
+            sink-independent Pushover/ntfy alert. See R18a in the brainstorm.
+      # ScrapeTargetDown — covers per-job scrape failures for core cluster
+      # infra (cilium-agent, alertmanager, prometheus, kube-state-metrics,
+      # node-exporter) plus every job that FEEDS another custom alert rule
+      # in this component — i.e. a job where `up == 0` would silently blind
+      # a downstream rule that assumes its metrics keep flowing. Catches the
+      # failure mode "Prometheus is up but a specific scrape target is
+      # crashlooping" that uptime-kuma probing /-/healthy doesn't catch.
+      #
+      # Audited 2026-08-18 (SQ-118) against the live job list
+      # (`count by(job)(up)` on kube-prometheus-stack-prometheus), after
+      # homeassistant being down for weeks left HomeAssistantBackupStale/
+      # HomeAssistantBackupSensorAbsent (SQ-108, prometheusrule-storage.yaml)
+      # and UptimeKumaHAIntegrationDown (this file) silently dependent on a
+      # target this rule never watched — the same gap, just one job at a
+      # time, so the fix widens the whole matcher rather than adding
+      # homeassistant alone. Added, each because a rule elsewhere in this
+      # component reads its metrics:
+      #   - homeassistant       → HomeAssistantBackupStale/Absent (storage),
+      #                           UptimeKumaHAIntegrationDown (this file)
+      #   - volsync-metrics     → VolSyncBackupOutOfSync/MetricsAbsent (storage)
+      #   - traefik             → TraefikMetricsAbsent/High5xxRate (network)
+      #   - blocky              → BlockyBlockingDisabled/ListRefreshStale/
+      #                           ListDownloadFailing (network)
+      #   - coredns             → CoreDNSHighServfail (network)
+      #   - cloudflared         → CloudflaredTunnelDegraded/Down (network)
+      #   - unpoller            → UnifiTelemetryStale/Absent (network)
+      #   - crowdsec-agent-service, crowdsec-service
+      #                         → CrowdSecAgentDown/CrowdSecLapiDown (crowdsec)
+      #   - longhorn-backend    → LonghornVolumeDegraded/Faulted/MetricsAbsent
+      #                           (storage)
+      #   - metallb-controller-monitor-service
+      #                         → MetalLBPoolNearExhausted/ConfigStale/
+      #                           UpdateErrors (network)
+      #   - truenas-exporter    → no rule in this repo reads it yet, but it
+      #                           is the VolSync backup destination
+      #                           (192.168.10.122, see CLAUDE.md) — a dark
+      #                           TrueNAS scrape target is the same "can't
+      #                           tell whether backups are landing" class
+      #                           this rule exists to close.
+      #
+      # Deliberately excluded (not alerting-dependency targets — adding
+      # them would just be noise):
+      #   - Kubernetes control plane (apiserver, kube-controller-manager,
+      #     kube-scheduler, kube-etcd, kubelet) — already covered by the
+      #     kube-prometheus-stack chart's own default "kubernetes" mixin
+      #     alerts; duplicating here fires twice for the same outage.
+      #   - Admission/webhook/controller jobs (cert-manager, cainjector,
+      #     kyverno-*, snapshot-controller, kubelet-csr-approver,
+      #     kube-prometheus-stack-operator) — no custom rule in this repo
+      #     reads their metrics; a crash here surfaces as the underlying
+      #     resource (cert, policy, snapshot) failing to reconcile instead.
+      #   - Per-app media/exporter jobs (plex-exporter, emby-exporter,
+      #     sonarr, radarr, lidarr, readarr, tautulli-exporter,
+      #     tunarr-exporter, deluge-exporter, nzbget-exporter,
+      #     sabnzbd-exportarr, ollama-exporter, homebridge,
+      #     triparr-bot-metrics, immich-metrics, graphite-exporter, alloy,
+      #     dcgm-exporter, smartctl-exporter*, pve-exporter,
+      #     nginx-external-ingress-nginx-controller-metrics,
+      #     kube-prometheus-stack-grafana) — these restart/redeploy far more
+      #     often than core infra, so gating on them here would be noisy,
+      #     and nothing else in this repo depends on their `up` staying 1.
+      #   - Namespace-prefixed DB/controller sidecar jobs
+      #     (kube-prometheus-stack/flux-controllers, sonarqube/sonarqube-db,
+      #     media/immich-cnpg-main, triparr-bot/triparr-db,
+      #     ollama/openwebui-db, goodmem/goodmem-db) — internal sidecar
+      #     metrics, not read by any alert rule here.
+      - alert: ScrapeTargetDown
+        expr: |
+          up{job=~"cilium-agent|alertmanager|kube-prometheus-stack-prometheus|kube-state-metrics|node-exporter|homeassistant|volsync-metrics|traefik|blocky|coredns|cloudflared|unpoller|crowdsec-agent-service|crowdsec-service|longhorn-backend|metallb-controller-monitor-service|truenas-exporter"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus scrape target {{ $labels.job }} is down on {{ $labels.instance }}"
+          description: |
+            Job {{ $labels.job }} on instance {{ $labels.instance }} has been
+            unreachable for 5+ minutes. Other rules depending on this job's
+            metrics may be silent.

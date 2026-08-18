@@ -1,0 +1,308 @@
+# Unit tests for ScrapeTargetDown in prometheusrule-meta.yaml.
+# CI (.github/workflows/prometheus-rules-ci.yaml) extracts that rule's .spec to
+# prometheusrule-meta-extracted.yaml in this directory, which this fixture loads.
+# exp_annotations MUST match the rule's folded (|) annotations byte-for-byte.
+#
+# SQ-118: ScrapeTargetDown's job=~"..." matcher only covered 5 core-infra jobs
+# (cilium-agent, alertmanager, prometheus, kube-state-metrics, node-exporter).
+# homeassistant going down for weeks left HomeAssistantBackupStale/Absent
+# (SQ-108) and UptimeKumaHAIntegrationDown (SQ-100) with no ScrapeTargetDown
+# backstop, so the failure was invisible until someone opened those specific
+# dashboards. The regex was widened to every job another custom alert rule in
+# this component depends on -- see the comment above the alert in
+# ../prometheusrule-meta.yaml for the full audit and what was deliberately
+# excluded.
+#
+# Every case below asserts ScrapeTargetDown FIRES for the down job -- not just
+# that some other alert stays silent. A test that only checks e.g.
+# HomeAssistantBackupStale doesn't fire proves nothing about this alert: it
+# passes identically whether or not homeassistant is in the regex, because
+# that rule doesn't depend on ScrapeTargetDown at all. Reverting the regex to
+# the pre-SQ-118 5-job set fails every "newly added job" case here.
+rule_files:
+  - prometheusrule-meta-extracted.yaml
+evaluation_interval: 1m
+tests:
+  # --- The reported bug: homeassistant down for 5m+ must fire. ---
+  # This is the case that fails if the regex is reverted to the original 5
+  # jobs -- the whole point of this fixture.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: homeassistant
+              instance: "192.168.10.191:8123"
+            exp_annotations:
+              summary: "Prometheus scrape target homeassistant is down on 192.168.10.191:8123"
+              description: |
+                Job homeassistant on instance 192.168.10.191:8123 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  # homeassistant down for only 3m (< for: 5m) must NOT fire yet -- boundary check.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "0x4"
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ScrapeTargetDown
+        exp_alerts: []
+
+  # homeassistant healthy (up=1) must never fire -- negative control.
+  - interval: 1m
+    input_series:
+      - series: 'up{job="homeassistant", instance="192.168.10.191:8123"}'
+        values: "1x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts: []
+
+  # --- Regression: one of the original 5 core-infra jobs still fires. ---
+  - interval: 1m
+    input_series:
+      - series: 'up{job="node-exporter", instance="10.0.0.1:9100"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: node-exporter
+              instance: "10.0.0.1:9100"
+            exp_annotations:
+              summary: "Prometheus scrape target node-exporter is down on 10.0.0.1:9100"
+              description: |
+                Job node-exporter on instance 10.0.0.1:9100 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  # --- Deliberately excluded job (media exporter) must NOT fire. ---
+  # Proves the fix isn't a blanket "match everything" regex -- SQ-118 excludes
+  # per-app media/exporter jobs (see the rule's comment for the full list).
+  - interval: 1m
+    input_series:
+      - series: 'up{job="plex-exporter", instance="10.0.0.2:9594"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts: []
+
+  # --- Every other job added by the SQ-118 audit fires when down for 5m+. ---
+  - interval: 1m
+    input_series:
+      - series: 'up{job="volsync-metrics", instance="10.0.0.3:8443"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: volsync-metrics
+              instance: "10.0.0.3:8443"
+            exp_annotations:
+              summary: "Prometheus scrape target volsync-metrics is down on 10.0.0.3:8443"
+              description: |
+                Job volsync-metrics on instance 10.0.0.3:8443 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="traefik", instance="10.0.0.4:9100"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: traefik
+              instance: "10.0.0.4:9100"
+            exp_annotations:
+              summary: "Prometheus scrape target traefik is down on 10.0.0.4:9100"
+              description: |
+                Job traefik on instance 10.0.0.4:9100 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="blocky", instance="192.168.10.195:4000"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: blocky
+              instance: "192.168.10.195:4000"
+            exp_annotations:
+              summary: "Prometheus scrape target blocky is down on 192.168.10.195:4000"
+              description: |
+                Job blocky on instance 192.168.10.195:4000 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="coredns", instance="10.0.0.5:9153"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: coredns
+              instance: "10.0.0.5:9153"
+            exp_annotations:
+              summary: "Prometheus scrape target coredns is down on 10.0.0.5:9153"
+              description: |
+                Job coredns on instance 10.0.0.5:9153 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="cloudflared", instance="10.0.0.6:2000"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: cloudflared
+              instance: "10.0.0.6:2000"
+            exp_annotations:
+              summary: "Prometheus scrape target cloudflared is down on 10.0.0.6:2000"
+              description: |
+                Job cloudflared on instance 10.0.0.6:2000 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="unpoller", instance="10.0.0.7:9130"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: unpoller
+              instance: "10.0.0.7:9130"
+            exp_annotations:
+              summary: "Prometheus scrape target unpoller is down on 10.0.0.7:9130"
+              description: |
+                Job unpoller on instance 10.0.0.7:9130 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-agent-service", instance="10.0.0.8:6060"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: crowdsec-agent-service
+              instance: "10.0.0.8:6060"
+            exp_annotations:
+              summary: "Prometheus scrape target crowdsec-agent-service is down on 10.0.0.8:6060"
+              description: |
+                Job crowdsec-agent-service on instance 10.0.0.8:6060 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="crowdsec-service", instance="10.0.0.9:8080"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: crowdsec-service
+              instance: "10.0.0.9:8080"
+            exp_annotations:
+              summary: "Prometheus scrape target crowdsec-service is down on 10.0.0.9:8080"
+              description: |
+                Job crowdsec-service on instance 10.0.0.9:8080 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="longhorn-backend", instance="10.0.0.10:9500"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: longhorn-backend
+              instance: "10.0.0.10:9500"
+            exp_annotations:
+              summary: "Prometheus scrape target longhorn-backend is down on 10.0.0.10:9500"
+              description: |
+                Job longhorn-backend on instance 10.0.0.10:9500 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="metallb-controller-monitor-service", instance="10.0.0.11:7472"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: metallb-controller-monitor-service
+              instance: "10.0.0.11:7472"
+            exp_annotations:
+              summary: "Prometheus scrape target metallb-controller-monitor-service is down on 10.0.0.11:7472"
+              description: |
+                Job metallb-controller-monitor-service on instance 10.0.0.11:7472 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
+
+  - interval: 1m
+    input_series:
+      - series: 'up{job="truenas-exporter", instance="192.168.10.122:9633"}'
+        values: "0x10"
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ScrapeTargetDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: truenas-exporter
+              instance: "192.168.10.122:9633"
+            exp_annotations:
+              summary: "Prometheus scrape target truenas-exporter is down on 192.168.10.122:9633"
+              description: |
+                Job truenas-exporter on instance 192.168.10.122:9633 has been
+                unreachable for 5+ minutes. Other rules depending on this job's
+                metrics may be silent.
