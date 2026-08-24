@@ -206,6 +206,7 @@ def main():
 
     rows = []
     stats = collections.Counter()
+    checked_per = collections.Counter()
 
     for s in series:
         try:
@@ -240,6 +241,7 @@ def main():
                 stats["no_mediainfo_runtime"] += 1
             else:
                 stats["runtime_checked"] += 1
+                checked_per[s.get("title")] += 1
                 delta = act - exp
                 ratio = act / float(exp)
                 if abs(delta) < ABS_FLOOR_S:
@@ -364,11 +366,14 @@ def main():
         1 for c in collisions if not (c["distinct_tvdb"] and c["distinct_paths"]))
 
     # ---- TV nuance: is a runtime flag series-uniform? then suspect the METADATA ----
-    files_per = {s2.get("title"): (s2.get("statistics") or {}).get("episodeFileCount") or 0
-                 for s2 in series}
+    # DENOMINATOR MATTERS: divide by episodes actually RUNTIME-CHECKED in that series,
+    # not by episodeFileCount. Kids in the Hall has 101 files but only 44 carry a
+    # mediainfo duration; 31 flagged is 31% of 101 but 70% of 44. Using the wrong
+    # denominator hid a confirmed metadata defect (TVDB says 60 min for 80 episodes;
+    # every measurable file is 18-28 min).
     flagged_per = collections.Counter(r["series"] for r in rows if r["runtime_flag"])
     uniform = {t for t, n in flagged_per.items()
-               if files_per.get(t) and n / files_per[t] >= SERIES_UNIFORM_PCT}
+               if checked_per.get(t) and n / checked_per[t] >= SERIES_UNIFORM_PCT}
     for r in rows:
         r["series_uniform"] = r["series"] in uniform
         if r["series_uniform"] and r["runtime_flag"]:

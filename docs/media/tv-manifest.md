@@ -1,6 +1,6 @@
 # TV Identity Manifest
 
-Generated 2026-08-08T07:33:23 from Sonarr at 192.168.10.211.
+Generated 2026-08-24T21:39:41 from Sonarr at 192.168.10.211.
 
 Step 1 of SQ-58 — verify identity AT THE FILE, then propagate upward. This report changes nothing; it never renames, moves or deletes.
 
@@ -9,38 +9,47 @@ Step 1 of SQ-58 — verify identity AT THE FILE, then propagate upward. This rep
 | Metric | Count |
 |---|---|
 | Series scanned | 152 |
-| Episodes with a file | 8118 |
-| Episodes with no file | 6009 |
-| Runtime cross-check possible | 7917 |
-| — no TVDB runtime (unverifiable) | 46 |
+| Episodes with a file | 8206 |
+| Episodes with no file | 5936 |
+| Runtime cross-check possible | 8006 |
+| — no TVDB runtime (unverifiable) | 44 |
 | — no mediainfo runtime (unverifiable) | 57 |
-| Shift check possible | 888 |
-| — name already matches own title (BLIND SPOT) | 7220 |
+| Shift check possible | 812 |
+| — name already matches own title (BLIND SPOT) | 7384 |
 | — multi-episode file (unjudgeable) | 10 |
 
-**The shift rate is 41 of 888 assessable = 4.6%, NOT 41 of 8108.** Where Sonarr has renamed a file its numbering is baked into the name, so a shift there is invisible to that method. A clean result on a renamed series is not evidence of correctness.
+**The shift rate is 1 of 812 assessable = 0.1%, NOT 1 of 8196.** Where Sonarr has renamed a file its numbering is baked into the name, so a shift there is invisible to that method. A clean result on a renamed series is not evidence of correctness.
 
 ## Findings
 
 | Signal | Count |
 |---|---|
-| Runtime TOO-SHORT (ratio <0.55 — content missing) | 47 |
+| Runtime TOO-SHORT (ratio <0.55 — content missing) | 66 |
 | Runtime LONG (1.15-1.60) | 99 |
-| DOUBLE-EPISODE or EXTENDED (ratio >=1.60 — usually legitimate) | 232 |
-| Within ad-break band (NORMAL) | 7539 |
-| Positional shifts | 41 |
+| DOUBLE-EPISODE or EXTENDED (ratio >=1.60 — usually legitimate) | 221 |
+| Within ad-break band (NORMAL) | 7620 |
+| Positional shifts | 1 |
 | **Both signals on one file** | **0** |
 
 A file carrying BOTH signals is the strongest evidence available here — the name says one episode and the duration disagrees too.
 
-## TOO-SHORT — content missing or wrong episode (47)
+## TOO-SHORT — content missing or wrong episode (66)
 
 Ratio below 0.55: shorter than ad breaks can explain. **These are the real errors.**
 
 | Series | S/E | Sonarr title | Expected | Actual | Δ | Note |
 |---|---|---|---|---|---|---|
 | Top Chef (FR) | S16E11 | Épisode 11 : 24 heures au palace | 156m | 31m | -125m |  |
+| Top Chef (FR) | S15E03 | Émission 3 | 120m | 51m | -69m |  |
+| Top Chef (FR) | S15E06 | Émission 6 | 120m | 51m | -69m |  |
+| Top Chef (FR) | S15E09 | Émission 9 | 120m | 52m | -68m |  |
 | American Masters | S30E05 | Loretta Lynn: Still a Mountain Girl | 120m | 53m | -67m |  |
+| Top Chef (FR) | S15E10 | Émission 10 | 120m | 56m | -64m |  |
+| Top Chef (FR) | S15E04 | Émission 4 | 120m | 57m | -63m |  |
+| Top Chef (FR) | S15E02 | Émission 2 | 120m | 59m | -61m |  |
+| Top Chef (FR) | S15E05 | Émission 5 | 120m | 60m | -60m |  |
+| Top Chef (FR) | S15E08 | Émission 8 | 120m | 62m | -58m |  |
+| Top Chef (FR) | S15E12 | Émission 12 | 120m | 65m | -55m |  |
 | American Masters | S25E02 | Troubadors: Carole King/James Taylor & t | 101m | 53m | -48m |  |
 | Top Chef | S18E14 | The Next Top Chef Is ... | 90m | 44m | -46m |  |
 | American Masters | S23E07 | Joan Baez: How Sweet the Sound | 90m | 49m | -41m |  |
@@ -75,19 +84,23 @@ Ratio below 0.55: shorter than ad breaks can explain. **These are the real error
 | The Kids in the Hall | S04E19 | #419 | 60m | 24m | -36m |  |
 | The Kids in the Hall | S04E11 | #411 | 60m | 24m | -36m |  |
 | The Kids in the Hall | S04E20 | #420 | 60m | 24m | -36m |  |
+| Come Dine With Me New Zealand | S01E09 | Episode 9 | 30m | 1m | -29m |  |
 | It's Always Sunny in Philadelphia | S06E13 | A Very Sunny Christmas | 45m | 20m | -25m |  |
 | Come Dine With Me Australia | S02E19 | Week 4: Kate | 45m | 20m | -24m |  |
 | Come Dine With Me Australia | S02E11 | Week 3: Dominic | 45m | 21m | -24m |  |
 | Come Dine With Me Australia | S02E12 | Week 3: Michelle | 45m | 23m | -22m |  |
 | Come Dine With Me Australia | S03E18 | Week 4: Gerald | 45m | 23m | -22m |  |
 | Come Dine With Me Australia | S03E17 | Week 4: Jacki | 45m | 24m | -21m |  |
+| Come Dine With Me Australia | S01E03 | Week 1: Ben | 45m | 24m | -21m |  |
 | Come Dine With Me Australia | S03E14 | Week 3: Lachlan | 45m | 24m | -21m |  |
+| Come Dine With Me Australia | S02E18 | Week 4: Karen | 45m | 24m | -21m |  |
 | Come Dine With Me Australia | S02E17 | Week 4: David | 45m | 24m | -21m |  |
 | Come Dine With Me Australia | S03E19 | Week 4: Bromwyn | 45m | 24m | -21m |  |
 | Come Dine With Me Australia | S03E16 | Week 4: Suze | 45m | 24m | -21m |  |
 | Come Dine With Me Australia | S03E15 | Week 3: Warren | 45m | 25m | -20m |  |
+| Come Dine With Me Australia | S01E06 | Week 2: Trudi | 45m | 25m | -20m |  |
 
-## DOUBLE-EPISODE or EXTENDED (232)
+## DOUBLE-EPISODE or EXTENDED (221)
 
 Ratio >=1.60 — usually a legitimate double episode or feature-length special. Verify; do NOT 'correct' these.
 
@@ -95,17 +108,6 @@ Ratio >=1.60 — usually a legitimate double episode or feature-length special. 
 |---|---|---|---|---|---|---|
 | Top Chef (FR) | S16E12 | Épisode 12 : Le choc des titans | 127m | 238m | +111m |  |
 | Tim and Eric Awesome Show, Great Job! | S04E01 | Snow | 15m | 122m | +107m |  |
-| Top Chef | S04E13 | Puerto Rico | 60m | 164m | +104m |  |
-| Top Chef | S04E11 | Restaurant Wars | 60m | 159m | +99m |  |
-| Top Chef | S04E07 | Improv | 60m | 156m | +96m |  |
-| Top Chef | S04E05 | The Elements | 60m | 151m | +91m |  |
-| Top Chef | S04E10 | Serve and Protect | 60m | 150m | +90m |  |
-| Top Chef | S04E03 | Block Party | 60m | 150m | +90m |  |
-| Top Chef | S04E04 | Film Food | 60m | 150m | +90m |  |
-| Top Chef | S04E08 | Common Threads | 60m | 149m | +89m |  |
-| Top Chef | S04E12 | High Steaks | 60m | 148m | +88m |  |
-| Top Chef | S04E06 | Tailgating | 60m | 143m | +83m |  |
-| Top Chef | S04E09 | Wedding Wars | 75m | 138m | +63m |  |
 | imagine... | S23E05 | The One and Only Mike Leigh | 50m | 111m | +61m |  |
 | ER | S03E10 | Homeless for the Holidays | 45m | 106m | +61m |  |
 | ER | S03E11 | Night Shift | 45m | 104m | +59m |  |
@@ -153,6 +155,17 @@ Ratio >=1.60 — usually a legitimate double episode or feature-length special. 
 | Come Dine with Me | S2013E114 | All in One: West Lancashire Coast | 25m | 47m | +22m |  |
 | Come Dine with Me | S2013E08 | All in One: East Coast of Yorkshire | 25m | 47m | +22m |  |
 | Come Dine with Me | S2014E03 | All in One: Suffolk | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E55 | All in One: Chippenham | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E63 | All in One: Kensington And Chelsea | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E73 | All in One: Cumbria | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E107 | All in One: North Norfolk | 25m | 47m | +22m |  |
+| Come Dine with Me | S2014E01 | All in One: South Oxfordshire | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E116 | All in One: Southampton | 25m | 47m | +22m |  |
+| Come Dine with Me | S2014E02 | All in One: Northumberland | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E64 | All in One: Turnbridge Wells | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E117 | All in One: High Wycombe | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E14 | All in One: Lake District | 25m | 47m | +22m |  |
+| Come Dine with Me | S2013E66 | All in One: Banbury | 25m | 47m | +22m |  |
 
 ## LONG — longer than a single cut should be (99)
 
@@ -165,12 +178,12 @@ Ratio >=1.60 — usually a legitimate double episode or feature-length special. 
 | Top Chef (FR) | S16E10 | Épisode 10 : Fâce à l'étoile suprême | 117m | 167m | +50m |  |
 | Top Chef (FR) | S17E05 | The MOFs - Jules Verne Circus in Amiens | 109m | 158m | +49m |  |
 | Top Chef (FR) | S16E04 | Épisode 4 : Goûtez-moi ce plat magique ! | 110m | 158m | +48m |  |
+| Top Chef (FR) | S17E03 | Tribute to Paul Bocuse - Collonges Abbey | 111m | 159m | +48m |  |
 | Top Chef (FR) | S09E01 | TBA | 120m | 167m | +47m |  |
 | Top Chef (FR) | S10E01 | TBA | 120m | 164m | +44m |  |
 | Top Chef (FR) | S08E01 | TBA | 120m | 163m | +43m |  |
 | Top Chef (FR) | S04E11 | TBA | 120m | 157m | +37m |  |
 | American Masters | S24E04 | Merle Haggard: Learning to Live with Mys | 82m | 116m | +34m |  |
-| Top Chef | S04E02 | Zoo Food | 60m | 89m | +29m |  |
 | imagine... | S28E03 | Alma Deutscher: Finding Cinderella | 50m | 77m | +27m |  |
 | imagine... | S26E02 | Georgia O'Keeffe: By Myself | 50m | 76m | +26m |  |
 | American Masters | S31E02 | Maya Angelou: And Still I Rise | 90m | 115m | +25m |  |
@@ -219,51 +232,11 @@ Ratio >=1.60 — usually a legitimate double episode or feature-length special. 
 | Come Dine With Me Australia | S02E16 | Week 4: Megan | 45m | 58m | +13m |  |
 | imagine... | S25E02 | Antony Gormley: Being Human | 50m | 63m | +13m |  |
 
-## Positional shifts without a runtime signal (41)
+## Positional shifts without a runtime signal (1)
 
 | Series | S/E | Sonarr says | File says | Offset |
 |---|---|---|---|---|
-| American Dad! | S15E08 | Death by Dinner Party | The Never-Ending Stories | +1 |
-| American Dad! | S15E09 | The Never-Ending Stories | Railroaded | +1 |
-| Anthony Bourdain: No Reservations | S03E04 | Namibia | Shanghai | +3 |
-| Anthony Bourdain: No Reservations | S03E08 | New York City | Brazil | +1 |
-| Anthony Bourdain: No Reservations | S03E11 | Cleveland | South Carolina | +3 |
-| Anthony Bourdain: No Reservations | S03E13 | Argentina | Tuscany | +2 |
 | Carlos | S01E03 | Episode 3 | Episode 1 | -2 |
-| Futurama | S11E08 | Oceans Three | Lord Nibbler in the Nothingverse | -1 |
-| King of the Hill | S11E12 | Lucky's Wedding Suit | Bill, Bulk, and the Body Buddies | -1 |
-| King of the Hill | S14E03 | Bobby Gets Grilled | Chore Money, Chore Problems | +1 |
-| King of the Hill | S14E04 | Chore Money, Chore Problems | Any Given Hill-Day | +3 |
-| King of the Hill | S14E08 | Kahn-scious Uncoupling | No Hank Left Behind | +1 |
-| King of the Hill | S14E09 | No Hank Left Behind | A Sounder Investment | +1 |
-| King of the Hill | S14E10 | A Sounder Investment | Kahn-scious Uncoupling | -2 |
-| The French Chef | S05E06 | Chop Dinner in Half an Hour | Filet of Beef Wellington | +1 |
-| The French Chef | S05E07 | Filet of Beef Wellington | Apple Charlotte | +1 |
-| The French Chef | S05E08 | Apple Charlotte | More Great Beginnings | +1 |
-| The French Chef | S05E09 | More Great Beginnings | Roast Suckling Pig | +1 |
-| The French Chef | S05E10 | Roast Suckling Pig | More About Potatoes | +1 |
-| The French Chef | S05E11 | More About Potatoes | Steak Dinner in Half an Hour | +1 |
-| The French Chef | S05E12 | Steak Dinner in Half an Hour | The Endive Show | +1 |
-| The French Chef | S05E13 | The Endive Show | Saddle of Lamb | +1 |
-| The French Chef | S05E16 | Paëlla à l'Américaine | Dinner Party: First Course | +1 |
-| The French Chef | S05E17 | Dinner Party: First Course | Dinner Party: Main Course | +1 |
-| The French Chef | S05E18 | Dinner Party: Main Course | Dinner Party: Meringue Dessert | +1 |
-| The French Chef | S05E19 | Dinner Party: Meringue Dessert | Soupe au Pistou | +1 |
-| The French Chef | S05E20 | Soupe au Pistou | Quenelles | +1 |
-| The French Chef | S07E01 | Bouillabaisse à la Marseillaise | Cake with a Halo | +3 |
-| The French Chef | S07E02 | Napoleon's Chicken | Hamburger Dinner | +3 |
-| The French Chef | S07E04 | Cake with a Halo | Turkey Breast Braised | +3 |
-| The French Chef | S07E07 | Turkey Breast Braised | How About Lentils? | +3 |
-| The French Chef | S07E08 | Lasagne a la Française | Fish in Monk's Clothing | +3 |
-| The French Chef | S07E10 | How About Lentils? | Cheese and Wine Party | +3 |
-| The French Chef | S07E11 | Fish in Monk's Clothing | Curry Dinner | +3 |
-| The French Chef | S07E13 | Cheese and Wine Party | Meat Loaf Masquerade | +3 |
-| The French Chef | S07E14 | Curry Dinner | To Roast a Chicken | +3 |
-| The French Chef | S07E16 | Meat Loaf Masquerade | Boeuf Bourguignon (1971) | +3 |
-| The French Chef | S07E19 | Boeuf Bourguignon (1971) | French Bread | +3 |
-| The French Chef | S07E20 | Strawberry Soufflé for Dessert | French Bread | +2 |
-| The French Chef | S10E03 | Coffee and .... Coffee Cake and Do | For Working Guys and Gals | -2 |
-| The French Chef | S10E06 | To Ragoût a Goose | Brunch for a Bunch | -2 |
 
 ## Same-title series — revivals are DIFFERENT WORKS
 
@@ -280,9 +253,9 @@ The exact-title check does not catch these: the country suffix makes the titles 
 
 | Franchise | Variants | Distinct tvdbId |
 |---|---|---|
-| top chef | FR 2010 (M6, 86 files); GR 2010 (Skai, 0 files); ES 2013 (Antena 3, 4 files); SA 2016 (MBC Shahid, 0 files); (orig) 2006 (Bravo, 343 files) | yes |
-| taskmaster | US 2018 (Comedy Central, 8 files); AU 2023 (Network 10, 50 files); NZ 2020 (TVNZ 2, 60 files); (orig) 2015 (Channel 4, 229 files) | yes |
-| come dine with me | CA 2010 (None, 0 files); IR 2010 (Manoto TV, 0 files); (orig) 2005 (Channel 4, 799 files) | yes |
+| top chef | FR 2010 (M6, 103 files); GR 2010 (Skai, 0 files); ES 2013 (Antena 3, 4 files); SA 2016 (MBC Shahid, 0 files); (orig) 2006 (Bravo, 343 files) | yes |
+| taskmaster | US 2018 (Comedy Central, 8 files); AU 2023 (Network 10, 50 files); NZ 2020 (TVNZ 2, 60 files); (orig) 2015 (Channel 4, 230 files) | yes |
+| come dine with me | CA 2010 (None, 0 files); IR 2010 (Manoto TV, 0 files); (orig) 2005 (Channel 4, 810 files) | yes |
 
 ## Spinoffs — a shared base title does NOT mean a shared show
 
@@ -290,8 +263,8 @@ The exact-title check does not catch these: the country suffix makes the titles 
 |---|---|
 | Destination Flavour | Destination Flavour China (2018, 10 files); Destination Flavour Down Under (2014, 10 files); Destination Flavour Japan (2013, 10 files); Destination Flavour Scandinavia (2016, 7 files); Destination Flavour Singapore (2017, 9 files) |
 | Top Chef | Top Chef Amateurs (2021, 12 files); Top Chef Canada (2011, 115 files); Top Chef Duels (2014, 10 files); Top Chef Suomi (2011, 0 files); Top Chef: Masters (2009, 50 files) |
-| Come Dine with Me | Come Dine With Me Australia (2010, 31 files); Come Dine With Me New Zealand (2015, 39 files); Come Dine with Me: The Professionals (2022, 40 files) |
-| Come Dine With Me | Come Dine With Me Australia (2010, 31 files); Come Dine With Me New Zealand (2015, 39 files); Come Dine with Me: The Professionals (2022, 40 files) |
+| Come Dine with Me | Come Dine With Me Australia (2010, 52 files); Come Dine With Me New Zealand (2015, 40 files); Come Dine with Me: The Professionals (2022, 40 files) |
+| Come Dine With Me | Come Dine With Me Australia (2010, 52 files); Come Dine With Me New Zealand (2015, 40 files); Come Dine with Me: The Professionals (2022, 40 files) |
 | Taskmaster | Taskmaster: Champion of Champions (2017, 5 files) |
 
 These are separate shows sharing a franchise name. Merging them, or letting one scrape over the other, mixes unrelated episode numbering.
