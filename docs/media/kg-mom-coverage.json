@@ -1,0 +1,4359 @@
+{
+ "generated_from": "2026-08-24T15:17:08",
+ "rows": [
+  {
+   "id": 281,
+   "name": "Deleuze's Images",
+   "date": "Jan 2023",
+   "type": "film",
+   "total": 612,
+   "matched": 160,
+   "on_disk": 155,
+   "pct": 25.3,
+   "examples": [
+    "Love Streams",
+    "L'Argent",
+    "And the Ship Sails On",
+    "And the Ship Sails On",
+    "L'Argent",
+    "Fitzcarraldo"
+   ]
+  },
+  {
+   "id": 140,
+   "name": "Queer Cinema(s)",
+   "date": "Dec 2012",
+   "type": "film",
+   "total": 3376,
+   "matched": 93,
+   "on_disk": 83,
+   "pct": 2.5,
+   "examples": [
+    "Pillion",
+    "Us",
+    "Dark Phoenix",
+    "My Days of Mercy",
+    "Nasty Baby",
+    "Behind the Candelabra"
+   ]
+  },
+  {
+   "id": 71,
+   "name": "Ingmar Bergman",
+   "date": "Sep 2008",
+   "type": "film",
+   "total": 175,
+   "matched": 67,
+   "on_disk": 67,
+   "pct": 38.3,
+   "examples": [
+    "Saraband",
+    "After the Rehearsal",
+    "Fanny and Alexander",
+    "From the Life of the Marionettes",
+    "Autumn Sonata",
+    "The Serpent's Egg"
+   ]
+  },
+  {
+   "id": 23,
+   "name": "The Birth of Cinema",
+   "date": "Aug 2006",
+   "type": "film",
+   "total": 816,
+   "matched": 68,
+   "on_disk": 65,
+   "pct": 8.0,
+   "examples": [
+    "Our Hospitality",
+    "The Paleface",
+    "Cops",
+    "My Wife's Relations",
+    "The Blacksmith",
+    "The Frozen North"
+   ]
+  },
+  {
+   "id": 51,
+   "name": "Rainer Werner Fassbinder",
+   "date": "Nov 2007",
+   "type": "film",
+   "total": 123,
+   "matched": 85,
+   "on_disk": 63,
+   "pct": 51.2,
+   "examples": [
+    "Fassbinder",
+    "Kamikaze '89",
+    "Querelle",
+    "Veronika Voss",
+    "Veronika Voss",
+    "Kamikaze '89"
+   ]
+  },
+  {
+   "id": 255,
+   "name": "The Olympics",
+   "date": "Jul 2021",
+   "type": "film",
+   "total": 186,
+   "matched": 49,
+   "on_disk": 49,
+   "pct": 26.3,
+   "examples": [
+    "The Games of the V Olympiad Stockholm, 1912",
+    "Goat",
+    "From Up on Poppy Hill",
+    "Bud Greenspan’s Torino 2006: Stories of Olympic Glory",
+    "Bud Greenspan’s Athens 2004: Stories of Olympic Glory",
+    "Atlanta’s Olympic Glory"
+   ]
+  },
+  {
+   "id": 20,
+   "name": "Jacques Demy & Agnès Varda",
+   "date": "May 2006",
+   "type": "film",
+   "total": 89,
+   "matched": 48,
+   "on_disk": 48,
+   "pct": 53.9,
+   "examples": [
+    "Varda by Agnès",
+    "Varda by Agnès",
+    "Faces Places",
+    "Agnès Varda: From Here to There",
+    "Agnès Varda: From Here to There",
+    "The Beaches of Agnès"
+   ]
+  },
+  {
+   "id": 296,
+   "name": "Frank Tashlin & Jerry Lewis",
+   "date": "Feb 2024",
+   "type": "film",
+   "total": 164,
+   "matched": 44,
+   "on_disk": 44,
+   "pct": 26.8,
+   "examples": [
+    "Funny Bones",
+    "Arizona Dream",
+    "Arizona Dream",
+    "Cookie",
+    "The King of Comedy",
+    "Slapstick of Another Kind"
+   ]
+  },
+  {
+   "id": 136,
+   "name": "Kaiju-eiga",
+   "date": "Jul 2012",
+   "type": "film",
+   "total": 129,
+   "matched": 42,
+   "on_disk": 42,
+   "pct": 32.6,
+   "examples": [
+    "Terror of Mechagodzilla",
+    "Terror of Mechagodzilla",
+    "Terror of Mechagodzilla",
+    "Godzilla vs. Mechagodzilla",
+    "Godzilla vs. Megalon",
+    "Godzilla vs. Gigan"
+   ]
+  },
+  {
+   "id": 139,
+   "name": "Amos Vogel: Film as a Subversive Art",
+   "date": "Oct 2012",
+   "type": "film",
+   "total": 502,
+   "matched": 43,
+   "on_disk": 41,
+   "pct": 8.2,
+   "examples": [
+    "Frenzy",
+    "Roma",
+    "Land of Silence and Darkness",
+    "Claire's Knee",
+    "Five Easy Pieces",
+    "Claire's Knee"
+   ]
+  },
+  {
+   "id": 117,
+   "name": "Sidney Lumet",
+   "date": "Jul 2011",
+   "type": "film",
+   "total": 78,
+   "matched": 39,
+   "on_disk": 36,
+   "pct": 46.2,
+   "examples": [
+    "Before the Devil Knows You're Dead",
+    "Find Me Guilty",
+    "Strip Search",
+    "Gloria",
+    "Critical Care",
+    "Night Falls on Manhattan"
+   ]
+  },
+  {
+   "id": 208,
+   "name": "Golden Harvest",
+   "date": "Jun 2018",
+   "type": "film",
+   "total": 345,
+   "matched": 37,
+   "on_disk": 36,
+   "pct": 10.4,
+   "examples": [
+    "Once Upon a Time in China III",
+    "Once Upon a Time in China II",
+    "Once Upon a Time in China",
+    "Once Upon a Time in China",
+    "Police Story 2",
+    "Police Story 2"
+   ]
+  },
+  {
+   "id": 65,
+   "name": "Frederick Wiseman",
+   "date": "Jul 2008",
+   "type": "film",
+   "total": 56,
+   "matched": 47,
+   "on_disk": 26,
+   "pct": 46.4,
+   "examples": [
+    "Menus-Plaisirs, les Troisgros",
+    "Monrovia, Indiana",
+    "Ex Libris: The New York Public Library",
+    "National Gallery",
+    "At Berkeley",
+    "Crazy Horse"
+   ]
+  },
+  {
+   "id": 90,
+   "name": "Jacques Rivette",
+   "date": "Sep 2009",
+   "type": "film",
+   "total": 87,
+   "matched": 31,
+   "on_disk": 25,
+   "pct": 28.7,
+   "examples": [
+    "Joan the Maid I: The Battles",
+    "Joan the Maid II: The Prisons",
+    "Joan the Maid I: The Battles",
+    "Joan the Maid II: The Prisons",
+    "Joan the Maid II: The Prisons",
+    "Joan the Maid II: The Prisons"
+   ]
+  },
+  {
+   "id": 64,
+   "name": "Shaw Brothers Studios Redux",
+   "date": "Dec 2020",
+   "type": "film",
+   "total": 605,
+   "matched": 25,
+   "on_disk": 25,
+   "pct": 4.1,
+   "examples": [
+    "Dirty Ho",
+    "Heroes of the East",
+    "The Five Venoms",
+    "Crippled Avengers",
+    "Heroes of the East",
+    "Heroes of the East"
+   ]
+  },
+  {
+   "id": 63,
+   "name": "Krzysztof Kieslowski",
+   "date": "May 2008",
+   "type": "film",
+   "total": 81,
+   "matched": 24,
+   "on_disk": 24,
+   "pct": 29.6,
+   "examples": [
+    "Three Colors: White",
+    "Three Colors: White",
+    "Three Colors: Red",
+    "Three Colors: Red",
+    "Three Colors: White",
+    "Three Colors: White"
+   ]
+  },
+  {
+   "id": 115,
+   "name": "Japanese cinema (1900-1945)",
+   "date": "Jun 2020",
+   "type": "film",
+   "total": 399,
+   "matched": 52,
+   "on_disk": 24,
+   "pct": 6.0,
+   "examples": [
+    "Equinox Flower",
+    "There Was a Father",
+    "There Was a Father",
+    "There Was a Father",
+    "There Was a Father",
+    "There Was a Father"
+   ]
+  },
+  {
+   "id": 225,
+   "name": "250 Quintessential Film Noirs",
+   "date": "Aug 2019",
+   "type": "film",
+   "total": 455,
+   "matched": 23,
+   "on_disk": 23,
+   "pct": 5.1,
+   "examples": [
+    "Cape Fear",
+    "Touch of Evil",
+    "The Killing",
+    "Kiss Me Deadly",
+    "Pickup on South Street",
+    "The Hitch-Hiker"
+   ]
+  },
+  {
+   "id": 15,
+   "name": "Iranian Films Redux",
+   "date": "May 2005",
+   "type": "film",
+   "total": 1085,
+   "matched": 31,
+   "on_disk": 23,
+   "pct": 2.1,
+   "examples": [
+    "Dark Phoenix",
+    "Like Someone in Love",
+    "Taste of Cherry",
+    "Taste of Cherry",
+    "Taste of Cherry",
+    "Taste of Cherry"
+   ]
+  },
+  {
+   "id": 155,
+   "name": "Chantal Akerman",
+   "date": "Jul 2014",
+   "type": "film",
+   "total": 58,
+   "matched": 41,
+   "on_disk": 21,
+   "pct": 36.2,
+   "examples": [
+    "No Home Movie",
+    "Almayer's Folly",
+    "Tomorrow We Move",
+    "From the Other Side",
+    "From the Other Side",
+    "The Captive"
+   ]
+  },
+  {
+   "id": 200,
+   "name": "Pre-Code America 1929-1934",
+   "date": "Jan 2018",
+   "type": "film",
+   "total": 702,
+   "matched": 21,
+   "on_disk": 21,
+   "pct": 3.0,
+   "examples": [
+    "The Scarlet Empress",
+    "Imitation of Life",
+    "It Happened One Night",
+    "The Gay Divorcee",
+    "2 Fast 2 Furious",
+    "42nd Street"
+   ]
+  },
+  {
+   "id": 213,
+   "name": "Film Blanc",
+   "date": "Dec 2018",
+   "type": "film",
+   "total": 190,
+   "matched": 22,
+   "on_disk": 20,
+   "pct": 10.5,
+   "examples": [
+    "After Life",
+    "After Life",
+    "After Life",
+    "Defending Your Life",
+    "Wings of Desire",
+    "Wings of Desire"
+   ]
+  },
+  {
+   "id": 84,
+   "name": "Christopher Doyle",
+   "date": "Jun 2009",
+   "type": "film",
+   "total": 62,
+   "matched": 19,
+   "on_disk": 19,
+   "pct": 30.6,
+   "examples": [
+    "White Girl",
+    "2046",
+    "Hero",
+    "In the Mood for Love",
+    "In the Mood for Love",
+    "Fallen Angels"
+   ]
+  },
+  {
+   "id": 235,
+   "name": "The Female Gaze",
+   "date": "Mar 2020",
+   "type": "film",
+   "total": 207,
+   "matched": 18,
+   "on_disk": 18,
+   "pct": 8.7,
+   "examples": [
+    "The Watermelon Woman",
+    "Daughters of the Dust",
+    "An Angel at My Table",
+    "Smooth Talk",
+    "Desert Hearts",
+    "The Slumber Party Massacre"
+   ]
+  },
+  {
+   "id": 238,
+   "name": "Screwball comedy",
+   "date": "Jul 2020",
+   "type": "film",
+   "total": 297,
+   "matched": 16,
+   "on_disk": 16,
+   "pct": 5.4,
+   "examples": [
+    "The Major and the Minor",
+    "To Be or Not to Be",
+    "The Palm Beach Story",
+    "Woman of the Year",
+    "The Lady Eve",
+    "Hellzapoppin'"
+   ]
+  },
+  {
+   "id": 196,
+   "name": "Chanbara Redux",
+   "date": "Nov 2017",
+   "type": "film",
+   "total": 301,
+   "matched": 15,
+   "on_disk": 15,
+   "pct": 5.0,
+   "examples": [
+    "Sanjuro",
+    "Sanjuro",
+    "Sanjuro",
+    "Sanjuro",
+    "Sanjuro",
+    "Sanjuro"
+   ]
+  },
+  {
+   "id": 221,
+   "name": "Czechoslovakia 1946-1969",
+   "date": "May 2019",
+   "type": "film",
+   "total": 561,
+   "matched": 15,
+   "on_disk": 15,
+   "pct": 2.7,
+   "examples": [
+    "Shame",
+    "Daisies",
+    "When the Cat Comes",
+    "When the Cat Comes",
+    "When the Cat Comes",
+    "When the Cat Comes"
+   ]
+  },
+  {
+   "id": 232,
+   "name": "A Happy KG Christmas & New Year",
+   "date": "Dec 2019",
+   "type": "film",
+   "total": 435,
+   "matched": 12,
+   "on_disk": 12,
+   "pct": 2.8,
+   "examples": [
+    "Christmas on Mars",
+    "The Hudsucker Proxy",
+    "The Long Day Closes",
+    "Metropolitan",
+    "The Store",
+    "The Store"
+   ]
+  },
+  {
+   "id": 38,
+   "name": "Euro Westerns",
+   "date": "Mar 2007",
+   "type": "film",
+   "total": 534,
+   "matched": 12,
+   "on_disk": 12,
+   "pct": 2.2,
+   "examples": [
+    "The Good, the Bad and the Ugly",
+    "The Good, the Bad and the Ugly",
+    "The Good, the Bad and the Ugly",
+    "The Good, the Bad and the Ugly",
+    "The Good, the Bad and the Ugly",
+    "The Good, the Bad and the Ugly"
+   ]
+  },
+  {
+   "id": 40,
+   "name": "Experimental film in the 21st Century",
+   "date": "Apr 2007",
+   "type": "film",
+   "total": 3416,
+   "matched": 15,
+   "on_disk": 12,
+   "pct": 0.4,
+   "examples": [
+    "High Life",
+    "Moon",
+    "The Twilight Saga: Eclipse",
+    "The Twilight Saga: Eclipse",
+    "WALL·E",
+    "Fast & Furious"
+   ]
+  },
+  {
+   "id": 93,
+   "name": "Akira Kurosawa",
+   "date": "Dec 2009",
+   "type": "film",
+   "total": 87,
+   "matched": 10,
+   "on_disk": 10,
+   "pct": 11.5,
+   "examples": [
+    "High and Low",
+    "High and Low",
+    "High and Low",
+    "High and Low",
+    "High and Low",
+    "High and Low"
+   ]
+  },
+  {
+   "id": 3,
+   "name": "David Lynch Redux",
+   "date": "Jan 2025",
+   "type": "film",
+   "total": 203,
+   "matched": 10,
+   "on_disk": 10,
+   "pct": 4.9,
+   "examples": [
+    "Inland Empire",
+    "Mulholland Drive",
+    "Lost Highway",
+    "Twin Peaks: Fire Walk with Me",
+    "Wild at Heart",
+    "Blue Velvet"
+   ]
+  },
+  {
+   "id": 154,
+   "name": "Soviet bloc Science Fiction",
+   "date": "May 2014",
+   "type": "film",
+   "total": 238,
+   "matched": 10,
+   "on_disk": 10,
+   "pct": 4.2,
+   "examples": [
+    "Volver",
+    "Stalker",
+    "Solaris",
+    "Solaris",
+    "Solaris",
+    "Solaris"
+   ]
+  },
+  {
+   "id": 17,
+   "name": "African Cinema",
+   "date": "Mar 2006",
+   "type": "film",
+   "total": 894,
+   "matched": 10,
+   "on_disk": 10,
+   "pct": 1.1,
+   "examples": [
+    "A Dry White Season",
+    "Trances",
+    "Trances",
+    "Trances",
+    "Muna Moto",
+    "Touki Bouki"
+   ]
+  },
+  {
+   "id": 294,
+   "name": "Pirates!",
+   "date": "Dec 2023",
+   "type": "film",
+   "total": 169,
+   "matched": 9,
+   "on_disk": 9,
+   "pct": 5.3,
+   "examples": [
+    "Once Upon a Time in China V",
+    "Porco Rosso",
+    "Porco Rosso",
+    "The Princess Bride",
+    "Castle in the Sky",
+    "Castle in the Sky"
+   ]
+  },
+  {
+   "id": 275,
+   "name": "Women Make Horror",
+   "date": "Oct 2022",
+   "type": "film",
+   "total": 275,
+   "matched": 10,
+   "on_disk": 9,
+   "pct": 3.3,
+   "examples": [
+    "Nanny",
+    "Shirley",
+    "The Love Witch",
+    "Trouble Every Day",
+    "Office Killer",
+    "I Was a Teenage Serial Killer"
+   ]
+  },
+  {
+   "id": 157,
+   "name": "World War One",
+   "date": "Oct 2014",
+   "type": "film",
+   "total": 304,
+   "matched": 10,
+   "on_disk": 9,
+   "pct": 3.0,
+   "examples": [
+    "Jules and Jim",
+    "The Chaplin Revue",
+    "The Chaplin Revue",
+    "Paths of Glory",
+    "The Life and Death of Colonel Blimp",
+    "Grand Illusion"
+   ]
+  },
+  {
+   "id": 247,
+   "name": "Architecture",
+   "date": "Jan 2021",
+   "type": "film",
+   "total": 555,
+   "matched": 16,
+   "on_disk": 9,
+   "pct": 1.6,
+   "examples": [
+    "Of Time and the City",
+    "Ocean's Eleven",
+    "Koyaanisqatsi",
+    "PlayTime",
+    "Hello Cubans",
+    "Mon Oncle"
+   ]
+  },
+  {
+   "id": 81,
+   "name": "Doris Wishman",
+   "date": "Mar 2009",
+   "type": "film",
+   "total": 43,
+   "matched": 8,
+   "on_disk": 8,
+   "pct": 18.6,
+   "examples": [
+    "Let Me Die a Woman",
+    "Let Me Die a Woman",
+    "The Immoral Three",
+    "Double Agent 73",
+    "Keyholes Are for Peeping",
+    "Love Toy"
+   ]
+  },
+  {
+   "id": 77,
+   "name": "Alain Resnais",
+   "date": "Jan 2009",
+   "type": "film",
+   "total": 52,
+   "matched": 8,
+   "on_disk": 8,
+   "pct": 15.4,
+   "examples": [
+    "Last Year at Marienbad",
+    "Last Year at Marienbad",
+    "Last Year at Marienbad",
+    "Last Year at Marienbad",
+    "Last Year at Marienbad",
+    "Last Year at Marienbad"
+   ]
+  },
+  {
+   "id": 95,
+   "name": "Kinema Junpo winners",
+   "date": "Feb 2010",
+   "type": "film",
+   "total": 77,
+   "matched": 9,
+   "on_disk": 8,
+   "pct": 10.4,
+   "examples": [
+    "My Neighbor Totoro",
+    "My Neighbor Totoro",
+    "My Neighbor Totoro",
+    "Early Summer",
+    "Early Summer",
+    "Early Summer"
+   ]
+  },
+  {
+   "id": 46,
+   "name": "Chambara (Kenji Misumi & Raizo Ichikawa)",
+   "date": "Jul 2007",
+   "type": "film",
+   "total": 88,
+   "matched": 8,
+   "on_disk": 8,
+   "pct": 9.1,
+   "examples": [
+    "Zatoichi Goes to the Fire Festival",
+    "Zatoichi Challenged",
+    "Zatoichi Challenged",
+    "Zatoichi and the Chess Expert",
+    "Zatoichi and the Chess Expert",
+    "Fight, Zatoichi, Fight"
+   ]
+  },
+  {
+   "id": 83,
+   "name": "Taiwanese New Wave (1982 - 1990)",
+   "date": "May 2009",
+   "type": "film",
+   "total": 89,
+   "matched": 8,
+   "on_disk": 8,
+   "pct": 9.0,
+   "examples": [
+    "Three Times",
+    "Yi Yi",
+    "Yi Yi",
+    "Flowers of Shanghai",
+    "A Brighter Summer Day",
+    "A Brighter Summer Day"
+   ]
+  },
+  {
+   "id": 29,
+   "name": "Blaxploitation Redux",
+   "date": "Apr 2026",
+   "type": "film",
+   "total": 188,
+   "matched": 10,
+   "on_disk": 8,
+   "pct": 4.3,
+   "examples": [
+    "Baadasssss!",
+    "Cooley High",
+    "Ganja & Hess",
+    "Across 110th Street",
+    "Sweet Sweetback's Baadasssss Song",
+    "Watermelon Man"
+   ]
+  },
+  {
+   "id": 311,
+   "name": "Jazz on  Film",
+   "date": "May 2025",
+   "type": "music",
+   "total": 446,
+   "matched": 8,
+   "on_disk": 8,
+   "pct": 1.8,
+   "examples": [
+    "Too Late Blues",
+    "Anatomy of a Murder",
+    "Shadows",
+    "Some Like It Hot",
+    "Sweet Smell of Success",
+    "Batman Begins"
+   ]
+  },
+  {
+   "id": 32,
+   "name": "Stop-Motion Animation",
+   "date": "Dec 2006",
+   "type": "film",
+   "total": 740,
+   "matched": 9,
+   "on_disk": 8,
+   "pct": 1.1,
+   "examples": [
+    "2 Fast 2 Furious",
+    "2 Fast 2 Furious",
+    "Furious 7",
+    "Furious 7",
+    "Furious 7",
+    "Furious 7"
+   ]
+  },
+  {
+   "id": 293,
+   "name": "Horror Noire",
+   "date": "Oct 2023",
+   "type": "film",
+   "total": 55,
+   "matched": 8,
+   "on_disk": 7,
+   "pct": 12.7,
+   "examples": [
+    "Nanny",
+    "Sorry to Bother You",
+    "Da Sweet Blood of Jesus",
+    "Eve's Bayou",
+    "To Sleep with Anger",
+    "Ganja & Hess"
+   ]
+  },
+  {
+   "id": 55,
+   "name": "Satyajit Ray",
+   "date": "Jan 2008",
+   "type": "film",
+   "total": 56,
+   "matched": 7,
+   "on_disk": 7,
+   "pct": 12.5,
+   "examples": [
+    "Charulata",
+    "The Big City",
+    "The Big City",
+    "The Music Room",
+    "The Music Room",
+    "Aparajito"
+   ]
+  },
+  {
+   "id": 218,
+   "name": "Art Brut / Outsider Art",
+   "date": "Apr 2019",
+   "type": "film",
+   "total": 175,
+   "matched": 7,
+   "on_disk": 7,
+   "pct": 4.0,
+   "examples": [
+    "The Gleaners and I: Two Years Later",
+    "The Gleaners and I: Two Years Later",
+    "The Gleaners and I",
+    "Junkopia",
+    "Mur Murs",
+    "Mur Murs"
+   ]
+  },
+  {
+   "id": 264,
+   "name": "Holocaust History",
+   "date": "Feb 2022",
+   "type": "film",
+   "total": 234,
+   "matched": 7,
+   "on_disk": 7,
+   "pct": 3.0,
+   "examples": [
+    "The Grey Zone",
+    "Come and See",
+    "The Diary of Anne Frank",
+    "Night and Fog",
+    "Night and Fog",
+    "Night and Fog"
+   ]
+  },
+  {
+   "id": 287,
+   "name": "OFFBEAT: British Cinema's Curiosities, Obscurities & Forgotten Gems",
+   "date": "May 2023",
+   "type": "film",
+   "total": 251,
+   "matched": 7,
+   "on_disk": 7,
+   "pct": 2.8,
+   "examples": [
+    "The Hit",
+    "Babylon",
+    "The Offence",
+    "Frenzy",
+    "The Offence",
+    "Walkabout"
+   ]
+  },
+  {
+   "id": 61,
+   "name": "Video Art",
+   "date": "May 2013",
+   "type": "film",
+   "total": 702,
+   "matched": 7,
+   "on_disk": 7,
+   "pct": 1.0,
+   "examples": [
+    "Vertigo",
+    "12 Angry Men",
+    "12 Angry Men",
+    "12 Angry Men",
+    "Rocky",
+    "12 Angry Men"
+   ]
+  },
+  {
+   "id": 104,
+   "name": "Weimar Republic cinema",
+   "date": "Nov 2010",
+   "type": "film",
+   "total": 781,
+   "matched": 8,
+   "on_disk": 7,
+   "pct": 0.9,
+   "examples": [
+    "The Blue Angel",
+    "The Blue Angel",
+    "Pandora's Box",
+    "Pandora's Box",
+    "Pandora's Box",
+    "Pandora's Box"
+   ]
+  },
+  {
+   "id": 145,
+   "name": "21st Century Video Art",
+   "date": "May 2013",
+   "type": "film",
+   "total": 866,
+   "matched": 14,
+   "on_disk": 7,
+   "pct": 0.8,
+   "examples": [
+    "Spider-Man: No Way Home",
+    "Weekend",
+    "Twilight",
+    "Ocean's Twelve",
+    "Ocean's Twelve",
+    "Hero"
+   ]
+  },
+  {
+   "id": 165,
+   "name": "Hungarian Cinema",
+   "date": "Apr 2015",
+   "type": "film",
+   "total": 1093,
+   "matched": 7,
+   "on_disk": 7,
+   "pct": 0.6,
+   "examples": [
+    "Harry Potter and the Deathly Hallows: Part 1",
+    "Satantango",
+    "Satantango",
+    "Satantango",
+    "Satantango",
+    "Adoption"
+   ]
+  },
+  {
+   "id": 79,
+   "name": "Ida Lupino",
+   "date": "Feb 2009",
+   "type": "film",
+   "total": 57,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 10.5,
+   "examples": [
+    "The Bigamist",
+    "The Hitch-Hiker",
+    "Never Fear",
+    "Not Wanted",
+    "Never Fear",
+    "Not Wanted"
+   ]
+  },
+  {
+   "id": 31,
+   "name": "Robert Altman",
+   "date": "Dec 2006",
+   "type": "film",
+   "total": 97,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 6.2,
+   "examples": [
+    "The Company",
+    "Gosford Park",
+    "3 Women",
+    "The Long Goodbye",
+    "M*A*S*H",
+    "M*A*S*H"
+   ]
+  },
+  {
+   "id": 313,
+   "name": "Chess: The King is Dead",
+   "date": "Jun 2025",
+   "type": "film",
+   "total": 112,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 5.4,
+   "examples": [
+    "Chess of the Wind",
+    "Chess of the Wind",
+    "The Thomas Crown Affair",
+    "The Seventh Seal",
+    "The Seventh Seal",
+    "At Land"
+   ]
+  },
+  {
+   "id": 234,
+   "name": "Kirk Douglas",
+   "date": "Feb 2020",
+   "type": "film",
+   "total": 112,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 5.4,
+   "examples": [
+    "The Heroes of Telemark",
+    "Two Weeks in Another Town",
+    "Operation Petticoat",
+    "Paths of Glory",
+    "A Letter to Three Wives",
+    "Out of the Past"
+   ]
+  },
+  {
+   "id": 18,
+   "name": "Italian Neo-Realism",
+   "date": "Apr 2006",
+   "type": "film",
+   "total": 112,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 5.4,
+   "examples": [
+    "Rocco and His Brothers",
+    "Nights of Cabiria",
+    "La Strada",
+    "La Strada",
+    "I Vitelloni",
+    "Variety Lights"
+   ]
+  },
+  {
+   "id": 133,
+   "name": "Heroic Bloodshed",
+   "date": "Mar 2012",
+   "type": "film",
+   "total": 114,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 5.3,
+   "examples": [
+    "Infernal Affairs II",
+    "Infernal Affairs III",
+    "Infernal Affairs",
+    "As Tears Go By",
+    "As Tears Go By",
+    "As Tears Go By"
+   ]
+  },
+  {
+   "id": 180,
+   "name": "Art Theatre Guild",
+   "date": "May 2016",
+   "type": "film",
+   "total": 126,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 4.8,
+   "examples": [
+    "Boy",
+    "Funeral Parade of Roses",
+    "Boy",
+    "Funeral Parade of Roses",
+    "Death by Hanging",
+    "Death by Hanging"
+   ]
+  },
+  {
+   "id": 176,
+   "name": "Indonesian Cinema",
+   "date": "Apr 2016",
+   "type": "film",
+   "total": 128,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 4.7,
+   "examples": [
+    "The Raid 2",
+    "The Raid",
+    "The Raid",
+    "The Raid",
+    "After the Curfew",
+    "After the Curfew"
+   ]
+  },
+  {
+   "id": 259,
+   "name": "Fungi in film",
+   "date": "Nov 2021",
+   "type": "film",
+   "total": 143,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 4.2,
+   "examples": [
+    "Only Lovers Left Alive",
+    "Warriors of the Wind",
+    "Warriors of the Wind",
+    "Warriors of the Wind",
+    "Dune",
+    "Warriors of the Wind"
+   ]
+  },
+  {
+   "id": 270,
+   "name": "Edgar Allan Poe & Edogawa Rampo",
+   "date": "Jun 2022",
+   "type": "film",
+   "total": 171,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 3.5,
+   "examples": [
+    "Spirits of the Dead",
+    "Terror-Creatures from the Grave",
+    "Terror-Creatures from the Grave",
+    "Terror-Creatures from the Grave",
+    "Terror-Creatures from the Grave",
+    "Terror-Creatures from the Grave"
+   ]
+  },
+  {
+   "id": 183,
+   "name": "Turkish Cinema 1914-1982",
+   "date": "Nov 2016",
+   "type": "film",
+   "total": 361,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 1.7,
+   "examples": [
+    "The Godfather",
+    "Law of the Border",
+    "Law of the Border",
+    "Dry Summer",
+    "Dry Summer",
+    "Dry Summer"
+   ]
+  },
+  {
+   "id": 215,
+   "name": "Poets & Poetry in Film",
+   "date": "Mar 2019",
+   "type": "film",
+   "total": 400,
+   "matched": 6,
+   "on_disk": 6,
+   "pct": 1.5,
+   "examples": [
+    "A Quiet Passion",
+    "Bright Star",
+    "I'm Not There",
+    "Henry Fool",
+    "Tongues Untied",
+    "Tongues Untied"
+   ]
+  },
+  {
+   "id": 307,
+   "name": "Hong Sang-soo",
+   "date": "Feb 2025",
+   "type": "film",
+   "total": 50,
+   "matched": 5,
+   "on_disk": 5,
+   "pct": 10.0,
+   "examples": [
+    "On the Beach at Night Alone",
+    "Right Now, Wrong Then",
+    "Tale of Cinema",
+    "Woman Is the Future of Man",
+    "Woman Is the Future of Man"
+   ]
+  },
+  {
+   "id": 298,
+   "name": "Mike Nichols & Elaine May",
+   "date": "May 2024",
+   "type": "film",
+   "total": 60,
+   "matched": 6,
+   "on_disk": 5,
+   "pct": 8.3,
+   "examples": [
+    "Silkwood",
+    "Mikey and Nicky",
+    "A New Leaf",
+    "The Graduate",
+    "Who's Afraid of Virginia Woolf?"
+   ]
+  },
+  {
+   "id": 108,
+   "name": "Albert Maysles & David Maysles",
+   "date": "Jan 2011",
+   "type": "film",
+   "total": 82,
+   "matched": 5,
+   "on_disk": 5,
+   "pct": 6.1,
+   "examples": [
+    "When We Were Kings",
+    "Grey Gardens",
+    "Gimme Shelter",
+    "Salesman",
+    "Monterey Pop"
+   ]
+  },
+  {
+   "id": 92,
+   "name": "Charles Chauvel and Australian Cinema",
+   "date": "Nov 2009",
+   "type": "film",
+   "total": 727,
+   "matched": 6,
+   "on_disk": 5,
+   "pct": 0.7,
+   "examples": [
+    "The Piano",
+    "Where the Green Ants Dream",
+    "My Brilliant Career",
+    "Picnic at Hanging Rock",
+    "Work"
+   ]
+  },
+  {
+   "id": 87,
+   "name": "Mai Zetterling",
+   "date": "Jul 2009",
+   "type": "film",
+   "total": 28,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 14.3,
+   "examples": [
+    "The Witches",
+    "The Girls",
+    "Night Games",
+    "Loving Couples"
+   ]
+  },
+  {
+   "id": 319,
+   "name": "Patricia Highsmith",
+   "date": "Nov 2025",
+   "type": "film",
+   "total": 38,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 10.5,
+   "examples": [
+    "Carol",
+    "Purple Noon",
+    "Purple Noon",
+    "Strangers on a Train"
+   ]
+  },
+  {
+   "id": 5,
+   "name": "Woody Allen",
+   "date": "Apr 2005",
+   "type": "film",
+   "total": 77,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 5.2,
+   "examples": [
+    "Zelig",
+    "Manhattan",
+    "Annie Hall",
+    "The Front"
+   ]
+  },
+  {
+   "id": 241,
+   "name": "Hiroshima at 75",
+   "date": "Aug 2020",
+   "type": "film",
+   "total": 84,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 4.8,
+   "examples": [
+    "Hiroshima Mon Amour",
+    "Hiroshima Mon Amour",
+    "Hiroshima Mon Amour",
+    "Godzilla"
+   ]
+  },
+  {
+   "id": 210,
+   "name": "L.A. Rebellion",
+   "date": "Sep 2018",
+   "type": "film",
+   "total": 105,
+   "matched": 5,
+   "on_disk": 4,
+   "pct": 3.8,
+   "examples": [
+    "Pariah",
+    "To Sleep with Anger",
+    "Penitentiary",
+    "Emma Mae"
+   ]
+  },
+  {
+   "id": 231,
+   "name": "James Wong Howe",
+   "date": "Nov 2019",
+   "type": "film",
+   "total": 122,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 3.3,
+   "examples": [
+    "Last of the Mobile Hot Shots",
+    "Seconds",
+    "Sweet Smell of Success",
+    "Shanghai Express"
+   ]
+  },
+  {
+   "id": 137,
+   "name": "Mumblecore",
+   "date": "Aug 2012",
+   "type": "film",
+   "total": 120,
+   "matched": 5,
+   "on_disk": 4,
+   "pct": 3.3,
+   "examples": [
+    "Young Bodies Heal Quickly",
+    "Frances Ha",
+    "Daddy Longlegs",
+    "Funny Ha Ha"
+   ]
+  },
+  {
+   "id": 300,
+   "name": "Biker Movies",
+   "date": "Aug 2024",
+   "type": "film",
+   "total": 135,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 3.0,
+   "examples": [
+    "Touki Bouki",
+    "Gimme Shelter",
+    "Easy Rider",
+    "The Wild One"
+   ]
+  },
+  {
+   "id": 291,
+   "name": "Deafness & HoH",
+   "date": "Jul 2023",
+   "type": "film",
+   "total": 141,
+   "matched": 5,
+   "on_disk": 4,
+   "pct": 2.8,
+   "examples": [
+    "Sound of Metal",
+    "Take Shelter",
+    "Land of Silence and Darkness",
+    "Out of the Past"
+   ]
+  },
+  {
+   "id": 229,
+   "name": "Polish TV",
+   "date": "Oct 2019",
+   "type": "film",
+   "total": 240,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 1.7,
+   "examples": [
+    "Avengers: Endgame",
+    "Avengers: Endgame",
+    "Avengers: Endgame",
+    "Avengers: Endgame"
+   ]
+  },
+  {
+   "id": 135,
+   "name": "Polish animation",
+   "date": "Jun 2012",
+   "type": "film",
+   "total": 497,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 0.8,
+   "examples": [
+    "The Empire Strikes Back",
+    "To Be or Not to Be",
+    "Sawdust and Tinsel",
+    "The Hit"
+   ]
+  },
+  {
+   "id": 152,
+   "name": "Israel",
+   "date": "Apr 2014",
+   "type": "film",
+   "total": 551,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 0.7,
+   "examples": [
+    "The Congress",
+    "Waltz with Bashir",
+    "Waltz with Bashir",
+    "Hanna K."
+   ]
+  },
+  {
+   "id": 116,
+   "name": "Opera",
+   "date": "May 2011",
+   "type": "music",
+   "total": 553,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 0.7,
+   "examples": [
+    "Aria",
+    "Moses and Aaron",
+    "The Magic Flute",
+    "The Tales of Hoffmann"
+   ]
+  },
+  {
+   "id": 170,
+   "name": "Greek Cinema",
+   "date": "Aug 2015",
+   "type": "film",
+   "total": 732,
+   "matched": 4,
+   "on_disk": 4,
+   "pct": 0.5,
+   "examples": [
+    "Prometheus",
+    "Prometheus",
+    "The Incredible Hulk",
+    "The Incredible Hulk"
+   ]
+  },
+  {
+   "id": 1,
+   "name": "Luis Buñuel",
+   "date": "Feb 2005",
+   "type": "film",
+   "total": 45,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 6.7,
+   "examples": [
+    "The Phantom of Liberty",
+    "The Discreet Charm of the Bourgeoisie",
+    "La Collectionneuse"
+   ]
+  },
+  {
+   "id": 318,
+   "name": "Val Lewton & RKO Horror",
+   "date": "Oct 2025",
+   "type": "film",
+   "total": 93,
+   "matched": 6,
+   "on_disk": 3,
+   "pct": 3.2,
+   "examples": [
+    "Cat People",
+    "Cat People",
+    "King Kong"
+   ]
+  },
+  {
+   "id": 322,
+   "name": "Old Time Radio at the Movies",
+   "date": "Dec 2025",
+   "type": "film",
+   "total": 116,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 2.6,
+   "examples": [
+    "My Friend Irma Goes West",
+    "My Friend Irma",
+    "Foreign Correspondent"
+   ]
+  },
+  {
+   "id": 309,
+   "name": "Japanese Queer Cinema",
+   "date": "Apr 2025",
+   "type": "film",
+   "total": 118,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 2.5,
+   "examples": [
+    "Funeral Parade of Roses",
+    "Funeral Parade of Roses",
+    "An Actor's Revenge"
+   ]
+  },
+  {
+   "id": 127,
+   "name": "British cinema during WW2",
+   "date": "Nov 2011",
+   "type": "film",
+   "total": 209,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 1.4,
+   "examples": [
+    "Brief Encounter",
+    "Crook's Tour",
+    "Crook's Tour"
+   ]
+  },
+  {
+   "id": 100,
+   "name": "Jean-Luc Godard Redux",
+   "date": "Jul 2010",
+   "type": "film",
+   "total": 259,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 1.2,
+   "examples": [
+    "Alphaville",
+    "Alphaville",
+    "Breathless"
+   ]
+  },
+  {
+   "id": 41,
+   "name": "Krautrock",
+   "date": "May 2007",
+   "type": "music",
+   "total": 275,
+   "matched": 4,
+   "on_disk": 3,
+   "pct": 1.1,
+   "examples": [
+    "Fitzcarraldo",
+    "Nosferatu the Vampyre",
+    "Heart of Glass"
+   ]
+  },
+  {
+   "id": 97,
+   "name": "Cannibal and Zombie movies",
+   "date": "Apr 2010",
+   "type": "film",
+   "total": 290,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 1.0,
+   "examples": [
+    "The Dead Don't Die",
+    "Night of the Living Dead",
+    "Terror-Creatures from the Grave"
+   ]
+  },
+  {
+   "id": 197,
+   "name": "British & Irish Occult/Folklore film",
+   "date": "Dec 2017",
+   "type": "film",
+   "total": 344,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 0.9,
+   "examples": [
+    "The Twilight Saga: Eclipse",
+    "Puffball",
+    "The Secret of Roan Inish"
+   ]
+  },
+  {
+   "id": 53,
+   "name": "Indian classical music",
+   "date": "Jan 2008",
+   "type": "music",
+   "total": 335,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 0.9,
+   "examples": [
+    "Spider-Man 3",
+    "2 Fast 2 Furious",
+    "The Music Room"
+   ]
+  },
+  {
+   "id": 211,
+   "name": "The Philippines",
+   "date": "Oct 2018",
+   "type": "film",
+   "total": 527,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 0.6,
+   "examples": [
+    "Insiang",
+    "Manila in the Claws of Light",
+    "Manila in the Claws of Light"
+   ]
+  },
+  {
+   "id": 164,
+   "name": "Mexican 20th Century Cinema",
+   "date": "Mar 2015",
+   "type": "film",
+   "total": 824,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 0.4,
+   "examples": [
+    "Cronos",
+    "The Wave",
+    "Two Monks"
+   ]
+  },
+  {
+   "id": 207,
+   "name": "Indigenous and Latin American Female Film Makers Redux",
+   "date": "Sep 2020",
+   "type": "film",
+   "total": 1186,
+   "matched": 3,
+   "on_disk": 3,
+   "pct": 0.3,
+   "examples": [
+    "Prometheus",
+    "La Ciénaga",
+    "La Ciénaga"
+   ]
+  },
+  {
+   "id": 118,
+   "name": "Arthur Penn",
+   "date": "Jul 2011",
+   "type": "film",
+   "total": 20,
+   "matched": 3,
+   "on_disk": 2,
+   "pct": 10.0,
+   "examples": [
+    "Night Moves",
+    "Mickey One"
+   ]
+  },
+  {
+   "id": 72,
+   "name": "Arthur Freed",
+   "date": "Oct 2008",
+   "type": "film",
+   "total": 49,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 4.1,
+   "examples": [
+    "Silk Stockings",
+    "It's Always Fair Weather"
+   ]
+  },
+  {
+   "id": 74,
+   "name": "Ken Loach",
+   "date": "Nov 2008",
+   "type": "film",
+   "total": 49,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 4.1,
+   "examples": [
+    "Kes",
+    "Kes"
+   ]
+  },
+  {
+   "id": 134,
+   "name": "Kay Francis",
+   "date": "May 2012",
+   "type": "film",
+   "total": 56,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 3.6,
+   "examples": [
+    "Trouble in Paradise",
+    "The Cocoanuts"
+   ]
+  },
+  {
+   "id": 123,
+   "name": "Joan Blondell",
+   "date": "Sep 2011",
+   "type": "film",
+   "total": 66,
+   "matched": 3,
+   "on_disk": 2,
+   "pct": 3.0,
+   "examples": [
+    "Opening Night",
+    "Gold Diggers of 1933"
+   ]
+  },
+  {
+   "id": 88,
+   "name": "Don Siegel",
+   "date": "Aug 2009",
+   "type": "film",
+   "total": 73,
+   "matched": 3,
+   "on_disk": 2,
+   "pct": 2.7,
+   "examples": [
+    "Charley Varrick",
+    "Dirty Harry"
+   ]
+  },
+  {
+   "id": 303,
+   "name": "Lewis Carroll",
+   "date": "Dec 2024",
+   "type": "film",
+   "total": 80,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 2.5,
+   "examples": [
+    "Céline and Julie Go Boating",
+    "Céline and Julie Go Boating"
+   ]
+  },
+  {
+   "id": 57,
+   "name": "Kenji Mizoguchi",
+   "date": "Jun 2020",
+   "type": "film",
+   "total": 82,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 2.4,
+   "examples": [
+    "Sansho the Bailiff",
+    "Sansho the Bailiff"
+   ]
+  },
+  {
+   "id": 263,
+   "name": "Antarctica (film)",
+   "date": "Jan 2022",
+   "type": "film",
+   "total": 94,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 2.1,
+   "examples": [
+    "The Thing",
+    "Voyage to the Edge of the World"
+   ]
+  },
+  {
+   "id": 9,
+   "name": "Takashi Miike",
+   "date": "Aug 2005",
+   "type": "film",
+   "total": 108,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 1.9,
+   "examples": [
+    "Audition",
+    "Audition"
+   ]
+  },
+  {
+   "id": 268,
+   "name": "Skateboarding",
+   "date": "May 2022",
+   "type": "music",
+   "total": 148,
+   "matched": 3,
+   "on_disk": 2,
+   "pct": 1.4,
+   "examples": [
+    "Minding the Gap",
+    "Kids"
+   ]
+  },
+  {
+   "id": 277,
+   "name": "Aviation - Kitty Hawk to WWII",
+   "date": "Nov 2022",
+   "type": "film",
+   "total": 145,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 1.4,
+   "examples": [
+    "Only Angels Have Wings",
+    "The Flying Ace"
+   ]
+  },
+  {
+   "id": 107,
+   "name": "Rock n' Roll Musicals",
+   "date": "Dec 2010",
+   "type": "music",
+   "total": 138,
+   "matched": 3,
+   "on_disk": 2,
+   "pct": 1.4,
+   "examples": [
+    "Smithereens",
+    "The Girl Can't Help It"
+   ]
+  },
+  {
+   "id": 302,
+   "name": "Trash & Garbage",
+   "date": "Nov 2024",
+   "type": "film",
+   "total": 174,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 1.1,
+   "examples": [
+    "The Gleaners and I",
+    "Junkopia"
+   ]
+  },
+  {
+   "id": 233,
+   "name": "Fifth Generation Chinese Cinema",
+   "date": "Jan 2020",
+   "type": "film",
+   "total": 177,
+   "matched": 4,
+   "on_disk": 2,
+   "pct": 1.1,
+   "examples": [
+    "Hero",
+    "Hero"
+   ]
+  },
+  {
+   "id": 42,
+   "name": "Hammer films",
+   "date": "Oct 2020",
+   "type": "film",
+   "total": 221,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 0.9,
+   "examples": [
+    "Rasputin: The Mad Monk",
+    "The Abominable Snowman"
+   ]
+  },
+  {
+   "id": 6,
+   "name": "Ennio Morricone Redux",
+   "date": "Apr 2005",
+   "type": "music",
+   "total": 220,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 0.9,
+   "examples": [
+    "The Battle of Algiers",
+    "A Fistful of Dollars"
+   ]
+  },
+  {
+   "id": 188,
+   "name": "Nine Overlooked Japanese Filmmakers",
+   "date": "Apr 2017",
+   "type": "film",
+   "total": 360,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 0.6,
+   "examples": [
+    "Zatoichi the Outlaw",
+    "Zatoichi the Outlaw"
+   ]
+  },
+  {
+   "id": 186,
+   "name": "East German Cinema",
+   "date": "Jan 2017",
+   "type": "film",
+   "total": 723,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 0.3,
+   "examples": [
+    "Captain America: The Winter Soldier",
+    "A Turning Point"
+   ]
+  },
+  {
+   "id": 39,
+   "name": "Avant-Garde Jazz",
+   "date": "Apr 2007",
+   "type": "music",
+   "total": 604,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 0.3,
+   "examples": [
+    "The Empire Strikes Back",
+    "The Shop Around the Corner"
+   ]
+  },
+  {
+   "id": 184,
+   "name": "Turkish Cinema",
+   "date": "Dec 2016",
+   "type": "film",
+   "total": 804,
+   "matched": 2,
+   "on_disk": 2,
+   "pct": 0.2,
+   "examples": [
+    "Milk",
+    "Law of the Border"
+   ]
+  },
+  {
+   "id": 222,
+   "name": "Zdeněk Liška & Czech/Slovak soundtracks",
+   "date": "May 2019",
+   "type": "music",
+   "total": 18,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 5.6,
+   "examples": [
+    "Daisies"
+   ]
+  },
+  {
+   "id": 58,
+   "name": "Franz Waxman",
+   "date": "Mar 2008",
+   "type": "music",
+   "total": 20,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 5.0,
+   "examples": [
+    "The Nun's Story"
+   ]
+  },
+  {
+   "id": 306,
+   "name": "David Lynch - Music",
+   "date": "Jan 2025",
+   "type": "music",
+   "total": 22,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 4.5,
+   "examples": [
+    "Twin Peaks: Fire Walk with Me"
+   ]
+  },
+  {
+   "id": 62,
+   "name": "Kazimierz Karabasz",
+   "date": "May 2008",
+   "type": "film",
+   "total": 24,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 4.2,
+   "examples": [
+    "The Birds"
+   ]
+  },
+  {
+   "id": 230,
+   "name": "Polish Soundtrack",
+   "date": "Oct 2019",
+   "type": "music",
+   "total": 25,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 4.0,
+   "examples": [
+    "Knife in the Water"
+   ]
+  },
+  {
+   "id": 178,
+   "name": "Bangladeshi Cinema",
+   "date": "Apr 2016",
+   "type": "film",
+   "total": 30,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 3.3,
+   "examples": [
+    "A River Called Titas"
+   ]
+  },
+  {
+   "id": 226,
+   "name": "The Soundtrack to Film Noir",
+   "date": "Aug 2019",
+   "type": "music",
+   "total": 36,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 2.8,
+   "examples": [
+    "Notorious"
+   ]
+  },
+  {
+   "id": 312,
+   "name": "Jazz soundtracks",
+   "date": "May 2025",
+   "type": "music",
+   "total": 38,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 2.6,
+   "examples": [
+    "Sweet Smell of Success"
+   ]
+  },
+  {
+   "id": 324,
+   "name": "Philately and Film",
+   "date": "Feb 2026",
+   "type": "film",
+   "total": 46,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 2.2,
+   "examples": [
+    "Charade"
+   ]
+  },
+  {
+   "id": 45,
+   "name": "Toru Takemitsu",
+   "date": "Jul 2007",
+   "type": "music",
+   "total": 46,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 2.2,
+   "examples": [
+    "Once Upon a Time in China and America"
+   ]
+  },
+  {
+   "id": 119,
+   "name": "Sam Peckinpah",
+   "date": "Jul 2011",
+   "type": "film",
+   "total": 47,
+   "matched": 3,
+   "on_disk": 1,
+   "pct": 2.1,
+   "examples": [
+    "Straw Dogs"
+   ]
+  },
+  {
+   "id": 28,
+   "name": "Blaxploitation soundtracks redux",
+   "date": "Apr 2026",
+   "type": "music",
+   "total": 53,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 1.9,
+   "examples": [
+    "Sweet Sweetback's Baadasssss Song"
+   ]
+  },
+  {
+   "id": 252,
+   "name": "Lon Chaney",
+   "date": "May 2021",
+   "type": "film",
+   "total": 62,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 1.6,
+   "examples": [
+    "Shadows"
+   ]
+  },
+  {
+   "id": 78,
+   "name": "Marguerite Duras",
+   "date": "Jan 2009",
+   "type": "film",
+   "total": 63,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 1.6,
+   "examples": [
+    "India Song"
+   ]
+  },
+  {
+   "id": 209,
+   "name": "DVD Booklets",
+   "date": "Aug 2018",
+   "type": "book",
+   "total": 84,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 1.2,
+   "examples": [
+    "Funeral Parade of Roses"
+   ]
+  },
+  {
+   "id": 174,
+   "name": "Charles Dickens on Film",
+   "date": "Dec 2015",
+   "type": "film",
+   "total": 81,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 1.2,
+   "examples": [
+    "Oliver!"
+   ]
+  },
+  {
+   "id": 33,
+   "name": "Catherine Deneuve",
+   "date": "Jan 2007",
+   "type": "film",
+   "total": 86,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 1.2,
+   "examples": [
+    "One Hundred and One Nights"
+   ]
+  },
+  {
+   "id": 248,
+   "name": "Federal Republic of Central America",
+   "date": "Mar 2021",
+   "type": "film",
+   "total": 105,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 1.0,
+   "examples": [
+    "Ballad of the Little Soldier"
+   ]
+  },
+  {
+   "id": 216,
+   "name": "Poets & Poetry (audio)",
+   "date": "Mar 2019",
+   "type": "music",
+   "total": 109,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.9,
+   "examples": [
+    "Das Boot"
+   ]
+  },
+  {
+   "id": 94,
+   "name": "Edgar Wallace",
+   "date": "Jun 2022",
+   "type": "film",
+   "total": 132,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.8,
+   "examples": [
+    "King Kong"
+   ]
+  },
+  {
+   "id": 162,
+   "name": "The Cannon Group",
+   "date": "Dec 2014",
+   "type": "film",
+   "total": 123,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.8,
+   "examples": [
+    "Castaway"
+   ]
+  },
+  {
+   "id": 27,
+   "name": "Jean Gabin",
+   "date": "Oct 2006",
+   "type": "film",
+   "total": 120,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.8,
+   "examples": [
+    "Grand Illusion"
+   ]
+  },
+  {
+   "id": 44,
+   "name": "John Wayne",
+   "date": "Jun 2007",
+   "type": "film",
+   "total": 128,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.8,
+   "examples": [
+    "Hatari!"
+   ]
+  },
+  {
+   "id": 205,
+   "name": "The Films of May '68",
+   "date": "Apr 2018",
+   "type": "film",
+   "total": 158,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.6,
+   "examples": [
+    "The Mysteries of Paris: Jacques Rivette's Out 1 Revisited"
+   ]
+  },
+  {
+   "id": 292,
+   "name": "13 Polish Filmmakers",
+   "date": "Sep 2023",
+   "type": "film",
+   "total": 217,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.5,
+   "examples": [
+    "The Silence"
+   ]
+  },
+  {
+   "id": 217,
+   "name": "Poets & Poetry (literature)",
+   "date": "Mar 2019",
+   "type": "book",
+   "total": 211,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.5,
+   "examples": [
+    "The Young Girls of Rochefort"
+   ]
+  },
+  {
+   "id": 193,
+   "name": "Central Asian Cinema to 1991",
+   "date": "Aug 2017",
+   "type": "film",
+   "total": 197,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.5,
+   "examples": [
+    "Revenge"
+   ]
+  },
+  {
+   "id": 96,
+   "name": "National Film Board of Canada: Animation",
+   "date": "Mar 2010",
+   "type": "film",
+   "total": 183,
+   "matched": 6,
+   "on_disk": 1,
+   "pct": 0.5,
+   "examples": [
+    "Pas de Deux"
+   ]
+  },
+  {
+   "id": 91,
+   "name": "Boris Karloff, Bela Lugosi & the Universal Classic Monsters",
+   "date": "Apr 2020",
+   "type": "film",
+   "total": 247,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.4,
+   "examples": [
+    "Targets"
+   ]
+  },
+  {
+   "id": 181,
+   "name": "Cuban Cinema Redux",
+   "date": "Jul 2019",
+   "type": "film",
+   "total": 257,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.4,
+   "examples": [
+    "Lucía"
+   ]
+  },
+  {
+   "id": 253,
+   "name": "Japanese Female Directors",
+   "date": "Jun 2021",
+   "type": "film",
+   "total": 265,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.4,
+   "examples": [
+    "Ebirah, Horror of the Deep"
+   ]
+  },
+  {
+   "id": 14,
+   "name": "Psychedelica",
+   "date": "Feb 2006",
+   "type": "music",
+   "total": 283,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.4,
+   "examples": [
+    "Fast & Furious"
+   ]
+  },
+  {
+   "id": 34,
+   "name": "Dark Ambient",
+   "date": "Jan 2007",
+   "type": "film",
+   "total": 242,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.4,
+   "examples": [
+    "Solaris"
+   ]
+  },
+  {
+   "id": 223,
+   "name": "Republic Pictures",
+   "date": "Jun 2019",
+   "type": "film",
+   "total": 379,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.3,
+   "examples": [
+    "Johnny Guitar"
+   ]
+  },
+  {
+   "id": 172,
+   "name": "Cinemas of India",
+   "date": "Oct 2015",
+   "type": "film",
+   "total": 374,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.3,
+   "examples": [
+    "Gandhi"
+   ]
+  },
+  {
+   "id": 50,
+   "name": "William Shakespeare",
+   "date": "Oct 2007",
+   "type": "book",
+   "total": 375,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.3,
+   "examples": [
+    "The Tragedy of Macbeth"
+   ]
+  },
+  {
+   "id": 228,
+   "name": "Thailand",
+   "date": "Sep 2019",
+   "type": "film",
+   "total": 405,
+   "matched": 3,
+   "on_disk": 1,
+   "pct": 0.2,
+   "examples": [
+    "Mysterious Object at Noon"
+   ]
+  },
+  {
+   "id": 149,
+   "name": "Philosophy on Screen",
+   "date": "Jan 2014",
+   "type": "film",
+   "total": 407,
+   "matched": 3,
+   "on_disk": 1,
+   "pct": 0.2,
+   "examples": [
+    "Poor Things"
+   ]
+  },
+  {
+   "id": 192,
+   "name": "West German Cinema 1947-1963",
+   "date": "Jul 2017",
+   "type": "film",
+   "total": 597,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.2,
+   "examples": [
+    "Shadows"
+   ]
+  },
+  {
+   "id": 16,
+   "name": "African Music",
+   "date": "Mar 2006",
+   "type": "music",
+   "total": 453,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.2,
+   "examples": [
+    "The Twilight Saga: Eclipse"
+   ]
+  },
+  {
+   "id": 35,
+   "name": "Cinema Novo and Beyond",
+   "date": "Feb 2007",
+   "type": "film",
+   "total": 560,
+   "matched": 4,
+   "on_disk": 1,
+   "pct": 0.2,
+   "examples": [
+    "Black Panthers"
+   ]
+  },
+  {
+   "id": 143,
+   "name": "European sovereign-debt crisis: PIGS",
+   "date": "Mar 2013",
+   "type": "film",
+   "total": 734,
+   "matched": 1,
+   "on_disk": 1,
+   "pct": 0.1,
+   "examples": [
+    "Star Trek"
+   ]
+  },
+  {
+   "id": 147,
+   "name": "Yugoslavian Cinema under Tito",
+   "date": "Jul 2013",
+   "type": "film",
+   "total": 929,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.1,
+   "examples": [
+    "Sweet Movie"
+   ]
+  },
+  {
+   "id": 195,
+   "name": "Cinema of Quebec",
+   "date": "Sep 2017",
+   "type": "film",
+   "total": 764,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.1,
+   "examples": [
+    "Harry Potter and the Deathly Hallows: Part 2"
+   ]
+  },
+  {
+   "id": 101,
+   "name": "Ethnographic Cinema",
+   "date": "Aug 2010",
+   "type": "film",
+   "total": 748,
+   "matched": 2,
+   "on_disk": 1,
+   "pct": 0.1,
+   "examples": [
+    "Divine Horsemen: The Living Gods of Haiti"
+   ]
+  },
+  {
+   "id": 43,
+   "name": "Old Time Radio Redux",
+   "date": "Dec 2025",
+   "type": "film",
+   "total": 36,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 262,
+   "name": "Antarctica (books)",
+   "date": "Jan 2022",
+   "type": "book",
+   "total": 8,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 265,
+   "name": "Holocaust on the page",
+   "date": "Feb 2022",
+   "type": "book",
+   "total": 39,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 266,
+   "name": "Singapore",
+   "date": "Mar 2022",
+   "type": "film",
+   "total": 108,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 267,
+   "name": "Phil Karlson",
+   "date": "Apr 2022",
+   "type": "film",
+   "total": 53,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 269,
+   "name": "Fleischer & Famous Studios",
+   "date": "May 2022",
+   "type": "film",
+   "total": 273,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 271,
+   "name": "Edgar Allan Poe (literature)",
+   "date": "Jun 2022",
+   "type": "book",
+   "total": 19,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 272,
+   "name": "Peter Brook",
+   "date": "Jul 2022",
+   "type": "film",
+   "total": 31,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 273,
+   "name": "Binka Zhelyazkova",
+   "date": "Aug 2022",
+   "type": "film",
+   "total": 12,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 274,
+   "name": "Early Colour Films",
+   "date": "Sep 2022",
+   "type": "film",
+   "total": 198,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 276,
+   "name": "Women Make Horror (Literature)",
+   "date": "Oct 2022",
+   "type": "book",
+   "total": 7,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 278,
+   "name": "Library Music on Film",
+   "date": "Dec 2022",
+   "type": "music",
+   "total": 6,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 279,
+   "name": "Library Music",
+   "date": "Dec 2022",
+   "type": "music",
+   "total": 135,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 280,
+   "name": "Greenland & The Faroe Islands",
+   "date": "Dec 2022",
+   "type": "film",
+   "total": 69,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 282,
+   "name": "Deleuze's Images: Deleuze on the Page",
+   "date": "Jan 2023",
+   "type": "book",
+   "total": 13,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 283,
+   "name": "Cinema's First Nasty Women",
+   "date": "Jul 2024",
+   "type": "film",
+   "total": 110,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 284,
+   "name": "Butoh",
+   "date": "Mar 2023",
+   "type": "film",
+   "total": 82,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 285,
+   "name": "Butoh Books",
+   "date": "Mar 2023",
+   "type": "book",
+   "total": 10,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 286,
+   "name": "Iraq",
+   "date": "Apr 2023",
+   "type": "film",
+   "total": 85,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 288,
+   "name": "Tatsumi Kumashiro",
+   "date": "Jun 2023",
+   "type": "film",
+   "total": 52,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 289,
+   "name": "Bye Bye Berlusconi! (Books)",
+   "date": "Jun 2023",
+   "type": "book",
+   "total": 2,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 290,
+   "name": "Bye Bye Berlusconi!",
+   "date": "Jun 2023",
+   "type": "film",
+   "total": 48,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 295,
+   "name": "John Pilger",
+   "date": "Dec 2023",
+   "type": "film",
+   "total": 37,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 297,
+   "name": "Tora-san: It's Tough Being a Man",
+   "date": "Apr 2024",
+   "type": "film",
+   "total": 89,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 299,
+   "name": "Ukrainian Cinema: 100 Best",
+   "date": "Jun 2024",
+   "type": "film",
+   "total": 133,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 301,
+   "name": "Indian Horror",
+   "date": "Oct 2024",
+   "type": "film",
+   "total": 46,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 304,
+   "name": "Lewis Carroll on the page",
+   "date": "Dec 2024",
+   "type": "book",
+   "total": 22,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 305,
+   "name": "David Lynch - Books",
+   "date": "Jan 2025",
+   "type": "book",
+   "total": 49,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 308,
+   "name": "Sachi Hamano",
+   "date": "Mar 2025",
+   "type": "film",
+   "total": 8,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 310,
+   "name": "Queer Japan:film and page",
+   "date": "Apr 2025",
+   "type": "film",
+   "total": 3,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 314,
+   "name": "Herman Yau",
+   "date": "Jul 2025",
+   "type": "film",
+   "total": 49,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 316,
+   "name": "Robert Wilson",
+   "date": "Aug 2025",
+   "type": "film",
+   "total": 88,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 317,
+   "name": "Mitchell Leisen",
+   "date": "Sep 2025",
+   "type": "film",
+   "total": 79,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 320,
+   "name": "Patricia Highsmith on the page",
+   "date": "Nov 2025",
+   "type": "book",
+   "total": 9,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 321,
+   "name": "Peter Watkins",
+   "date": "Nov 2025",
+   "type": "film",
+   "total": 34,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 323,
+   "name": "Rosa von Praunheim",
+   "date": "Jan 2026",
+   "type": "film",
+   "total": 55,
+   "matched": 2,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 325,
+   "name": "Enchanted Forests",
+   "date": "Feb 2026",
+   "type": "film",
+   "total": 73,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 326,
+   "name": "Alberto Cavalcanti",
+   "date": "Mar 2026",
+   "type": "film",
+   "total": 36,
+   "matched": 1,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 327,
+   "name": "Eduardo Coutinho",
+   "date": "May 2026",
+   "type": "film",
+   "total": 29,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 198,
+   "name": "British & Irish Occult/Folklore literature",
+   "date": "Dec 2017",
+   "type": "book",
+   "total": 43,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 199,
+   "name": "British & Irish Occult/Folklore music",
+   "date": "Dec 2017",
+   "type": "music",
+   "total": 31,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 201,
+   "name": "Pre-Code American soundtrack 1929-1934",
+   "date": "Jan 2018",
+   "type": "music",
+   "total": 6,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 202,
+   "name": "Pre-Code America books 1929-1934",
+   "date": "Jan 2018",
+   "type": "book",
+   "total": 30,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 203,
+   "name": "Estonia, Latvia, Lithuania",
+   "date": "Feb 2018",
+   "type": "film",
+   "total": 799,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 204,
+   "name": "Screen One - Screen Two - Screenplay",
+   "date": "Apr 2018",
+   "type": "film",
+   "total": 217,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 206,
+   "name": "Allan Dwan",
+   "date": "Jun 2018",
+   "type": "film",
+   "total": 82,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 212,
+   "name": "Some Belgian & Dutch Documentarists",
+   "date": "Nov 2018",
+   "type": "film",
+   "total": 269,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 214,
+   "name": "Jonas Mekas",
+   "date": "Feb 2019",
+   "type": "film",
+   "total": 129,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 219,
+   "name": "Art Brut / Outsider Art (literature)",
+   "date": "Apr 2019",
+   "type": "book",
+   "total": 23,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 220,
+   "name": "Outsider Music",
+   "date": "Apr 2019",
+   "type": "music",
+   "total": 71,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 224,
+   "name": "Caribbean Cinema",
+   "date": "Jul 2019",
+   "type": "film",
+   "total": 179,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 227,
+   "name": "Film Noir & Crime Fiction",
+   "date": "Aug 2019",
+   "type": "film",
+   "total": 98,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 236,
+   "name": "Jean-Pierre Mocky",
+   "date": "May 2020",
+   "type": "film",
+   "total": 84,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 237,
+   "name": "Japanese Cinema & Literature (1900-1945)",
+   "date": "Jun 2020",
+   "type": "book",
+   "total": 35,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 239,
+   "name": "Screwball Comedy (literature)",
+   "date": "Jul 2020",
+   "type": "book",
+   "total": 30,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 240,
+   "name": "Hiroshima at 75 - literature",
+   "date": "Aug 2020",
+   "type": "book",
+   "total": 10,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 242,
+   "name": "The Evacuation of St Kilda",
+   "date": "Aug 2020",
+   "type": "film",
+   "total": 17,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 243,
+   "name": "Gran Colombia",
+   "date": "Sep 2020",
+   "type": "film",
+   "total": 339,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 244,
+   "name": "Hammer Films (literature)",
+   "date": "Oct 2020",
+   "type": "book",
+   "total": 18,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 245,
+   "name": "Werner Schroeter",
+   "date": "Dec 2020",
+   "type": "film",
+   "total": 54,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 246,
+   "name": "Architecture (books)",
+   "date": "Jan 2021",
+   "type": "book",
+   "total": 71,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 249,
+   "name": "Armenia & Azerbaijan Redux",
+   "date": "Apr 2021",
+   "type": "film",
+   "total": 311,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 254,
+   "name": "Vittorio Cottafavi, Riccardo Freda & Raffaello Matarazzo",
+   "date": "Jul 2021",
+   "type": "film",
+   "total": 158,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 256,
+   "name": "On and In Afghanistan",
+   "date": "Sep 2021",
+   "type": "film",
+   "total": 175,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 257,
+   "name": "Afghanistan",
+   "date": "Sep 2021",
+   "type": "film",
+   "total": 2,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 258,
+   "name": "Roma and Travellers",
+   "date": "Oct 2021",
+   "type": "film",
+   "total": 197,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 260,
+   "name": "Fungi on the Page",
+   "date": "Oct 2021",
+   "type": "book",
+   "total": 20,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 261,
+   "name": "Umetsugu Inoue",
+   "date": "Dec 2021",
+   "type": "film",
+   "total": 35,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 124,
+   "name": "Italian cinema under fascism",
+   "date": "Nov 2014",
+   "type": "film",
+   "total": 9,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 125,
+   "name": "Italian literature under fascism",
+   "date": "Nov 2014",
+   "type": "book",
+   "total": 1,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 126,
+   "name": "Italian music under fascism",
+   "date": "Nov 2014",
+   "type": "music",
+   "total": 0,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 128,
+   "name": "Sword and Sandal: Peplum",
+   "date": "Dec 2011",
+   "type": "film",
+   "total": 143,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 129,
+   "name": "Peplum soundtracks",
+   "date": "Dec 2011",
+   "type": "music",
+   "total": 3,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 130,
+   "name": "Ancient Greek and Roman literature",
+   "date": "Dec 2011",
+   "type": "book",
+   "total": 65,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 131,
+   "name": "Spanish cinema under Franco",
+   "date": "Jan 2012",
+   "type": "film",
+   "total": 656,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 132,
+   "name": "Hans Christian Andersen",
+   "date": "Feb 2012",
+   "type": "film",
+   "total": 72,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 138,
+   "name": "Nordic Noir",
+   "date": "Sep 2012",
+   "type": "film",
+   "total": 257,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 141,
+   "name": "Singing Cowboys",
+   "date": "Feb 2013",
+   "type": "film",
+   "total": 52,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 142,
+   "name": "Singing Cowboys",
+   "date": "Feb 2013",
+   "type": "film",
+   "total": 8,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 144,
+   "name": "Action cinema from South East Asia",
+   "date": "Apr 2013",
+   "type": "film",
+   "total": 15,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 146,
+   "name": "Scandinavian Silent Cinema",
+   "date": "Aug 2014",
+   "type": "film",
+   "total": 534,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 148,
+   "name": "Chinese cinema under Mao",
+   "date": "Oct 2013",
+   "type": "film",
+   "total": 164,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 150,
+   "name": "Czech Silent and Early Sound Cinema",
+   "date": "Mar 2014",
+   "type": "film",
+   "total": 92,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 153,
+   "name": "Palestine",
+   "date": "Apr 2014",
+   "type": "film",
+   "total": 309,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 156,
+   "name": "Carlos Hugo Christensen",
+   "date": "Sep 2014",
+   "type": "film",
+   "total": 49,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 158,
+   "name": "World War One literature",
+   "date": "Oct 2014",
+   "type": "book",
+   "total": 31,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 159,
+   "name": "Italian cinema under fascism",
+   "date": "Nov 2014",
+   "type": "film",
+   "total": 248,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 160,
+   "name": "Italian music under fascism",
+   "date": "Nov 2014",
+   "type": "music",
+   "total": 14,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 161,
+   "name": "Italian literature under fascism",
+   "date": "Nov 2014",
+   "type": "book",
+   "total": 28,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 163,
+   "name": "North Korea",
+   "date": "Feb 2015",
+   "type": "film",
+   "total": 99,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 166,
+   "name": "The Wednesday Play & Play for Today",
+   "date": "Jun 2015",
+   "type": "film",
+   "total": 353,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 167,
+   "name": "Groupe de Recherches Musicales",
+   "date": "Jul 2015",
+   "type": "music",
+   "total": 47,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 168,
+   "name": "Groupe de Recherches Musicales",
+   "date": "Jul 2015",
+   "type": "music",
+   "total": 76,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 169,
+   "name": "Groupe de Recherches Musicales",
+   "date": "Jul 2015",
+   "type": "music",
+   "total": 5,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 171,
+   "name": "Raoul Ruiz",
+   "date": "Sep 2015",
+   "type": "film",
+   "total": 130,
+   "matched": 1,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 173,
+   "name": "Charles Dickens on the page/audiobook",
+   "date": "Dec 2015",
+   "type": "book",
+   "total": 16,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 175,
+   "name": "Austrian Cinema 1895 - 1938",
+   "date": "Jan 2016",
+   "type": "film",
+   "total": 168,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 177,
+   "name": "Malaysian Cinema",
+   "date": "Apr 2016",
+   "type": "film",
+   "total": 147,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 179,
+   "name": "Pakistani Cinema",
+   "date": "Apr 2016",
+   "type": "film",
+   "total": 29,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 182,
+   "name": "Andrzej Wajda",
+   "date": "Oct 2016",
+   "type": "film",
+   "total": 81,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 185,
+   "name": "Soviet Fantasy Cinema",
+   "date": "Dec 2016",
+   "type": "film",
+   "total": 208,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 187,
+   "name": "Poverty Row: Monogram & Producers Releasing Corporation",
+   "date": "Feb 2017",
+   "type": "film",
+   "total": 291,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 189,
+   "name": "Polish Documentary",
+   "date": "May 2017",
+   "type": "film",
+   "total": 723,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 190,
+   "name": "Commedia all'Italiana",
+   "date": "Jun 2017",
+   "type": "film",
+   "total": 300,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 191,
+   "name": "Italian Soundtrack",
+   "date": "Jun 2017",
+   "type": "music",
+   "total": 213,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 194,
+   "name": "Central Asian Cinema: 1992 - the present",
+   "date": "Sep 2017",
+   "type": "film",
+   "total": 127,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 48,
+   "name": "Andy Warhol",
+   "date": "Sep 2007",
+   "type": "film",
+   "total": 60,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 49,
+   "name": "Johann Sebastian Bach",
+   "date": "Oct 2007",
+   "type": "music",
+   "total": 157,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 52,
+   "name": "Fantagraphics Books",
+   "date": "Nov 2007",
+   "type": "book",
+   "total": 417,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 54,
+   "name": "Raj Kapoor",
+   "date": "Jan 2008",
+   "type": "film",
+   "total": 34,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 56,
+   "name": "Nuevo tango",
+   "date": "Feb 2008",
+   "type": "music",
+   "total": 70,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 59,
+   "name": "Joan Crawford",
+   "date": "Mar 2008",
+   "type": "film",
+   "total": 67,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 60,
+   "name": "Taschen books",
+   "date": "Apr 2008",
+   "type": "book",
+   "total": 97,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 66,
+   "name": "Jean Rouch",
+   "date": "Jul 2008",
+   "type": "film",
+   "total": 57,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 67,
+   "name": "Morton Feldman",
+   "date": "Aug 2008",
+   "type": "music",
+   "total": 91,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 68,
+   "name": "Pedro Costa",
+   "date": "Aug 2008",
+   "type": "film",
+   "total": 28,
+   "matched": 2,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 69,
+   "name": "Manoel de Oliveira Redux",
+   "date": "Aug 2008",
+   "type": "film",
+   "total": 79,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 70,
+   "name": "Michelangelo Antonioni",
+   "date": "Sep 2008",
+   "type": "film",
+   "total": 30,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 73,
+   "name": "Alan Clarke",
+   "date": "Nov 2008",
+   "type": "film",
+   "total": 40,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 75,
+   "name": "Vintage Children's records",
+   "date": "Dec 2008",
+   "type": "music",
+   "total": 24,
+   "matched": 1,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 76,
+   "name": "The Golden Age of Serials (1929 - 1956)",
+   "date": "Dec 2008",
+   "type": "film",
+   "total": 145,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 80,
+   "name": "Joseph W. Sarno",
+   "date": "Mar 2009",
+   "type": "film",
+   "total": 81,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 82,
+   "name": "Otar Iosseliani and Georgian cinema",
+   "date": "Apr 2009",
+   "type": "film",
+   "total": 233,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 85,
+   "name": "Romanian music",
+   "date": "Jul 2009",
+   "type": "music",
+   "total": 261,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 86,
+   "name": "Lina Wertmüller",
+   "date": "Jul 2009",
+   "type": "film",
+   "total": 25,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 89,
+   "name": "Luc Moullet",
+   "date": "Sep 2009",
+   "type": "film",
+   "total": 42,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 98,
+   "name": "Third Reich Cinema",
+   "date": "May 2010",
+   "type": "film",
+   "total": 1239,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 99,
+   "name": "National Film Board of Canada: Documentaries",
+   "date": "Jun 2010",
+   "type": "film",
+   "total": 282,
+   "matched": 1,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 102,
+   "name": "Jesus Franco",
+   "date": "Sep 2010",
+   "type": "film",
+   "total": 314,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 103,
+   "name": "Arthur Conan Doyle",
+   "date": "Oct 2010",
+   "type": "film",
+   "total": 144,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 105,
+   "name": "Music of the Weimar Republic",
+   "date": "Nov 2010",
+   "type": "music",
+   "total": 36,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 106,
+   "name": "Literature of the Weimar Republic",
+   "date": "Nov 2010",
+   "type": "book",
+   "total": 70,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 109,
+   "name": "Soviet montage",
+   "date": "Feb 2011",
+   "type": "film",
+   "total": 53,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 110,
+   "name": "Soviet silent cinema",
+   "date": "Feb 2011",
+   "type": "film",
+   "total": 292,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 112,
+   "name": "Sound recordings of the Soviet Union (1918-1935)",
+   "date": "Feb 2011",
+   "type": "music",
+   "total": 8,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 113,
+   "name": "Literature of the Soviet Union (1918-1935)",
+   "date": "Feb 2011",
+   "type": "book",
+   "total": 11,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 114,
+   "name": "Egyptian cinema",
+   "date": "Mar 2011",
+   "type": "film",
+   "total": 326,
+   "matched": 1,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 120,
+   "name": "French cinema under the Occupation",
+   "date": "Aug 2011",
+   "type": "film",
+   "total": 140,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 121,
+   "name": "French literature under the Occupation",
+   "date": "Aug 2011",
+   "type": "book",
+   "total": 28,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 122,
+   "name": "French music under the Occupation",
+   "date": "Aug 2011",
+   "type": "music",
+   "total": 15,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 2,
+   "name": "Pink Floyd",
+   "date": "Feb 2005",
+   "type": "music",
+   "total": 21,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 4,
+   "name": "Kraftwerk",
+   "date": "Mar 2005",
+   "type": "music",
+   "total": 16,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 7,
+   "name": "Terry Gilliam",
+   "date": "May 2005",
+   "type": "film",
+   "total": 61,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 8,
+   "name": "Dogma Films",
+   "date": "May 2005",
+   "type": "film",
+   "total": 42,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 10,
+   "name": "David Bowie",
+   "date": "Aug 2005",
+   "type": "music",
+   "total": 21,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 11,
+   "name": "Italian Action",
+   "date": "Dec 2005",
+   "type": "film",
+   "total": 248,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 12,
+   "name": "Old-School Hip Hop",
+   "date": "Dec 2005",
+   "type": "music",
+   "total": 169,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 13,
+   "name": "Kinji Fukasaku",
+   "date": "Feb 2006",
+   "type": "film",
+   "total": 90,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 19,
+   "name": "Early Bluegrass (pre-1965)",
+   "date": "Apr 2006",
+   "type": "music",
+   "total": 26,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 21,
+   "name": "Modern Soul",
+   "date": "May 2006",
+   "type": "music",
+   "total": 125,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 22,
+   "name": "First Wave Ska",
+   "date": "Aug 2006",
+   "type": "music",
+   "total": 66,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 24,
+   "name": "Dubstep",
+   "date": "Sep 2006",
+   "type": "music",
+   "total": 68,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 25,
+   "name": "1950's Science Fiction",
+   "date": "Sep 2006",
+   "type": "film",
+   "total": 235,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 26,
+   "name": "Flamenco",
+   "date": "Oct 2006",
+   "type": "music",
+   "total": 157,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 30,
+   "name": "Narrative Concept Albums",
+   "date": "Dec 2006",
+   "type": "music",
+   "total": 59,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 36,
+   "name": "Música Brasileira",
+   "date": "Feb 2007",
+   "type": "film",
+   "total": 475,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 37,
+   "name": "Euro Western Soundtracks",
+   "date": "Mar 2007",
+   "type": "music",
+   "total": 75,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 47,
+   "name": "Luv N' Haight records",
+   "date": "Sep 2007",
+   "type": "music",
+   "total": 25,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 111,
+   "name": "",
+   "date": "Aug 2026",
+   "type": "film",
+   "total": 2,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 250,
+   "name": "",
+   "date": "Aug 2026",
+   "type": "film",
+   "total": 0,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 251,
+   "name": "",
+   "date": "Aug 2026",
+   "type": "film",
+   "total": 0,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  },
+  {
+   "id": 315,
+   "name": "",
+   "date": "Aug 2026",
+   "type": "film",
+   "total": 0,
+   "matched": 0,
+   "on_disk": 0,
+   "pct": 0.0,
+   "examples": []
+  }
+ ]
+}

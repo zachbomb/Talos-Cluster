@@ -39,3 +39,7 @@ clustertool-new
 
 # Sidequest/agent worktrees — never commit
 .claude/worktrees/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
