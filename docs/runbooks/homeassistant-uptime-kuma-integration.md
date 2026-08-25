@@ -1,8 +1,19 @@
 # Home Assistant ↔ uptime-kuma integration: 401 recovery
 
-**Symptom:** every `binary_sensor.uptimekuma_*` / `sensor.uptimekuma_*` entity in Home
-Assistant is `unavailable`, while the uptime-kuma pod is `1/1 Running` and its own
-monitors are green.
+**Symptom:** every `sensor.uptime_kuma_*` entity in Home Assistant is `unavailable`,
+while the uptime-kuma pod is `1/1 Running` and its own monitors are green.
+
+> **Entity rename (2026-08-25, SQ-132):** the integration renamed its entities —
+> domain `binary_sensor` → `sensor` AND slug `uptimekuma` → `uptime_kuma` (underscore
+> inserted). The old names `binary_sensor.uptimekuma_*` / `sensor.uptimekuma_*` no
+> longer exist; if you go looking for them today you will find nothing and wrongly
+> conclude the integration was removed. A healthy state now looks like
+> `sensor.uptime_kuma_status = up` (11 `sensor.uptime_kuma_*` entities plus
+> `update.192_168_10_245_uptime_kuma_version`; 7 of the 11 legitimately sit at
+> `unknown`/unavailable even when healthy). The rename made the old alert selector
+> match zero series and `UptimeKumaHAIntegrationDown` fired permanently against a
+> healthy integration — re-verify any entity-name-keyed selector after integration
+> upgrades.
 
 **This is the watchdog failing silently.** uptime-kuma is what watches the Cloudflare
 tunnel, Traefik and Home Assistant itself. When the HA integration to it dies, nothing
@@ -125,12 +136,16 @@ in Home Assistant's config entry, which is not managed by this repo.
 
 ## Verification
 
-Expect one `binary_sensor` **and** one `sensor` per active uptime-kuma monitor — 56 of
-each at time of writing (57 monitors, `DizqueTV` inactive), i.e. 112 entities total.
+Post-rename (2026-08-25) the integration exposes `sensor.uptime_kuma_*` entities —
+11 at time of writing, of which 7 are legitimately `unknown`/unavailable even when
+healthy (certificate expiry plus the uptime/response-time aggregates). Do NOT expect
+them all available; the healthy signature is `max(...) = 1`, carried by
+`sensor.uptime_kuma_status` (state `up`), `response_time`, `monitor_type` and
+`monitored_url`.
 
 ```bash
-# all 56 back to available, within ~2 minutes (HA scrape interval is 1m)
-count(homeassistant_entity_available{entity=~"binary_sensor.uptimekuma_.*"} == 1)
+# healthy = 1, within ~2 minutes (HA scrape interval is 1m); broken/401 = 0
+max(homeassistant_entity_available{entity=~"sensor.uptime_kuma_.*"})
 ```
 
 ```bash
@@ -141,14 +156,14 @@ kubectl logs -n monitoring deploy/uptime-kuma --tail=50 | grep -i api-auth   # s
 
 `homeassistant-telemetry-health` in
 `clusters/main/kubernetes/system/kube-prometheus-stack/app/prometheusrule-meta.yaml`
-fires `UptimeKumaHAIntegrationDown` when every uptimekuma binary_sensor reports
+fires `UptimeKumaHAIntegrationDown` when every `sensor.uptime_kuma_*` entity reports
 unavailable for 15 minutes while the Home Assistant scrape target is still up.
 
 Prometheus already scrapes HA's `/api/prometheus` (`ScrapeConfig homeassistant`), which
 exports `homeassistant_entity_available{entity="…"}` for all ~3400 entities. The data to
 catch this had been sitting in Prometheus, unqueried, for the entire outage.
 
-The rule is deliberately scoped to the uptimekuma entities: ~640 of HA's 3437 entities
+The rule is deliberately scoped to the uptime_kuma entities: ~640 of HA's 3437 entities
 are `unavailable` at any given moment (dead Zigbee devices, unreachable buttons, and so
 on), so a blanket "an HA entity is unavailable" alert is unusable.
 
