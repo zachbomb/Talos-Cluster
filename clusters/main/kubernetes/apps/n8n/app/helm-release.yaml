@@ -39,6 +39,11 @@ spec:
   # docker-link-style variables entirely. n8n reaches other services by DNS, so
   # nothing depends on them. The chart does not expose the field, hence the
   # post-render patch rather than a value.
+  #
+  # The second patch adds a startupProbe. Chart 2.1.0 renders only liveness and
+  # readiness (templates/deployment.yaml has no startupProbe block at all), so this
+  # is likewise only reachable through a post-render patch. Sizing rationale is in
+  # the `main.livenessProbe` comment below.
   postRenderers:
     - kustomize:
         patches:
@@ -49,20 +54,96 @@ spec:
               - op: add
                 path: /spec/template/spec/enableServiceLinks
                 value: false
+          - target:
+              kind: Deployment
+              name: n8n
+            patch: |
+              - op: add
+                path: /spec/template/spec/containers/0/startupProbe
+                value:
+                  httpGet:
+                    path: /healthz
+                    port: http
+                  periodSeconds: 5
+                  timeoutSeconds: 5
+                  failureThreshold: 40
   values:
-    n8n:
-      encryption_key: "${TRIPARR_ENCRYPTION_KEY}"
-    config:
-      generic:
-        timezone: "America/New_York"
-      executions:
-        pruneData: "true"
-        pruneDataMaxAge: 168
-    service:
-      type: LoadBalancer
-      port: 5678
-      annotations:
-        metallb.io/loadBalancerIPs: "${MYSPEED_IP}"
+    # NOTE ON SCHEMA: chart 2.x moved every n8n-process and workload setting under
+    # `main:` (also `worker:`/`webhook:`). Only `image:`, `ingress:` and a few
+    # chart-wide keys stay top-level. The 1.x paths this file used before
+    # (`n8n.encryption_key`, `config.*`, `service.*`, `persistence.*`, `resources.*`)
+    # are not recognised by 2.x, and Helm does not error on unknown value keys - it
+    # renders nothing and reports success. The result was a container with zero env
+    # vars, no resource requests (BestEffort) and an emptyDir instead of a PVC,
+    # while Flux reported Ready=True.
+    #
+    # `main.config` and `main.secret` are converted 1:1 into env vars: each YAML
+    # level is upper-cased and joined with `_`. So the tree below must spell the
+    # real n8n env var name, not n8n's internal config key path. Confirmed against
+    # chart 2.1.0 templates/_helpers.tpl (`toEnvVars`) and n8n's own config
+    # decorators (@Env) for each variable.
+    main:
+      # -> GENERIC_TIMEZONE, EXECUTIONS_DATA_PRUNE, EXECUTIONS_DATA_MAX_AGE
+      config:
+        generic:
+          timezone: "America/New_York"
+        executions:
+          data:
+            prune: true
+            max_age: 168
+      # -> N8N_ENCRYPTION_KEY (rendered into Secret n8n-app-secret, not a ConfigMap)
+      secret:
+        n8n:
+          encryption_key: "${TRIPARR_ENCRYPTION_KEY}"
+      persistence:
+        enabled: true
+        # 2.x defaults to type: emptyDir even when enabled: true. `dynamic` is what
+        # provisions the PVC; without it n8n's SQLite DB, credentials and the
+        # generated encryption key are discarded on every pod restart.
+        type: dynamic
+        accessModes:
+          - ReadWriteOnce
+        size: 2Gi
+      service:
+        enabled: true
+        type: LoadBalancer
+        port: 5678
+        annotations:
+          metallb.io/loadBalancerIPs: "${MYSPEED_IP}"
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          # Memory only. A CPU limit throttles n8n's Node boot on a control-plane
+          # node that already sits at 72% CPU requests, which lengthens the very
+          # boot window the probes are racing. Measured idle RSS is ~331Mi.
+          memory: 1Gi
+      # Boot measured on k8s-control-1: container start -> "n8n ready on ::, port
+      # 5678" took 24.8s (21:24:19Z -> 21:24:43.8Z). The chart default liveness has
+      # no initialDelaySeconds, periodSeconds 10, failureThreshold 3, so it SIGTERMs
+      # at ~28-30s - a few seconds after n8n binds. The immediately preceding
+      # container died at exactly 28s, exit 143. That race produced 285 restarts.
+      # The startupProbe above now owns the boot window (40 x 5s = 200s, ~8x the
+      # measured boot) and the kubelet suppresses liveness/readiness until it
+      # passes. Liveness afterwards is loosened from the 1s default timeout, which
+      # a busy Node event loop can miss without being unhealthy.
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: http
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: http
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+    # ingress stays top-level in chart 2.x. Its backend port follows
+    # main.service.port, so it tracks the 5678 above automatically.
     ingress:
       enabled: true
       className: traefik
@@ -79,13 +160,3 @@ spec:
         - hosts:
             - n8n.${BASE_DOMAIN}
           secretName: n8n-tls-0
-    persistence:
-      enabled: true
-      size: 2Gi
-    resources:
-      requests:
-        cpu: 10m
-        memory: 128Mi
-      limits:
-        cpu: "1"
-        memory: 512Mi
