@@ -1,6 +1,14 @@
 # Unit tests for prometheusrule-storage.yaml. CI extracts the rule .spec to
 # prometheusrule-storage-extracted.yaml (loaded below). exp_annotations must match
 # the rule's rendered output byte-for-byte.
+#
+# Longhorn tests (SQ-131/SQ-133): longhorn_volume_robustness is a ONE-HOT gauge
+# keyed on a `state` STRING label (healthy/degraded/faulted/unknown), value 0/1.
+# The synthetic series below model that real shape. The previous fixture fed
+# numeric enum values (2/3) that never occur in the wild, so it passed against
+# rules that could never fire in production — a test validating a bug. Every
+# positive fire here is paired with a negative control precisely because a
+# fires-only test would have passed against the dead `== 3` rule too.
 rule_files:
   - prometheusrule-storage-extracted.yaml
 evaluation_interval: 1m
@@ -75,6 +83,30 @@ tests:
               summary: "VolSync backup out of sync: media/sonarr-config"
               description: "VolSync ReplicationSource media/sonarr-config has missed its schedule window (out_of_sync=1 for 2h+) — the restic backup to S3 is behind. Check the mover pod + S3 reachability. Runbook: memory reference_volsync_operational_procedures."
 
+  # Wedged source (sync counter flat for 26h+) → VolSyncSourceStale fires; an
+  # actively syncing source and a flat *-dest series do NOT (the -dest exclusion
+  # is the negative control that keeps 32+ healthy ReplicationDestinations from
+  # paging — they sync on restore, not on a schedule).
+  - interval: 60m
+    input_series:
+      - series: 'volsync_sync_duration_seconds_count{obj_name="sonarr-config", obj_namespace="media"}'
+        values: "5x40"
+      - series: 'volsync_sync_duration_seconds_count{obj_name="radarr-config", obj_namespace="media"}'
+        values: "5+1x40"
+      - series: 'volsync_sync_duration_seconds_count{obj_name="sonarr-config-dest", obj_namespace="media"}'
+        values: "5x40"
+    alert_rule_test:
+      - eval_time: 28h
+        alertname: VolSyncSourceStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              obj_name: sonarr-config
+              obj_namespace: media
+            exp_annotations:
+              summary: "VolSync source stale: media/sonarr-config — no completed sync in 26h"
+              description: "ReplicationSource media/sonarr-config has completed zero syncs in 26h against a daily schedule. This fires even when out_of_sync stays 0 (wedged mover Job / stale restic lock). Check the mover pod and restic locks. Runbook: memory reference_restic_lock_staleness_and_job_wedge."
+
   # No VolSync series → VolSyncMetricsAbsent (guards silent scrape loss).
   - interval: 1m
     input_series:
@@ -90,39 +122,82 @@ tests:
               summary: "VolSync metrics absent — backup health is blind"
               description: "No volsync_volume_out_of_sync series. The VolSync ServiceMonitor (volsync ns) is missing or its scrape is failing — backup failures cannot be detected. Verify the volsync ServiceMonitor and that its target is up."
 
-  # Longhorn robustness=3 → LonghornVolumeFaulted (critical).
+  # One-hot faulted volume → LonghornVolumeFaulted fires (critical, for: 5m);
+  # the same volume's degraded/healthy/unknown zero-valued series do NOT trip
+  # LonghornVolumeDegraded.
   - interval: 1m
     input_series:
-      - series: 'longhorn_volume_robustness{volume="pvc-faulted"}'
-        values: "3x10"
-      - series: 'longhorn_volume_robustness{volume="pvc-healthy"}'
-        values: "1x10"
+      - series: 'longhorn_volume_robustness{state="healthy", volume="pvc-bad", pvc="volsync-lidarr-config-config-src", pvc_namespace="media", node="node1"}'
+        values: "0x20"
+      - series: 'longhorn_volume_robustness{state="degraded", volume="pvc-bad", pvc="volsync-lidarr-config-config-src", pvc_namespace="media", node="node1"}'
+        values: "0x20"
+      - series: 'longhorn_volume_robustness{state="faulted", volume="pvc-bad", pvc="volsync-lidarr-config-config-src", pvc_namespace="media", node="node1"}'
+        values: "1x20"
+      - series: 'longhorn_volume_robustness{state="unknown", volume="pvc-bad", pvc="volsync-lidarr-config-config-src", pvc_namespace="media", node="node1"}'
+        values: "0x20"
     alert_rule_test:
       - eval_time: 6m
         alertname: LonghornVolumeFaulted
         exp_alerts:
           - exp_labels:
               severity: critical
-              volume: pvc-faulted
+              state: faulted
+              volume: pvc-bad
+              pvc: volsync-lidarr-config-config-src
+              pvc_namespace: media
+              node: node1
             exp_annotations:
-              summary: "Longhorn volume FAULTED: pvc-faulted"
-              description: "Longhorn volume pvc-faulted is FAULTED (robustness=3) — no healthy replica, data at risk / app down. Investigate immediately."
+              summary: "Longhorn volume FAULTED: pvc-bad"
+              description: "Longhorn volume pvc-bad (PVC media/volsync-lidarr-config-config-src) is FAULTED — no healthy replica, data at risk / app down. Investigate immediately."
+      - eval_time: 16m
+        alertname: LonghornVolumeDegraded
+        exp_alerts: []
 
-  # Longhorn robustness=2 for 10m → LonghornVolumeDegraded (warning).
+  # One-hot degraded volume → LonghornVolumeDegraded fires after 15m, and NOT
+  # before the `for:` window elapses.
   - interval: 1m
     input_series:
-      - series: 'longhorn_volume_robustness{volume="pvc-degraded"}'
-        values: "2x15"
+      - series: 'longhorn_volume_robustness{state="degraded", volume="pvc-deg", pvc="plex-config", pvc_namespace="media", node="node1"}'
+        values: "1x30"
+      - series: 'longhorn_volume_robustness{state="healthy", volume="pvc-deg", pvc="plex-config", pvc_namespace="media", node="node1"}'
+        values: "0x30"
     alert_rule_test:
-      - eval_time: 11m
+      - eval_time: 16m
         alertname: LonghornVolumeDegraded
         exp_alerts:
           - exp_labels:
               severity: warning
-              volume: pvc-degraded
+              state: degraded
+              volume: pvc-deg
+              pvc: plex-config
+              pvc_namespace: media
+              node: node1
             exp_annotations:
-              summary: "Longhorn volume degraded: pvc-degraded"
-              description: "Longhorn volume pvc-degraded is DEGRADED (robustness=2) — a replica is rebuilding or lost. On this single-node cluster this often precedes an instance-manager cascade. Runbook: memory project_longhorn_1_12_im_liveness_outage_2026_06."
+              summary: "Longhorn volume degraded: pvc-deg"
+              description: "Longhorn volume pvc-deg (PVC media/plex-config) is DEGRADED — a replica is rebuilding or lost. On this single-node cluster this often precedes an instance-manager cascade. Runbook: memory project_longhorn_1_12_im_liveness_outage_2026_06."
+      - eval_time: 14m
+        alertname: LonghornVolumeDegraded
+        exp_alerts: []
+
+  # Healthy + detached(unknown) fleet → NO Longhorn volume alerts. This is the
+  # live steady state (97 healthy + 55 unknown of 152 volumes, 2026-08-25): the
+  # one-hot 1-valued healthy/unknown series must not match the faulted/degraded
+  # selectors.
+  - interval: 1m
+    input_series:
+      - series: 'longhorn_volume_robustness{state="healthy", volume="pvc-ok", pvc="ok", pvc_namespace="media", node="node1"}'
+        values: "1x30"
+      - series: 'longhorn_volume_robustness{state="faulted", volume="pvc-ok", pvc="ok", pvc_namespace="media", node="node1"}'
+        values: "0x30"
+      - series: 'longhorn_volume_robustness{state="unknown", volume="pvc-detached", pvc="det", pvc_namespace="media", node="node1"}'
+        values: "1x30"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: LonghornVolumeFaulted
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: LonghornVolumeDegraded
+        exp_alerts: []
 
   # No Longhorn series → LonghornMetricsAbsent (guards the current broken scrape).
   - interval: 1m

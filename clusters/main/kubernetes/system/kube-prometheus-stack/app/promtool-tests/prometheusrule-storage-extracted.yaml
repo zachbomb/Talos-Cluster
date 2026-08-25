@@ -32,6 +32,22 @@ groups:
           summary: "VolSync backup out of sync: {{ $labels.obj_namespace }}/{{ $labels.obj_name }}"
           description: >-
             VolSync ReplicationSource {{ $labels.obj_namespace }}/{{ $labels.obj_name }} has missed its schedule window (out_of_sync=1 for 2h+) — the restic backup to S3 is behind. Check the mover pod + S3 reachability. Runbook: memory reference_volsync_operational_procedures.
+      # SQ-128/SQ-131: out_of_sync alone missed five wedges — a wedged mover Job
+      # can leave out_of_sync=0 while no sync ever completes. This rule catches
+      # that class: no COMPLETED sync in 26h (daily schedule + slack) on any
+      # source-side ReplicationSource. The `-dest` exclusion is REQUIRED:
+      # destination-side ReplicationDestinations sync on restore, not on a
+      # schedule, so without it 32+ healthy `*-dest` series match immediately
+      # (live-verified 2026-08-25: 84 total series, 52 after exclusion, 0 stale).
+      - alert: VolSyncSourceStale
+        expr: increase(volsync_sync_duration_seconds_count{obj_name!~".*-dest"}[26h]) == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VolSync source stale: {{ $labels.obj_namespace }}/{{ $labels.obj_name }} — no completed sync in 26h"
+          description: >-
+            ReplicationSource {{ $labels.obj_namespace }}/{{ $labels.obj_name }} has completed zero syncs in 26h against a daily schedule. This fires even when out_of_sync stays 0 (wedged mover Job / stale restic lock). Check the mover pod and restic locks. Runbook: memory reference_restic_lock_staleness_and_job_wedge.
       - alert: VolSyncMetricsAbsent
         expr: absent(volsync_volume_out_of_sync)
         for: 30m
@@ -43,24 +59,34 @@ groups:
             No volsync_volume_out_of_sync series. The VolSync ServiceMonitor (volsync ns) is missing or its scrape is failing — backup failures cannot be detected. Verify the volsync ServiceMonitor and that its target is up.
   - name: longhorn-volumes
     rules:
+      # The robustness metric is a one-hot `state`-labeled gauge (see header).
+      # The previous exprs (`== 2` / `== 3`) compared against enum values that
+      # never occur, so both alerts were structurally dead: 2026-08-25 two
+      # volumes sat robustness=faulted for ~14h (434/429 FailedAttachVolume
+      # retries) with zero pages, found only by manual inspection.
       - alert: LonghornVolumeDegraded
-        expr: longhorn_volume_robustness == 2
-        for: 10m
+        expr: longhorn_volume_robustness{state="degraded"} > 0
+        for: 15m
         labels:
           severity: warning
         annotations:
           summary: "Longhorn volume degraded: {{ $labels.volume }}"
           description: >-
-            Longhorn volume {{ $labels.volume }} is DEGRADED (robustness=2) — a replica is rebuilding or lost. On this single-node cluster this often precedes an instance-manager cascade. Runbook: memory project_longhorn_1_12_im_liveness_outage_2026_06.
+            Longhorn volume {{ $labels.volume }} (PVC {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) is DEGRADED — a replica is rebuilding or lost. On this single-node cluster this often precedes an instance-manager cascade. Runbook: memory project_longhorn_1_12_im_liveness_outage_2026_06.
+      # This is the AUTHORITATIVE LonghornVolumeFaulted. A duplicate (also
+      # structurally dead — it selects a `robustness=` label that does not
+      # exist) lives in clusters/main/kubernetes/system/longhorn/app/
+      # prometheus-rules.yaml (longhorn-system/longhorn-alerts) and should be
+      # removed rather than fixed, or the two will double-page.
       - alert: LonghornVolumeFaulted
-        expr: longhorn_volume_robustness == 3
+        expr: longhorn_volume_robustness{state="faulted"} > 0
         for: 5m
         labels:
           severity: critical
         annotations:
           summary: "Longhorn volume FAULTED: {{ $labels.volume }}"
           description: >-
-            Longhorn volume {{ $labels.volume }} is FAULTED (robustness=3) — no healthy replica, data at risk / app down. Investigate immediately.
+            Longhorn volume {{ $labels.volume }} (PVC {{ $labels.pvc_namespace }}/{{ $labels.pvc }}) is FAULTED — no healthy replica, data at risk / app down. Investigate immediately.
       - alert: LonghornMetricsAbsent
         expr: absent(longhorn_volume_robustness)
         for: 20m

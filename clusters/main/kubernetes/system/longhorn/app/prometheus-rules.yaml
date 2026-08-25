@@ -19,19 +19,14 @@ spec:
     - name: longhorn-volume-health
       interval: 30s
       rules:
-        - alert: LonghornVolumeFaulted
-          expr: longhorn_volume_robustness{robustness="faulted"} > 0
-          for: 2m
-          labels:
-            severity: critical
-            component: longhorn
-          annotations:
-            summary: "Longhorn volume {{ $labels.volume }} is faulted"
-            description: |
-              Volume {{ $labels.volume }} (node {{ $labels.node }}) has
-              robustness=faulted for over 2 minutes. Likely engine startup
-              failure (iSCSI desync) or replica corruption.
-              Runbook: docs/runbooks/longhorn-recovery.md
+        # LonghornVolumeFaulted was REMOVED here (SQ-133, 2026-08-25). It was
+        # structurally dead — it selected a `robustness=` label that does not
+        # exist on longhorn_volume_robustness (the metric is one-hot on a
+        # `state` label), so it matched nothing and never fired. The
+        # authoritative, live-verified LonghornVolumeFaulted lives in
+        # kube-prometheus-stack/app/prometheusrule-storage.yaml
+        # (storage-health), unit-tested by promtool-tests/storage-test.yaml.
+        # Do not re-add a copy here or the two will double-page.
         # METRIC SHAPE NOTE (verified Longhorn 1.11.2, 2026-05-25):
         # `longhorn_volume_state` is a multi-series gauge — one series PER POSSIBLE
         # STATE per volume. Each volume emits 6+ series:
@@ -43,8 +38,9 @@ spec:
         #   {state="deleting", volume=X}    value=1 if current, else 0
         # Sample query verified 894 series across 149 volumes: filter by string
         # label `state="X"` works (NOT numeric enum despite some Longhorn docs).
-        # If a future Longhorn release changes this shape, fall back to
-        # `longhorn_volume_robustness != "healthy"` (used in LonghornVolumeFaulted).
+        # `longhorn_volume_robustness` has the SAME one-hot string-label shape,
+        # keyed on `state` (healthy/degraded/faulted/unknown) — see the
+        # storage-health rules in kube-prometheus-stack/app/prometheusrule-storage.yaml.
         - alert: LonghornVolumeStuckDetaching
           expr: longhorn_volume_state{state="detaching"} == 1
           for: 5m
