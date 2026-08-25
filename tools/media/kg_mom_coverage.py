@@ -63,17 +63,25 @@ def main():
 
     rows = []
     for mid, mom in cat["moms"].items():
-        hit = []
+        # DEDUPE BY tmdbId. Karagarga lists the same film repeatedly (alternate
+        # rips, AKA variants), so counting matched ENTRIES double-counts library
+        # films. An early version reported Rivette as 25 owned when only 10
+        # distinct films existed; Plex's own childCount is what exposed it.
+        hit, seen_tmdb = [], set()
         for e in mom["entries"]:
             m = owned(e["title"], e["year"])
-            if m: hit.append({"kg": e["title"], "radarr": m["title"], "year": m.get("year"),
-                              "tmdbId": m.get("tmdbId"), "hasFile": m.get("hasFile")})
+            if not m: continue
+            if m.get("tmdbId") in seen_tmdb: continue
+            seen_tmdb.add(m.get("tmdbId"))
+            hit.append({"kg": e["title"], "radarr": m["title"], "year": m.get("year"),
+                        "tmdbId": m.get("tmdbId"), "hasFile": m.get("hasFile")})
         onfile = [h for h in hit if h["hasFile"]]
         rows.append({"id": mom["id"], "name": mom["name"], "date": mom["date"],
                      "type": mom["type"], "total": mom["count"],
                      "matched": len(hit), "on_disk": len(onfile),
                      "pct": round(100*len(onfile)/mom["count"], 1) if mom["count"] else 0.0,
-                     "examples": [h["radarr"] for h in onfile[:6]]})
+                     "examples": [h["radarr"] for h in onfile[:6]],
+                     "owned": onfile})
     rows.sort(key=lambda r: (-r["on_disk"], -r["pct"]))
     json.dump({"generated_from": cat["harvested"], "rows": rows},
               open("docs/media/kg-mom-coverage.json", "w"), ensure_ascii=False, indent=1)

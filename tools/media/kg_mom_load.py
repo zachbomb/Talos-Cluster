@@ -15,20 +15,25 @@ resolve are reported, never guessed at.
 Usage:  python3 tools/media/kg_mom_load.py --dry-run
         python3 tools/media/kg_mom_load.py --apply
 """
-import json, re, sys, time, unicodedata, urllib.parse, urllib.request
+import json, os, re, sys, time, unicodedata, urllib.parse, urllib.request
 
 B = "http://192.168.10.210:7878/api/v3"
 KEY = open("/tmp/.rk").read().strip()
 ROOT = "/media/media/movies"
 QPROFILE = 16          # Remux + WEB 1080p [Original] - language=Original
 MOMS = {
-    51:  "kg-mom-fassbinder",
-    20:  "kg-mom-demy-varda",
-    117: "kg-mom-lumet",
-    65:  "kg-mom-wiseman",
-    90:  "kg-mom-rivette",
-    63:  "kg-mom-kieslowski",
+    281: "kg-mom-deleuze-s-images",
+    23: "kg-mom-the-birth-of-cinema",
+    255: "kg-mom-the-olympics",
+    296: "kg-mom-frank-tashlin-jerry-lewis",
+    71: "kg-mom-ingmar-bergman",
+    139: "kg-mom-amos-vogel-film-as-a-subversive-ar"
 }
+
+# Override for batched runs: KGMOM_MOMS="140:kg-mom-queer-cinema,309:kg-mom-japanese-queer-cinema"
+if os.environ.get("KGMOM_MOMS"):
+    MOMS = {int(k): v for k, v in
+            (pair.split(":", 1) for pair in os.environ["KGMOM_MOMS"].split(","))}
 
 def api(path, method="GET", body=None):
     data = json.dumps(body).encode() if body is not None else None
