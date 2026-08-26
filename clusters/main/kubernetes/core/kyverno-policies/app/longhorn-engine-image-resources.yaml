@@ -1,0 +1,72 @@
+---
+# Give Longhorn engine-image pods a CPU/memory REQUEST so they stop being
+# BestEffort. Discovered 2026-08-25 during a full control-plane cascade.
+#
+# The failure chain this breaks:
+#   VolSync backup window fills the node's CPU requests (10326m requested on a
+#   9950m node) -> engine-image pods, being BestEffort, get no guaranteed slice
+#   -> their exec liveness probe (`/data/longhorn version --client-only`) cannot
+#   complete even at timeoutSeconds=30 -> kubelet SIGKILLs them (exit 137,
+#   reason=Error, NOT OOMKilled) -> 135/159 Longhorn volumes report
+#   robustness=unknown -> CSI attach fails -> kube-controller-manager churns the
+#   attach/detach reconciler, cannot renew its leader lease within the deadline,
+#   and exits 1. It restarted 44 times.
+#
+# The engine images are the load-bearing piece: instance-manager is already
+# Burstable (via Longhorn's guaranteed-instance-manager-cpu, which is a
+# PERCENTAGE, not cores — 8 means ~0.8 CPU, not 8), but nothing protects the
+# engine images, and it is their death that makes every volume unattachable.
+#
+# REQUESTS ONLY — deliberately NO cpu limit. A CPU limit throttles the container
+# once it exceeds the quota, which reintroduces exactly the probe-timeout death
+# this policy exists to prevent. A request buys scheduler-guaranteed CPU; a limit
+# takes it away again. No memory limit either: these currently have none, and
+# adding one would introduce an OOMKill risk that does not exist today.
+#
+# 50m x3 pods = 150m of the node's headroom — cheap insurance against a cascade
+# that took out the control plane.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: longhorn-engine-image-resources
+  annotations:
+    policies.kyverno.io/title: Longhorn engine-image resource requests
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/description: >-
+      Injects CPU/memory requests (never limits) into Longhorn engine-image pods
+      so they are Burstable rather than BestEffort, preventing liveness-probe
+      SIGKILL under node CPU pressure and the volume-unattachable cascade that
+      follows.
+spec:
+  background: false
+  rules:
+    - name: engine-image-requests
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - longhorn-system
+              selector:
+                matchLabels:
+                  longhorn.io/component: engine-image
+              # CREATE only. Mutating on UPDATE makes pods PERMANENTLY
+              # UNMODIFIABLE: any metadata-only patch (e.g. clearing a stale
+              # finalizer) re-triggers the mutation and the API server rejects
+              # the whole request because pod spec is immutable. That wedged five
+              # VolSync movers for 45h on 2026-08-08 — see
+              # volsync-mover-resources.yaml for the full account.
+              operations:
+                - CREATE
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - name: "{{ element.name }}"
+                    resources:
+                      requests:
+                        cpu: 50m
+                        memory: 64Mi

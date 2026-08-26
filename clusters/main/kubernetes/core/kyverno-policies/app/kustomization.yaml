@@ -7,3 +7,4 @@ resources:
   - ensure-digest.yaml
   - priorityclass-volsync-mover.yaml
   - volsync-mover-resources.yaml
+  - longhorn-engine-image-resources.yaml
