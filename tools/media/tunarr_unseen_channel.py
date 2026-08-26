@@ -60,6 +60,11 @@ def main():
     ap.add_argument("--group", default="Unseen")
     ap.add_argument("--section", default="1")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--mode", choices=["random", "manual"], default="random",
+                    help="random = Tunarr Random Slots (re-shuffles each regeneration); "
+                         "manual = fixed lineup that replays in identical order forever")
+    ap.add_argument("--max-days", type=int, default=14)
+    ap.add_argument("--cooldown-days", type=int, default=30)
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
 
@@ -114,10 +119,30 @@ def main():
                    if c["number"] == args.number)
         print(f"   CREATED channel #{args.number} '{args.channel_name}' id={cid}")
 
-    tun(f"/api/channels/{cid}/programming", "POST",
-        {"type": "manual", "lineup": progs, "append": False}, base=args.tunarr)
+    if args.mode == "manual":
+        # A manual lineup is a FIXED LOOP: once the cycle completes it replays in
+        # the identical order forever. Kept only for debugging.
+        body = {"type": "manual", "lineup": progs, "append": False}
+    else:
+        # Random Slots: Tunarr generates `maxDays` ahead and RE-SHUFFLES on each
+        # regeneration, so the channel does not replay a fixed order at end of
+        # cycle. cooldownMs stops a film recurring too soon.
+        # flexPreference "end" keeps pad AFTER the film — "distribute" can place
+        # flex mid-slot, which is fine for episodes and wrong for a feature.
+        import uuid as _u
+        body = {"type": "random",
+                "programs": [p["id"] for p in progs],
+                "schedule": {
+                    "type": "random", "flexPreference": "end",
+                    "maxDays": args.max_days, "padMs": 300000, "padStyle": "slot",
+                    "randomDistribution": "uniform",
+                    "slots": [{"id": str(_u.uuid4()), "type": "movie",
+                               "order": "shuffle", "weight": 1,
+                               "cooldownMs": args.cooldown_days * 86400000}],
+                }}
+    tun(f"/api/channels/{cid}/programming", "POST", body, base=args.tunarr)
     back = tun(f"/api/channels/{cid}/programming", base=args.tunarr)
-    print(f"   programming set: totalPrograms={back.get('totalPrograms')}")
+    print(f"   programming set ({args.mode}): totalPrograms={back.get('totalPrograms')}")
 
 
 if __name__ == "__main__":
