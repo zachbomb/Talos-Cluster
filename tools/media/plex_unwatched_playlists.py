@@ -102,6 +102,14 @@ def main():
             print(f"      e.g. {v.get('title')[:44]} ({v.get('year')})")
         return
 
+    # Plex accepts duplicate playlist titles, so a re-run would silently create a
+    # SECOND "Zach - Unwatched" rather than refreshing the first. Delete first.
+    existing = ET.fromstring(call(f"http://{ip}:32400/playlists", tok))
+    for pl_ in existing.findall("Playlist"):
+        if pl_.get("title") == args.title:
+            call(f"http://{ip}:32400/playlists/{pl_.get('ratingKey')}", tok, "DELETE")
+            print(f"   removed existing playlist {pl_.get('ratingKey')}")
+
     mid = ET.fromstring(call(f"http://{ip}:32400/identity", tok)).get("machineIdentifier")
     keys = [v.get("ratingKey") for v in pool]
     base = f"server://{mid}/com.plexapp.plugins.library/library/metadata/"
