@@ -80,17 +80,39 @@ Plex became fast again (0.87-1.5s) after its pod was REPLACED at 18:33 PDT, whic
 suggests process-level degradation rather than a persistent data problem — but that
 is one observation, not a mechanism.
 
+## CORRECTION (2026-08-27) — there is no second disk
+
+The original version of this document proposed "add `default-disk` to Longhorn
+scheduling and rebalance; 2.2 TB is sitting idle." **That is wrong and acting on it
+would cause an outage.** Two independent reasons:
+
+1. **`allowScheduling=False` on `default-disk-080600000000` is deliberate**, not an
+   oversight. It is the end state of the 2026-07-20 QLC->SSD migration (113 volumes,
+   ~700 GB, 3.5 h of full-quiesce eviction at concurrency 1) done specifically to get
+   Longhorn OFF that path, because it caused the recurring #158 mass-fault death
+   spirals.
+2. **The 2.2 TB does not physically exist.** `/var/lib/longhorn/` is on the Talos
+   EPHEMERAL partition, which since 2026-07-27 is a 2 TB **THIN zvol on the 444 GB
+   Solidigm pool that also holds etcd**. The xfs layer reports 2.0T/1.9T-free and is
+   blind to the pool beneath it; Longhorn inherits that illusion
+   (`storageMaximum=2196GB`, `storageAvailable=1994GB`). Scheduling replicas there
+   writes against phantom capacity and fills the etcd pool — "pool-full = etcd write
+   failure (a WORSE outage than #158)".
+
+**The real constraint:** there is exactly ONE disk backing Longhorn data, the Intel
+D3-S4510 1.92 TB (`ssd-hot`), at 1083 GB available / 1627 GB scheduled. Spreading
+load across two disks is not available in the current hardware. Pinning DB volumes
+by disk tag is likewise impossible — there is nowhere to pin to.
+
 ## Proposed work
 
-1. **Add `default-disk` to Longhorn scheduling and rebalance.** 2.2 TB is sitting
-   idle while 153 replicas fight over one device. Biggest single win.
-2. **Pin DB-heavy volumes** (plex-config, the CNPG clusters, sonarqube-db) to their
-   own disk via Longhorn disk tags, so an app's backup cannot starve its own database.
-3. **Add plex-config and emby-config to the lchown exemption list** — a recursive
-   chown over 15 GB every backup is pure avoidable I/O.
-4. **Audit remaining BestEffort pods.** 9 in longhorn-system alone, including
-   `longhorn-driver-deployer` and `longhorn-ui`, both of which were crashlooping on
-   2026-08-25. Requests only, never CPU limits.
-
-Blast radius is every stateful app, so 1 and 2 want a maintenance window, not an
-improvised change.
+1. **Reduce what contends, since it cannot be separated.**
+   - DONE: `fsGroupChangePolicy=OnRootMismatch` on VolSync movers (commit c34db8ccf).
+     Measured: tunarr-local 37m12s -> 3m51s, notifiarr 3m15s -> 58s. Gains scale with
+     FILE COUNT, not bytes — byte-heavy/few-file volumes (ollama) are unchanged.
+   - Audit remaining BestEffort pods. 9 in longhorn-system alone, including
+     `longhorn-driver-deployer` and `longhorn-ui`, both crashlooping on 2026-08-25.
+     Requests only, never CPU limits.
+2. **Adding a second physical disk for Longhorn is the only route to real separation.**
+   That is a hardware change, not a config change, and it is what SQ-136/SQ-139 would
+   need before they mean anything.
