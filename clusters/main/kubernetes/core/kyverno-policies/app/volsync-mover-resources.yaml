@@ -76,6 +76,44 @@ spec:
             # with the PriorityClass value in priorityclass-volsync-mover.yaml.
             priorityClassName: volsync-mover-low
             priority: -100
+    # Stop kubelet recursively chowning the WHOLE volume on every mover mount.
+    #
+    # The mover pod is created with fsGroup 1000 and NO fsGroupChangePolicy,
+    # which defaults to "Always" - so kubelet walks and chowns every file on
+    # every run. On large config volumes that dominates the entire backup:
+    # plex-config lastSyncDuration was 3h34m and emby-config 1h48m for ~15 GB,
+    # with source movers stuck in ContainerCreating emitting
+    # VolumePermissionChangeInProgress once a minute for many minutes.
+    #
+    # That I/O lands on the same single SSD every Longhorn replica shares
+    # (153/153 on ssd-hot) - the same device holding Plex's SQLite DB. See
+    # docs/dr/longhorn-single-disk-io-contention.md.
+    #
+    # OnRootMismatch makes kubelet check the top-level directory's ownership and
+    # skip the recursive walk when it already matches. The mover chowns to the
+    # same fsGroup every run, so after the first pass the walk is pure waste.
+    # Correctness is unchanged: on a genuine mismatch it still recurses.
+    #
+    # Applied here rather than on the ReplicationSource because TrueCharts sets
+    # moverSecurityContext itself (fsGroup: 1000) and does not expose
+    # fsGroupChangePolicy - the same reason mover resources are injected here.
+    - name: volsync-mover-fsgroup-change-policy
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              names:
+                - "volsync-src-*"
+              # CREATE only - see the rule above for why UPDATE wedges backups.
+              operations:
+                - CREATE
+      mutate:
+        patchStrategicMerge:
+          spec:
+            securityContext:
+              fsGroupChangePolicy: OnRootMismatch
+
     - name: cap-volsync-mover-resources
       match:
         any:
