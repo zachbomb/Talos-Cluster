@@ -117,7 +117,7 @@ spec:
               enabled: true
               cacheCapacity: 3Gi
               trigger:
-                schedule: "12 1 * * *"
+                schedule: "50 11 * * *"
       media:
         enabled: true
         type: nfs
@@ -175,7 +175,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "32 2 * * *"
+                schedule: "28 12 * * *"
     autoscaling:
       vpa:
         enabled: false

@@ -95,7 +95,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "8 2 * * *"
+                schedule: "8 12 * * *"
       media:
         enabled: true
         type: nfs

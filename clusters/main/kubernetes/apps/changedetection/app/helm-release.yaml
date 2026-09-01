@@ -159,7 +159,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: 22 3 * * *
+                schedule: 48 6 * * *
 
     ingress:
       main:

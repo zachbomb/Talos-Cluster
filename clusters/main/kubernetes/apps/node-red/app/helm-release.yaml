@@ -123,7 +123,7 @@ spec:
                 # I/O storm and lost leases). This slot was verified free against
                 # every schedule in the repo at the time of writing; check before
                 # reusing minute 48 of hour 4 elsewhere.
-                schedule: 48 4 * * *
+                schedule: 39 8 * * *
 
     ingress:
       main:

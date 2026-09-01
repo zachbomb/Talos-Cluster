@@ -142,7 +142,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "28 3 * * *"
+                schedule: "31 10 * * *"
       config:
         enabled: true
         size: 2Gi
@@ -158,7 +158,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "20 3 * * *"
+                schedule: "18 10 * * *"
       media:
         enabled: true
         size: 2Gi
@@ -174,7 +174,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "36 3 * * *"
+                schedule: "17 9 * * *"
       static:
         enabled: true
         size: 1Gi

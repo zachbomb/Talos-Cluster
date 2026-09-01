@@ -212,7 +212,7 @@ spec:
               enabled: true
               cacheCapacity: 10Gi
               trigger:
-                schedule: "4 3 * * *"
+                schedule: "4 9 * * *"
             dest:
               enabled: false
               cacheCapacity: 10Gi
@@ -228,7 +228,7 @@ spec:
               enabled: true
               cacheCapacity: 3Gi
               trigger:
-                schedule: "12 3 * * *"
+                schedule: "26 11 * * *"
             dest:
               enabled: false
               cacheCapacity: 3Gi

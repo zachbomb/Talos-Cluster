@@ -356,7 +356,7 @@ spec:
               enabled: true
               cacheCapacity: 8Gi
               trigger:
-                schedule: "44 3 * * *"
+                schedule: "55 10 * * *"
             dest:
               enabled: false
               cacheCapacity: 8Gi
@@ -372,7 +372,7 @@ spec:
               enabled: true
               cacheCapacity: 8Gi
               trigger:
-                schedule: "0 4 * * *"
+                schedule: "16 12 * * *"
             dest:
               enabled: false
               cacheCapacity: 8Gi
@@ -388,7 +388,7 @@ spec:
               enabled: true
               cacheCapacity: 8Gi
               trigger:
-                schedule: "52 3 * * *"
+                schedule: "47 10 * * *"
             dest:
               enabled: false
               cacheCapacity: 8Gi

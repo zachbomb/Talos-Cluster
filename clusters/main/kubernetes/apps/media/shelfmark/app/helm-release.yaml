@@ -97,7 +97,7 @@ spec:
               enabled: true
               cacheCapacity: 1Gi
               trigger:
-                schedule: 24 3 * * *
+                schedule: 43 10 * * *
       books:
         enabled: true
         type: nfs

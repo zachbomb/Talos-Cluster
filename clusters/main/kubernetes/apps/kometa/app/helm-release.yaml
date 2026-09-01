@@ -51,7 +51,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "40 0 * * *"
+                schedule: "20 11 * * *"
 
     securityContext:
       container:

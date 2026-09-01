@@ -104,7 +104,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "56 0 * * *"
+                schedule: "36 12 * * *"
       media:
         enabled: true
         type: nfs
@@ -190,7 +190,7 @@ spec:
               enabled: true
               cacheCapacity: 2Gi
               trigger:
-                schedule: "4 2 * * *"
+                schedule: "49 9 * * *"
     addons:
       codeserver:
         enabled: true
