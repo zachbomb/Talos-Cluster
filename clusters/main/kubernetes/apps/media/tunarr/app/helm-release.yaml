@@ -120,7 +120,25 @@ spec:
                     # stale playlist can outlive its segments.
                     for d in /.transcode/stream_*/; do
                       [ -d "$$d" ] || continue
+                      # --- SQ-249 instrumentation. Capture the EXACT quantity that decides
+                      # the branch, BEFORE deciding, because it cannot be recovered after.
+                      #
+                      # The liveness test below is mtime-based: "any .ts touched in the last
+                      # 2 minutes". A stall longer than that makes a LIVE session look dead
+                      # and drops it into the aggressive purge. Measured 2026-09-01 on a
+                      # continuous, unbroken 8-minute session (PDT contiguous, one
+                      # DISCONTINUITY, MEDIA-SEQUENCE:0): 136 playlist entries vs 74 segments
+                      # on disk, oldest survivor's mtime aligning exactly with a 2-minute
+                      # cutoff. Whether that came from the dead branch or the 10-minute rule
+                      # COULD NOT BE DETERMINED after the fact - nothing recorded it, and the
+                      # sidecar logged only its startup line. Do not remove this without
+                      # replacing it; the reconstruction cost hours and stayed inconclusive.
+                      _p_before=$$(ls "$$d"*.ts 2>/dev/null | wc -l)
+                      _p_newest=$$(ls -t "$$d"*.ts 2>/dev/null | head -1)
+                      _p_age=-1
+                      [ -n "$$_p_newest" ] && _p_age=$$(( $$(date +%s) - $$(stat -c %Y "$$_p_newest" 2>/dev/null || date +%s) ))
                       if [ -n "$$(find "$$d" -maxdepth 1 -name '*.ts' -mmin -2 2>/dev/null | head -1)" ]; then
+                        _p_branch=live
                         # 10 MINUTES, not 2. Upstream `trimPlaylist` pins the SERVED
                         # video window to minSegmentRequested; when nothing advances
                         # that anchor it stays at 0 and the served playlist is frozen
@@ -145,7 +163,39 @@ spec:
                         # Retire this once upstream anchors to the live edge.
                         find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +10 -delete 2>/dev/null
                       else
+                        _p_branch=dead
                         find "$$d" -maxdepth 1 -type f -mmin +2 -delete 2>/dev/null
+                      fi
+                      # Log a tick only when it MATTERS: something was deleted, the dead
+                      # branch fired ON A DIRECTORY THAT STILL HAD SEGMENTS, or the liveness
+                      # probe came within 30s of flipping. That last case is the near-miss
+                      # that would PROVE the race rather than infer it.
+                      #
+                      # The `_p_before -gt 0` guard is load-bearing: without it an emptied
+                      # dead directory re-logs `before=0 deleted=0` on EVERY 2-minute tick
+                      # until the empty-dir reaper collects it - ~30 lines/hour per orphan,
+                      # drowning the real events in a RAM-backed log. Caught in test.
+                      _p_after=$$(ls "$$d"*.ts 2>/dev/null | wc -l)
+                      _p_del=$$(( _p_before - _p_after ))
+                      if [ "$$_p_del" -gt 0 ] || { [ "$$_p_branch" = dead ] && [ "$$_p_before" -gt 0 ]; } || [ "$$_p_age" -gt 90 ] 2>/dev/null; then
+                        _p_log=/var/logs/cache-purge.log
+                        if [ -w /var/logs ] 2>/dev/null; then
+                          # /var/logs is a MEMORY-backed tmpfs shared by all three
+                          # containers. An uncapped diagnostic here ends in OOM, not ENOSPC
+                          # - a diagnostic that can kill the thing it observes is worse than
+                          # no diagnostic. Same cap and tail-keep as ffmpeg-wrap.log.
+                          if [ -f "$$_p_log" ] && [ "$$(wc -c < "$$_p_log" 2>/dev/null || echo 0)" -gt 262144 ] 2>/dev/null; then
+                            tail -c 131072 "$$_p_log" > "$$_p_log.tmp" 2>/dev/null && mv -f "$$_p_log.tmp" "$$_p_log" 2>/dev/null || true
+                          fi
+                          _p_first=$$(ls "$$d"*.ts 2>/dev/null | head -1 | sed 's#.*/##')
+                          _p_last=$$(ls "$$d"*.ts 2>/dev/null | tail -1 | sed 's#.*/##')
+                          _p_pl=$$(grep -c "\.ts" "$$d"stream.m3u8 2>/dev/null || echo 0)
+                          _p_dir=$$(basename "$$d" | cut -c8-15)
+                          _p_now=$$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)
+                          printf '%s dir=%s branch=%s newest_age=%ss before=%s after=%s deleted=%s kept=%s..%s playlist=%s\n' \
+                            "$$_p_now" "$$_p_dir" "$$_p_branch" "$$_p_age" "$$_p_before" "$$_p_after" \
+                            "$$_p_del" "$$_p_first" "$$_p_last" "$$_p_pl" >> "$$_p_log" 2>/dev/null || true
+                        fi
                       fi
                     done
                     # mtime guard is CRITICAL: Tunarr creates stream_<ch>/ then launches
