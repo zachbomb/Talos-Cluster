@@ -95,11 +95,111 @@ if [ "$srt_ord" != 0 ] && [ -n "$preval" ]; then
   esac
 fi
 
+# pass 1d: PRE-TRIM the subtitle sidecar instead of seeking it (SQ-249 trigger fix).
+#
+# The output-side seek above works, but it makes ffmpeg DECODE AND DISCARD the .srt
+# from t=0 at `-readrate 1`, which is the only reason `-readrate_initial_burst` exists.
+# That burst then produces its own defect. Measured 2026-09-01 on an 18:07 join:
+#   * all 12 .vtt segments were written within ONE SECOND of ffmpeg starting, then
+#     NOTHING for ~18 minutes while wall-clock caught up to the burst. Predicted
+#     resumption at process age 1147s, observed ~1099s - confirmed independently by
+#     two observers, so the mechanism is settled, not inferred.
+#   * on resumption the low-index subtitle fetches dragged Tunarr's SHARED
+#     minSegmentRequested backward - "Media sequence changed unexpectedly: 269 -> 15"
+#     two seconds later - collapsing the video window. Our own workaround was pulling
+#     the trigger on the upstream shared-anchor defect.
+#   * and after catchup the subtitle input advances at 1x FROM THE JOIN, so cues arrive
+#     ~17 min behind the live edge and a player drops them as past. The burst cannot be
+#     tuned out of this. It has to be replaced.
+#
+# Pre-trimming removes the cause: hand ffmpeg a .srt whose t=0 IS the join point. Then
+# there is nothing to discard, no burst, no catchup stall, no resumption fetch storm,
+# and `-readrate 1` does exactly the job it was added for (stopping the sidecar racing
+# 2.4-3.5x ahead of the video).
+#
+# NOT input-side `-ss`. That was tried FIRST and rejected: it rebases to the first
+# SURVIVING CUE'S START rather than to the seek point, so every cue runs early by a
+# content-dependent 0.795 / 0.924 / 1.385 / 1.461 / 1.717 / 2.747 s (measured over six
+# joins), and -copyts / -itsoffset / -output_ts_offset all fail to prevent it. Doing the
+# arithmetic ourselves is the entire point - we control the rebase instead of inheriting
+# ffmpeg's seek semantics, which are quietly wrong here.
+#
+# FAIL-SAFE: if anything does not work out - no path, unreadable, awk trouble, zero
+# surviving cues - sub_trim stays empty and the ORIGINAL seek+burst path runs unchanged.
+# This can degrade to today's behaviour, never below it.
+#
+# Validated offline before shipping: 10 seek points against a real 926-cue .srt, exact
+# on every surviving cue (start, end, text, renumbering), straddling cues clamped to 0,
+# and identical output under the container's mawk 1.3.4 and under macOS awk.
+sub_trim=""; sub_src=""
+if [ -n "$sub_off" ]; then
+  _o=0; _exp=0
+  for a in "$@"; do
+    if [ "$_exp" = 1 ]; then
+      _exp=0
+      [ "$_o" = "$srt_ord" ] && sub_src="$a"
+    fi
+    [ "$a" = "-i" ] && { _o=$(( _o + 1 )); _exp=1; }
+  done
+  if [ -n "$sub_src" ] && [ -r "$sub_src" ]; then
+    # Bound growth: /tmp is a shared MEMORY-backed tmpfs and exec() means this script can
+    # never clean up after itself, so each invocation reaps its own old leavings.
+    find /tmp -maxdepth 1 -name 'tunarr-subtrim-*.srt' -mmin +180 -delete 2>/dev/null || true
+    _tt="/tmp/tunarr-subtrim-$$-$(date +%s 2>/dev/null || echo 0).srt"
+    # CR is stripped BEFORE awk. In paragraph mode (RS="") a line holding only CR is not
+    # blank, so a CRLF .srt never splits into records and silently yields NOTHING. Caught
+    # in testing; it would have shipped as "pre-trim mysteriously drops all subtitles".
+    tr -d '\r' < "$sub_src" 2>/dev/null | awk -v off="${sub_off%ms}" '
+      function ms(t,   a) {
+        gsub(/^[ \t]+|[ \t]+$/, "", t)
+        split(t, a, /[:,]/)
+        return ((a[1]*3600) + (a[2]*60) + a[3]) * 1000 + a[4]
+      }
+      function fmt(v,   h, m, s, x) {
+        if (v < 0) v = 0
+        h = int(v/3600000); v -= h*3600000
+        m = int(v/60000);   v -= m*60000
+        s = int(v/1000);    x = v - s*1000
+        return sprintf("%02d:%02d:%02d,%03d", h, m, s, x)
+      }
+      BEGIN { RS = ""; FS = "\n"; n = 0 }
+      {
+        ti = 0
+        for (i = 1; i <= NF; i++) if ($i ~ / --> /) { ti = i; break }
+        if (!ti) next
+        split($ti, tt, / --> /)
+        st = ms(tt[1]); en = ms(tt[2])
+        if (en < off) next
+        n++
+        printf "%d\n%s --> %s\n", n, fmt(st - off), fmt(en - off)
+        for (i = ti + 1; i <= NF; i++) print $i
+        printf "\n"
+      }' > "$_tt" 2>/dev/null || true
+    # Adopt it only if it actually holds cues. An empty trim would silently remove
+    # subtitles for a whole airing - worse than the burst behaviour it replaces.
+    if [ -s "$_tt" ] && grep -q -- ' --> ' "$_tt" 2>/dev/null; then
+      sub_trim="$_tt"
+      sub_burst=""
+    else
+      rm -f "$_tt" 2>/dev/null || true
+    fi
+  fi
+fi
+
 # pass 2: rotate positional params, dropping the first matching post-i "-ss preval"
-after=0; pend=0; dropped=0; rr_added=0; iord=0; map_done=0
+after=0; pend=0; dropped=0; rr_added=0; iord=0; map_done=0; sub_pend=0
 set -- "$@" "///WRAPEND///"
 while [ "$1" != "///WRAPEND///" ]; do
   a="$1"; shift
+  # Swap the sidecar path for the PRE-TRIMMED copy. Done here, at the argument
+  # immediately following the subtitle `-i`, rather than by matching on filename -
+  # the media input can legitimately be an .srt-adjacent name, and a filename match
+  # would eventually hit the wrong input.
+  if [ "$sub_pend" = 1 ]; then
+    sub_pend=0
+    [ -n "$sub_trim" ] && a="$sub_trim"
+    set -- "$@" "$a"; continue
+  fi
   if [ "$pend" = 1 ]; then
     pend=0
     if [ -n "$preval" ] && [ "$dropped" = 0 ] && [ "$a" = "$preval" ]; then
@@ -133,16 +233,23 @@ while [ "$1" != "///WRAPEND///" ]; do
       set -- "$@" "-readrate" "1"
       # Burst must cover the span the OUTPUT-side seek discards, or the paced read
       # never reaches the join. Only emitted when we are actually injecting the seek.
+      # sub_burst is EMPTY when pre-trim succeeded: with a .srt whose t=0 is the join
+      # there is no discarded span to cover, and emitting a burst anyway would recreate
+      # the 18-minute wall-clock-catchup stall this fix exists to remove.
       [ -n "$sub_burst" ] && set -- "$@" "-readrate_initial_burst" "$sub_burst"
       rr_added=1
     fi
+    # Arm the path swap for the very next argument (this input's path).
+    [ "$srt_ord" != 0 ] && [ "$iord" = "$srt_ord" ] && [ -n "$sub_trim" ] && sub_pend=1
   fi
   # Attach the seek pair to the SUBTITLE OUTPUT, immediately after its `-map <n>:0`.
   # Anchoring to the map (not to a positional guess) is what keeps these off the video
   # output — a stray -output_ts_offset there would shift VIDEO timestamps and present
   # as an A/V sync bug, i.e. it would be blamed on the wrong subsystem for a while.
   # Input index is srt_ord-1 because srt_ord is a 1-based -i ordinal.
-  if [ -n "$sub_off" ] && [ "$map_done" = 0 ] && [ "$a" = "-map" ]; then
+  # Skipped entirely when sub_trim is set: the trimmed file already starts at the join,
+  # so an output-side seek would discard a second time and shift cues by another offset.
+  if [ -z "$sub_trim" ] && [ -n "$sub_off" ] && [ "$map_done" = 0 ] && [ "$a" = "-map" ]; then
     set -- "$@" "$a"
     a="$1"; shift                      # the map target, e.g. "2:0"
     if [ "$a" = "$((srt_ord - 1)):0" ]; then
@@ -296,10 +403,12 @@ if [ -w "$(dirname "$_log")" ] 2>/dev/null; then
     tail -c 131072 "$_log" > "$_log.tmp" 2>/dev/null && mv -f "$_log.tmp" "$_log" 2>/dev/null || true
   fi
   {
-    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s seed=%s args=%s\n' \
+    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s args=%s\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)" \
       "${srt_ord:-0}" "${preval:-none}" "${sub_off:-none}" "${sub_burst:-none}" \
-      "$([ -n "$sub_off" ] && echo yes || echo no)" "${seed:-nosub}" "$#"
+      "$([ -n "$sub_off" ] && echo yes || echo no)" \
+      "$([ -n "$sub_trim" ] && echo pretrim || { [ -n "$sub_off" ] && echo seek || echo none; })" \
+      "${seed:-nosub}" "$#"
   } >> "$_log" 2>/dev/null || true
 fi
 
