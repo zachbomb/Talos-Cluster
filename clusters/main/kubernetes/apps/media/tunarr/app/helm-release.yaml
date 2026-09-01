@@ -78,6 +78,58 @@ spec:
                   gpu.intel.com/i915: 1
                   memory: 8Gi
                   cpu: "4"
+              # Startup budget must exceed a COLD-CACHE start, not a warm one.
+              #
+              # Tunarr binds :8000 only AFTER rebuilding the TV guide, and that costs
+              # ~9.7s per channel (measured, repeatedly). At 36 channels that is ~350s
+              # (~5.8 min) before anything listens. The chart default startup probe is
+              # periodSeconds 5 x failureThreshold 60 + 10s delay = 310s (5.2 min).
+              #
+              # 5.8 > 5.2, so a cold start CANNOT finish. Observed 2026-09-01 after a
+              # Longhorn volume detach wiped the guide cache: Tunarr built all 36 guides,
+              # then kubelet killed it 2 seconds short of binding the port, and the next
+              # attempt started from a cold cache again. A self-sustaining loop - the
+              # probe kills exactly the work that would have made the next start fast.
+              #
+              # This stayed latent for months because a WARM start binds in seconds and
+              # never approaches the budget. It only fires when the cache is lost.
+              #
+              # 930s (~15.5 min) is ~2.6x the measured cold start. A generous startup
+              # budget costs nothing when startup is fast - the probe succeeds on its
+              # first check and the remaining threshold is never consumed.
+              probes:
+                startup:
+                  enabled: true
+                  type: tcp
+                  port: 8000
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                    failureThreshold: 90
+                    timeoutSeconds: 5
+                # Liveness/readiness stay tcp on 8000 to match the chart, but with real
+                # margin. NOTE they are WEAK signals here: a tcpSocket check passes while
+                # HTTP is completely wedged (seen twice - /api/version 200 while
+                # /api/channels hangs, then both hanging, port still open throughout).
+                # Do not read "probes passing" as "Tunarr healthy".
+                liveness:
+                  enabled: true
+                  type: tcp
+                  port: 8000
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 30
+                    failureThreshold: 10
+                    timeoutSeconds: 10
+                readiness:
+                  enabled: true
+                  type: tcp
+                  port: 8000
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 15
+                    failureThreshold: 10
+                    timeoutSeconds: 10
             cache-purge:
               enabled: true
               image:
