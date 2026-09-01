@@ -391,7 +391,56 @@ observer). RFC 8216 requires the media sequence number of a live playlist to be
 non-decreasing; a decrease invalidates every client-side assumption about continuity
 and causes conforming players to abort.
 
-### Suggested fix (either alone is sufficient; the first is preferred)
+#### THIRD divergence mechanism (2026-09-01): program-boundary relaunch renumbers renditions independently
+
+The two mechanisms above (pacing drift, origin offset) both assume a session whose
+renditions START aligned and then diverge. A program boundary produces divergence a third
+way, and it re-skews even a nominally aligned session:
+
+At the boundary the transcode relaunches. The SUBTITLE rendition restarts numbering at 0
+while the VIDEO playlist continues from its running high-water mark. Because
+`minSegmentRequested` is parsed from the request path and shared, a perfectly legitimate
+`sub000000` request rewrites the video anchor to ~0.
+
+**The sign is the opposite of the intuitive one, which is why this hid for so long.** A
+backward anchor does not cause deletion. It causes the server to ADVERTISE segments that
+were correctly deleted minutes earlier:
+
+1. anchor climbs to ~80 during normal play; `deleteOldSegments` correctly removes below ~70
+2. boundary; subtitle rendition renumbers to 0
+3. client requests `sub000000`; shared anchor dragged back to ~0
+4. `trimPlaylist` serves a window at ~0 plus `segmentsToKeepBefore: 10`
+5. every segment in that window is long gone -> 100% 404
+
+**Server-side confirmation** (new — previous evidence for this defect was client-side and
+black-box). Tunarr logs both halves itself at debug level. One session, ~2s apart, the
+client walking FORWARD through a stale window:
+
+```
+04:49:16.565  GET .../hls/data000019.ts  404
+04:49:18.748  GET .../hls/data000028.ts  404
+04:49:20.891  GET .../hls/data000037.ts  404
+04:49:22.931  GET .../hls/data000046.ts  404
+```
+
+with `Deleting old segments from stream (channel ...)` logged 59 times in 30 minutes
+(~30s cadence). Client-side, gathered independently: backward media-sequence jumps of
+10->0 at the boundary, then 55->23 and 67->34 on an ~80s cadence, each landing at
+approximately `sub_index - 10`. That offset is `segmentsToKeepBefore`, recovered a second
+time by a completely different route.
+
+**`deleteOldSegments` is EXONERATED.** It behaves correctly against the anchor it is given.
+Worth stating explicitly because the disk state — a playlist advertising far more entries
+than exist — invites blaming the reaper or an external janitor. Measured on a continuous
+8-minute session: 136 playlist entries vs 74 segments on disk, with no external janitor
+involved.
+
+**Recovery:** a client retune does NOT help; it reconnects to the same skewed session.
+`DELETE` on the session resets both renditions to aligned numbering and playback is
+immediately stable.
+
+### Suggested fix (any one is sufficient; the first is preferred)
+
 
 - Use ffmpeg's own `-hls_flags delete_segments` with a bounded `-hls_list_size`, so the
   playlist and the on-disk segments stay consistent **by construction** and neither
@@ -404,6 +453,10 @@ Anchoring the joiner window to the **live edge** (standard HLS-live behaviour) r
 than to `minSegmentRequested` would additionally fix the joinability problem, where a
 client joining an established session receives a head-anchored window whose entries are
 long gone.
+
+**Smaller fix shape, added 2026-09-01:** renumber ALL renditions together at relaunch.
+This does not give renditions independent anchors, but it removes the boundary as a
+divergence source, and is a materially smaller change than per-rendition anchors.
 
 ### Related observation (may be the same root, filed separately)
 
@@ -567,58 +620,6 @@ streams start at a small negative PTS (e.g. -0.005s, common in some remuxes),
 ffmpeg produces no HLS segments at all; dropping the redundant post-input `-ss`
 fixes it (verified standalone). Currently worked around here with an
 `ffmpegExecutablePath` wrapper that strips the duplicate seek.
-
----
-
-## Report 6 — program-boundary rendition relaunch renumbers subtitles from 0 while video keeps counting, so every legitimate subtitle request drags the shared anchor backward
-
-**Characterised live 2026-09-01, with matching client-side and server-side evidence.**
-This is Report 1+2's shared anchor meeting a second mechanism: at a program boundary the
-transcode relaunches and the SUBTITLE rendition restarts its numbering at 0 while the VIDEO
-playlist continues from its running high-water mark.
-
-Because `minSegmentRequested` is parsed from the request path and is shared across ALL
-renditions of a session, a perfectly legitimate `sub000000` request after a boundary
-rewrites the video window's anchor to ~0.
-
-**The sign is the opposite of the intuitive one.** A backward anchor does not cause
-deletion — it causes the server to advertise segments that were deleted minutes earlier:
-
-1. anchor climbs to ~80 during normal play; `deleteOldSegments` correctly removes below ~70
-2. program boundary; subtitle rendition renumbers to 0
-3. client requests `sub000000`; the shared anchor is dragged back to ~0
-4. `trimPlaylist` serves a window anchored at ~0 (plus `segmentsToKeepBefore: 10`)
-5. every segment in that window was deleted minutes ago → 100% 404
-
-**Server-side evidence** (single session `8aaaa3f9`, one channel, ~2s apart) — the client
-walking forward through a window whose segments no longer exist:
-
-```
-04:49:16.565  GET .../hls/data000019.ts  404
-04:49:18.748  GET .../hls/data000028.ts  404
-04:49:20.891  GET .../hls/data000037.ts  404
-04:49:22.931  GET .../hls/data000046.ts  404
-```
-
-`deleteOldSegments` ran 59 times in 30 minutes on that channel (~30s cadence).
-
-**Client-side evidence**, independently gathered: backward media-sequence jumps of
-10→0 at the boundary, then 55→23 and 67→34 on an ~80s cadence, each landing at
-approximately `sub_index - 10`. That offset is `segmentsToKeepBefore`.
-
-`deleteOldSegments` is NOT the defect — it behaves correctly against the anchor it is
-given. The defect is that one anchor is shared across renditions that do not share a
-numbering epoch, so a correct subtitle request silently rewrites what the video window
-means.
-
-**Consequence:** with any subtitle-rendition consumer active, EVERY program boundary
-destabilises the channel for minutes, until a session reap or the consumer stops. A client
-retune does not help — it reconnects to the same skewed session. `DELETE` on the session
-resets both renditions to aligned numbering and playback is immediately stable again.
-
-**Suggested fixes**, either sufficient:
-- per-rendition anchors (correct, larger change), or
-- renumber all renditions together at relaunch (smaller, and probably enough)
 
 ---
 
