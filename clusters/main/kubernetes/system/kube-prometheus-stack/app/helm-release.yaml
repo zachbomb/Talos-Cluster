@@ -55,6 +55,37 @@ spec:
         # 3 of the Jobs tracked here have owner_kind=None (VolSync movers and
         # other one-shot Jobs), which the CronJobStale* rules do not cover.
         KubeJobFailed: true
+      # Disable the 30-day apiserver SLO recording rules. They compute availability
+      # over a 30d window and CANNOT KEEP UP WITH THEIR OWN SCHEDULE on this cluster:
+      #
+      #   kube-apiserver-availability.rules   interval=180s   evaluationTime=319s
+      #   -> DUTY CYCLE 177% (measured again later the same day at 145%)
+      #
+      # A group whose evaluation takes longer than its interval never finishes before
+      # the next run is due, so Prometheus evaluates it CONTINUOUSLY. Measured effect:
+      # a sustained 56-66 MB/s read off the single shared SSD -- 3.7x the next-busiest
+      # volume -- because both offending rules are 30-day range scans over
+      # high-cardinality apiserver histograms (215,024 series):
+      #
+      #   code_verb:apiserver_request_total:increase30d                            165.6s
+      #   cluster_verb_scope_le:apiserver_request_sli_duration_seconds_bucket:..30d 152.7s
+      #
+      # That starved Plex's SQLite into BIMODAL latency: the same POST /playQueues
+      # answered in 0.86s and in 40.6s depending on whether a 30d scan was mid-flight.
+      # At 40.6s the client's ~30s timeout fired and playback failed outright.
+      #
+      # This is hard to find because an overrunning job does not look like a job --
+      # no start, no finish, no log line. It presents as ambient load with no owner,
+      # and the victim looks healthy in every dimension because it is simply waiting
+      # on a saturated disk. See memory: prometheus-rule-group-duty-cycle-starves-disk.
+      #
+      # WHAT IS LOST: 30-day apiserver availability SLO numbers. Meaningful on a
+      # multi-tenant production cluster; near-worthless on a single node where the
+      # apiserver's health is already covered by KubeAPIDown and the burnrate rules
+      # (kept -- those are 38% duty, not 145%). Re-enable if this ever becomes
+      # multi-node AND the series count is brought under control.
+      rules:
+        kubeApiserverAvailability: false
     alertmanager:
       enabled: true
       # Override default inhibit_rules to exempt the Watchdog heartbeat from
