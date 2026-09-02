@@ -51,7 +51,7 @@ spec:
       # renovate: datasource=docker depName=nodered/node-red
       repository: docker.io/nodered/node-red
       pullPolicy: IfNotPresent
-      tag: "5.0.5"
+      tag: "5.0.6"
 
     service:
       main:
