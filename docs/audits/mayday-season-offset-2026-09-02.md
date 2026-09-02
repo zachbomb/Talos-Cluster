@@ -96,3 +96,39 @@ The files are almost all present and intact. This is a metadata repair.
 4. Sonarr's rename-on-import is what destroyed the original evidence -- any repair
    has to correct Sonarr's database too, or it will re-break on the next scan.
    Plan that step; do not improvise it.
+
+## INDEPENDENT CONFIRMATION FROM CONTAINER HEADERS (added 2026-09-02)
+
+The owner suggested using file metadata and headers. It works, it is nearly free
+(a header read, not a demux), and it CONFIRMS the subtitle finding from a
+completely different signal.
+
+Container muxer version groups the library into distinct encode batches:
+
+    libebml v1.4.2 + libmatroska v1.6.4   S14 S15 S16 S17 S18 S19 S20 S24
+    libebml v1.4.4 + libmatroska v1.7.1   S04 S05 S08 S09 S10 S11 S12
+    libebml v1.4.5 + libmatroska v1.7.1   S03 S13 S21 S22 S23 S25 S26
+    Lavf62.x                              S01 S02 S06 S07
+
+**The v1.4.2 batch is exactly the damaged set.** The subtitle matcher independently
+flagged S14/S15/S17/S18/S19/S20 as ~100% misfiled; those are precisely the seasons
+sharing that muxer version. S21 and S23 -- which the matcher found CLEAN -- are
+v1.4.5. Two independent methods, same boundary.
+
+FALSIFIABLE PREDICTION worth settling before repairing anything: **S16 and S24 are
+in the v1.4.2 batch but have not been content-checked yet.** If the batch hypothesis
+holds they are misfiled too. If they come back clean, the batch is not the boundary
+and the repair map must be per-episode. Check these FIRST.
+
+Also from headers, and load-bearing for the repair choice:
+
+    duration outliers: 0 of 240 (median 45 min)
+
+Every file is a genuine, full-length episode. Nothing truncated, nothing a
+wrong-runtime grab. That is what makes RENAME the correct repair rather than
+re-download -- the content is all present, only the labels are wrong.
+
+What headers did NOT give us: no title/show tags survived. Sonarr's rename is not
+the only evidence loss; the release group did not embed titles either. So headers
+localise the damage but cannot identify individual episodes -- subtitles remain the
+only way to say what a given file actually contains.
