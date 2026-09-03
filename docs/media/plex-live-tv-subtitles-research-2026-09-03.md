@@ -59,8 +59,35 @@ plain `hls` mode also produced `subs.m3u8` + real WebVTT segments (verified on c
 CEA-608 injection was considered and rejected: Tunarr's filtergraph re-encode maps
 `[vpf]` (raw pixels), so caption side-data has no path through, no `-a53cc` is emitted,
 and a 50-file library sample carried zero `closed_captions`. Plex's handling of it is
-also the broken path described above. dvbsub-in-TS remains untested, but Plex's live
-subtitle handling is CEA-608-oriented, so the odds are poor and it would be bitmap-only.
+also the broken path described above.
+
+## ★ dvbsub-in-TS is the one surviving path for SELECTABLE subs — better odds than assumed
+
+An earlier draft of this document guessed the odds were poor. **Measured, they are not.**
+Plex ships its own transcoder, and it carries the codec:
+
+    DECODERS: dvbsub (dvb_subtitle), cc_dec (eia_608/cea_708), pgssub, subrip,
+              webvtt, mov_text, dvdsub
+    ENCODERS: dvbsub, subrip, webvtt, mov_text
+
+So Plex **can decode DVB subtitles**. That is a necessary precondition and it is satisfied.
+
+Why this is now a small change rather than a big one: Tunarr ALREADY does the hard parts.
+With `subtitlePreferences` set it selects the correct track and materialises it as a text
+file in the pipeline (observed: `/tmp/tunarr-subtrim-*.srt` passed as a third `-i` input
+and mapped as `2:0`). The only missing step is that the `.ts` remux
+(`-map 0 -c copy -f mpegts`) drops it instead of encoding it as `-c:s dvbsub`.
+
+**STILL UNVERIFIED — and it is the whole question:** whether PMS's *live-TV* pipeline
+surfaces a dvbsub track from a tuner's MPEG-TS as a selectable subtitle to clients.
+Decoder capability is not the same as DVR-path plumbing, and Plex's live subtitle
+handling is CEA-608-oriented. Caveats that remain regardless: dvbsub is BITMAP, so no
+restyling or client-side sizing, and rendering text to bitmap costs CPU.
+
+Note this is NOT "two sources for one channel" — Plex cannot compose a live channel from
+a TS plus a separate subtitle feed. Sidecars match by filename adjacency to a library
+FILE; a live session has no file and its metadata object is ephemeral. The subtitle has
+to be inside the transport stream.
 
 ## Bottom line
 
