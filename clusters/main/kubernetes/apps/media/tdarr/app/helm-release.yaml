@@ -139,14 +139,23 @@ spec:
           - noatime
           - nodiratime
           - nolock
+    workload:
+      main:
+        podSpec:
+          # Required for nvidia.com/gpu to be usable - the device plugin alone is
+          # not enough, the pod must run under the nvidia container runtime.
+          runtimeClassName: "nvidia"
     resources:
       requests:
         memory: 512Mi
         cpu: 25m
       limits:
-        memory: 4Gi
-        cpu: 500m
+        memory: 8Gi
+        cpu: "2"
         gpu.intel.com/i915: 1
+        # Added for GPU-accelerated subtitle OCR (Florence2). Intel i915 is kept
+        # for tdarr's normal VAAPI transcoding; the two serve different jobs.
+        nvidia.com/gpu: 1
     autoscaling:
       vpa:
         enabled: true
