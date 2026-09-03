@@ -8,9 +8,15 @@ Live-TV subtitles were missing on every channel because the per-channel selectio
 was never configured — not because of any pipeline or code defect. No `ffmpeg-wrap`
 edit, no fork, no dvbsub work was required for the HLS path.
 
-Measured state before: **36 channels, 27 with `subtitlesEnabled: true`, 0 with
-`subtitlePreferences` set.** Subtitles were switched on everywhere while the resolver
+Measured state before: **36 channels, 27 with `subtitlesEnabled: true`, 22 of those with
+`subtitlePreferences` unset.** Most channels had subtitles switched on while the resolver
 had no rule telling it which track to pick.
+
+> **CORRECTION (same day).** An earlier version of this document said "0 of 36 configured".
+> That was WRONG and came from reading `GET /api/channels` — the **list endpoint OMITS
+> `subtitlePreferences` (and `fillerCollections`)**. Five channels (15, 22, 23, 24, 25)
+> were already configured, with `allowImageBased: true`. Always re-GET each channel
+> individually; never infer this field's state from the list.
 
 ## The config
 
