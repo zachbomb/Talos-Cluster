@@ -107,3 +107,73 @@ project in this category does, because Plex's live-TV pipeline accepts nothing e
 * Plex forum, CC not working on Live TV — https://forums.plex.tv/t/closed-captions-not-working-on-livetv/369691
 * Tunarr FFmpeg/subtitle configuration — https://tunarr.com/configure/ffmpeg/
 * ErsatzTV subtitle extraction/burn issue — https://github.com/ErsatzTV/ErsatzTV/issues/1761
+
+---
+
+# ADDENDUM 2026-09-03 — the dvbsub path is CLOSED. Tested, not assumed.
+
+The earlier addendum said dvbsub-in-TS was the one surviving path for selectable
+subtitles and that Plex's decoder support made the odds decent. **Tested end to end;
+it does not work, for a reason upstream of Plex entirely.**
+
+## Two independent blockers, both measured in the tunarr pod
+
+**1. lavf will not expose the WebVTT rendition as an input stream.**
+
+    ffprobe -extension_picky 0 -allowed_extensions ALL \
+            'http://localhost:8000/stream/channels/<uuid>.m3u8?mode=hls'
+    -> 0,h264,video
+       1,aac,audio          (no subtitle stream, even with the extension guards off)
+
+So a `-map 0:s:0?` remux of Tunarr's own HLS master silently produces nothing. This is
+the SQ-114 demuxer behaviour applying to the internal `.ts` remux, not just to clients.
+
+**2. ffmpeg cannot encode TEXT subtitles to a BITMAP codec.** Feeding the extracted
+`.srt` directly as a second input and asking for `-c:s dvbsub`:
+
+    [sost#0:2/dvbsub] Subtitle encoding currently only possible from
+                      text to text or bitmap to bitmap
+    Error opening output file.
+
+This is categorical, not a flag problem. Available subtitle encoders are
+`ssa, ass, dvbsub, dvdsub, mov_text, srt, subrip, text` — the two bitmap encoders
+refuse text input, and every text encoder is uncarriable in MPEG-TS.
+
+## Therefore
+
+MPEG-TS is the only container Plex accepts for live channels. Our subtitles exist only
+as TEXT (srt/WebVTT). Text cannot be converted to a TS-carriable subtitle codec by
+ffmpeg. **The only remaining way to put these subtitles into a Plex live stream is to
+draw them onto the video — burn-in.** Whether Plex would surface a dvbsub track is now
+moot; we cannot produce one from this source material.
+
+Getting selectable subtitles into Plex live TV would require rendering text to bitmap
+images outside ffmpeg (BDSup2Sub-class tooling) and muxing those — a bespoke pipeline
+per program, on a live stream. Not proportionate.
+
+## Where that leaves the options
+
+| path | selectable | reaches Plex clients | status |
+|---|---|---|---|
+| HLS WebVTT rendition | yes | no | **working today** for HLS-capable clients |
+| Burn-in | no | yes | possible; explicitly ruled out by the owner |
+| dvbsub in TS | yes | yes | **IMPOSSIBLE from a text source** |
+| Emby / Jellyfin for live TV | yes | n/a | native M3U/IPTV + HLS; already deployed at .204 |
+
+The realistic route to "selectable subtitles on more than one client" is a client/server
+that consumes HLS — i.e. Emby or Jellyfin for live TV — not Plex.
+
+## Separately: forced-track selection (measured, bounded)
+
+`subtitlePreferences.filter` has no value meaning "not forced", and `none` does not avoid
+one; Tunarr picks a forced track when the file flags it `default=1`. Blast radius:
+
+    26,343  programs with an english TEXT track
+       767  have a forced english track            (2.9%)
+       671  forced AND default=1  <- shows near-empty subs   (2.5%)
+       545  of those have a better non-forced track available
+
+97.5% of programs are unaffected. The pre-trim in `ffmpeg-wrap` was suspected and
+**exonerated** by an offline reproduction: a synthetic 1080-cue source trimmed at
+745728ms yielded 782 cues against 781 expected. The sparse output was the forced track
+itself, not cue loss.
