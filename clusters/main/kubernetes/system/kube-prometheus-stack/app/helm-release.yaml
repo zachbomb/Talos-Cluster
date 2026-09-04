@@ -86,6 +86,37 @@ spec:
       # multi-node AND the series count is brought under control.
       rules:
         kubeApiserverAvailability: false
+        # 2026-09-03: the burnrate rules had to go too, and the reason is a WARNING
+        # about the comment directly above this one.
+        #
+        # That comment says burnrate was deliberately KEPT because "those are 38%
+        # duty, not 145%". That was true when measured in August. It is no longer:
+        #
+        #   kube-apiserver-burnrate.rules   interval=30s   evaluationTime=215.2s
+        #   -> DUTY CYCLE 717%   (38% -> 717%, roughly 19x, as apiserver series
+        #      cardinality grew; the rules multi-window burn-rate math scans the
+        #      same high-cardinality histograms the availability rules did)
+        #
+        # Same continuous-evaluation failure, same 56-66 MB/s signature: measured
+        # 60.9 MB/s sustained off the prometheus volume, ~3x the next-busiest.
+        # Same victim: Plex /hubs went BIMODAL at 9.5-55s for identical requests
+        # (7 samples: 55.07, 22.15, 13.39, 39.15, 26.86, 25.15, 9.49) while cheap
+        # endpoints stayed fast (/library/sections 0.05-0.19s, /identity 0.02s).
+        # Clients time out and fail with FailedToCreateSession; playback never starts.
+        #
+        # THE LESSON: the August fix did not fail - its stated PREMISE EXPIRED. A
+        # config comment that justifies keeping something by citing a measured
+        # number is only valid while that number holds. If a duty-cycle problem
+        # recurs here, RE-MEASURE every apiserver group rather than trusting the
+        # numbers written above; check with:
+        #   curl -s localhost:9091/api/v1/rules | jq '.data.groups[]
+        #     | select(.evaluationTime > .interval) | {name,interval,evaluationTime}'
+        #
+        # WHAT IS LOST: apiserver error-budget burn-rate SLO alerting. That is a
+        # multi-tenant production concern; on a single node the apiserver's health
+        # is already covered by KubeAPIDown. Re-enable only if this becomes
+        # multi-node AND series cardinality is brought under control.
+        kubeApiserverBurnrate: false
     alertmanager:
       enabled: true
       # Override default inhibit_rules to exempt the Watchdog heartbeat from
