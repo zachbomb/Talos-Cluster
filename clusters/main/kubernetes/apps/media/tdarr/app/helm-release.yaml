@@ -153,8 +153,20 @@ spec:
         memory: 8Gi
         cpu: "2"
         gpu.intel.com/i915: 1
-        # Added for GPU-accelerated subtitle OCR (Florence2). Intel i915 is kept
-        # for tdarr's normal VAAPI transcoding; the two serve different jobs.
+        # Originally added for GPU subtitle OCR (Florence2). That work was DROPPED:
+        # the 33% blank-cue rate was never an OCR-accuracy problem, it was an
+        # unconditional ImageOps.invert in pgsocr's preprocess_image, and fixing
+        # that on CPU beat anything a model would have bought. No GPU workload
+        # currently uses this reservation.
+        #
+        # Deliberately LEFT IN PLACE (owner decision 2026-09-03): harmless while
+        # Ollama is idle, and it keeps the runtimeClassName/device-plugin wiring
+        # proven for whenever Ollama is set up properly or a lightweight model
+        # justifies it. Remove this and runtimeClassName above if the A4000 is
+        # needed elsewhere.
+        #
+        # Intel i915 above is UNRELATED and must stay - that is tdarr's normal
+        # VAAPI transcoding path. The two serve different jobs.
         nvidia.com/gpu: 1
     autoscaling:
       vpa:
