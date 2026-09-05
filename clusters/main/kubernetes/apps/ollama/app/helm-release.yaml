@@ -36,7 +36,7 @@ spec:
     uiImage:
       repository: ghcr.io/open-webui/open-webui
       pullPolicy: IfNotPresent
-      tag: latest@sha256:33e61767ff4254af89a1ed59483f286d33be00a3ed282248d43c263fa667d7fa
+      tag: latest@sha256:1a6399d237dc392a2313e0ca826020b3fd5d22536357840eb63393d18dc8b924
     credentials:
       s3:
         type: s3
