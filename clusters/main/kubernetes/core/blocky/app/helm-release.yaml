@@ -42,7 +42,7 @@ spec:
     redis:
       image:
         repository: docker.io/valkey/valkey
-        tag: 8.1.10-alpine
+        tag: 9.1.2-alpine
         pullPolicy: IfNotPresent
       workload:
         main:
