@@ -1,0 +1,197 @@
+# Unit tests for prometheusrule-cnpg-backups.yaml. Rules are loaded from the
+# committed prometheusrule-cnpg-backups-extracted.yaml; regenerate it with
+#   yq eval '.spec' ../prometheusrule-cnpg-backups.yaml > prometheusrule-cnpg-backups-extracted.yaml
+# after editing the source, or the CI drift guard fails.
+#
+# Reading the fixtures: promtool's synthetic clock starts at epoch 0, so at
+# `eval_time: 120m` the expression `time()` evaluates to 7200. The backup rules
+# measure age as `time() - <timestamp value>`, so a backup that is N seconds old
+# at eval time T is written as the constant series value `T - N` — NEGATIVE for
+# any realistic age. That is deliberate, not a typo.
+#
+# THE CASE THAT MATTERS MOST is "replica reports 0 → silent". Only the primary
+# reports a backup timestamp; every standby sits at 0 permanently (measured on
+# immich-cnpg-main-2). Without the `cnpg_pg_replication_in_recovery == 0` join
+# the never-backed-up rule fires forever on healthy replicas, and an alert that
+# is always firing is an alert nobody reads — which is precisely how the real
+# four-month outage stayed invisible.
+rule_files:
+  - prometheusrule-cnpg-backups-extracted.yaml
+evaluation_interval: 1m
+
+tests:
+  # ---------------------------------------------------------------------------
+  # Healthy primary: backup 1h old. Everything silent.
+  # The promql_expr_test is a positive control — a rule whose selector matched
+  # NOTHING would also produce no alerts, so an empty fixture looks identical to
+  # a healthy one. This assertion fails loudly if the series stop existing.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      # 7200 - 3600 = 3600 → 1h old at eval_time 120m
+      - series: 'cnpg_collector_last_available_backup_timestamp{namespace="goodmem", pod="goodmem-db-1"}'
+        values: "3600x130"
+      - series: 'cnpg_pg_replication_in_recovery{namespace="goodmem", pod="goodmem-db-1"}'
+        values: "0x130"
+    promql_expr_test:
+      - expr: count(cnpg_collector_last_available_backup_timestamp)
+        eval_time: 120m
+        exp_samples:
+          - labels: "{}"
+            value: 1
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: CNPGBackupStale
+        exp_alerts: []
+      - eval_time: 120m
+        alertname: CNPGClusterNeverBackedUp
+        exp_alerts: []
+
+  # ---------------------------------------------------------------------------
+  # ⚠ THE FALSE-POSITIVE GUARD: a healthy REPLICA reports timestamp 0.
+  # Must stay silent. Without the in_recovery join this fires permanently.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'cnpg_collector_last_available_backup_timestamp{namespace="media", pod="immich-cnpg-main-2"}'
+        values: "0x500"
+      # 1 = standby
+      - series: 'cnpg_pg_replication_in_recovery{namespace="media", pod="immich-cnpg-main-2"}'
+        values: "1x500"
+    promql_expr_test:
+      - expr: count(cnpg_pg_replication_in_recovery == 1)
+        eval_time: 480m
+        exp_samples:
+          - labels: "{}"
+            value: 1
+    alert_rule_test:
+      - eval_time: 480m
+        alertname: CNPGClusterNeverBackedUp
+        exp_alerts: []
+
+  # ---------------------------------------------------------------------------
+  # A PRIMARY that has never backed up → fires. This is sonarqube's real state,
+  # sustained undetected for four months.
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'cnpg_collector_last_available_backup_timestamp{namespace="ollama", pod="openwebui-db-1"}'
+        values: "0x500"
+      - series: 'cnpg_pg_replication_in_recovery{namespace="ollama", pod="openwebui-db-1"}'
+        values: "0x500"
+    alert_rule_test:
+      - eval_time: 480m
+        alertname: CNPGClusterNeverBackedUp
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: ollama
+              pod: openwebui-db-1
+            exp_annotations:
+              summary: "CNPG cluster ollama/openwebui-db-1 has NO backup on record"
+              description: >-
+                No base backup has ever completed for this primary, so its WAL archive — if any — is not a recovery point. This is the state sonarqube-db was in, undetected, for four months. Either configure spec.backup.barmanObjectStore and take a base backup, or silence this alert to record that the risk is accepted.
+
+  # ---------------------------------------------------------------------------
+  # Backup 72h old on a primary → CNPGBackupStale fires, VeryStale does not
+  # (72h is past the 48h warning but short of the 7d critical).
+  # ---------------------------------------------------------------------------
+  #
+  # TWO FIXTURE CONSTRAINTS COLLIDE HERE, and both cost a debugging round:
+  #
+  # 1. The rule guards with `timestamp > 0` to separate "has backed up" from
+  #    "never backed up". promtool's clock starts at epoch 0, so a 72h-old
+  #    backup only has a POSITIVE timestamp once eval_time exceeds 72h.
+  #    At eval_time 4400m (264000s): 264000 - 259200(72h) = 4800 → positive.
+  #
+  # 2. The interval must stay <= 5m or samples fall outside Prometheus'
+  #    staleness window between evaluations and EVERY assertion collapses to
+  #    got:[] — indistinguishable from a broken rule. A 10m interval was tried
+  #    and failed exactly this way.
+  #
+  # Hence: 1m interval, ~4450 samples, eval_time 4400m.
+  - interval: 1m
+    input_series:
+      - series: 'cnpg_collector_last_available_backup_timestamp{namespace="sonarqube", pod="sonarqube-db-1"}'
+        values: "4800x4450"
+      - series: 'cnpg_pg_replication_in_recovery{namespace="sonarqube", pod="sonarqube-db-1"}'
+        values: "0x4450"
+    promql_expr_test:
+      # positive control: the guarded expression really does select this series
+      - expr: >-
+          count((time() - cnpg_collector_last_available_backup_timestamp > 48*3600)
+          and (cnpg_collector_last_available_backup_timestamp > 0))
+        eval_time: 4400m
+        exp_samples:
+          - labels: "{}"
+            value: 1
+    alert_rule_test:
+      - eval_time: 4400m
+        alertname: CNPGBackupVeryStale
+        exp_alerts: []
+      - eval_time: 4400m
+        alertname: CNPGBackupStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: sonarqube
+              pod: sonarqube-db-1
+            exp_annotations:
+              summary: "CNPG backup for sonarqube/sonarqube-db-1 is 3d 0h 0m 0s old"
+              description: >-
+                Backups run daily, so this means at least two consecutive runs failed. Check for a WEDGED Backup object first — one stuck in a non-terminal phase (e.g. walArchivingFailing) blocks EVERY subsequent backup indefinitely, including manual ones, and fixing the underlying cause does not clear it: `kubectl get backups.postgresql.cnpg.io -A` and delete any that are neither completed nor failed.
+
+  # ---------------------------------------------------------------------------
+  # WAL volume filling. 8% (steady state) silent; 75% fires the warning only.
+  # This rule is the deadlock precursor and the only one covering clusters with
+  # no cnpg_* metrics at all (e.g. tools/paperless-ngx-cnpg-main).
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="tools", persistentvolumeclaim="paperless-ngx-cnpg-main-2-wal"}'
+        values: "100x60"
+      # 25 available of 100 → 75% full
+      - series: 'kubelet_volume_stats_available_bytes{namespace="tools", persistentvolumeclaim="paperless-ngx-cnpg-main-2-wal"}'
+        values: "25x60"
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="goodmem", persistentvolumeclaim="goodmem-db-1-wal"}'
+        values: "100x60"
+      # 92 available of 100 → 8% full, steady state
+      - series: 'kubelet_volume_stats_available_bytes{namespace="goodmem", persistentvolumeclaim="goodmem-db-1-wal"}'
+        values: "92x60"
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: CNPGWALVolumeCritical
+        exp_alerts: []
+      - eval_time: 45m
+        alertname: CNPGWALVolumeFilling
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: tools
+              persistentvolumeclaim: paperless-ngx-cnpg-main-2-wal
+            exp_annotations:
+              summary: "CNPG WAL volume tools/paperless-ngx-cnpg-main-2-wal is 75% full"
+              description: >-
+                Normal is 7-8%. WAL that cannot be archived is never recycled, so a filling WAL volume almost always means archiving is broken. If it reaches 100% PostgreSQL will refuse to start and cannot archive its way out — see docs/dr/sonarqube-wal-deadlock-2026-09-07.md. Check `kubectl get cluster -n tools -o wide` and the ContinuousArchiving condition.
+
+  # ---------------------------------------------------------------------------
+  # WAL volume at 90% → critical fires (warning fires too; both are expected).
+  # ---------------------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'kubelet_volume_stats_capacity_bytes{namespace="sonarqube", persistentvolumeclaim="sonarqube-db-1-wal"}'
+        values: "100x60"
+      - series: 'kubelet_volume_stats_available_bytes{namespace="sonarqube", persistentvolumeclaim="sonarqube-db-1-wal"}'
+        values: "10x60"
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: CNPGWALVolumeCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: sonarqube
+              persistentvolumeclaim: sonarqube-db-1-wal
+            exp_annotations:
+              summary: "CNPG WAL volume sonarqube/sonarqube-db-1-wal is 90% full — PostgreSQL will lock itself out at 100%"
+              description: >-
+                Act now. At 100% PostgreSQL stops and CANNOT recover on its own, because a stopped instance cannot archive the WAL that is blocking it. Expand the PVC to unblock (the CNPG operator does NOT resize it for you — patch the PVC directly), then fix archiving.

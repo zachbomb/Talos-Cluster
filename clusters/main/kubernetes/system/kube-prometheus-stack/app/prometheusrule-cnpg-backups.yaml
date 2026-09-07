@@ -1,0 +1,174 @@
+---
+# CloudNativePG backup + WAL health.
+#
+# WHY THIS EXISTS: sonarqube-db had WAL archiving broken from 2026-05-14 and
+# NOBODY KNEW FOR FOUR MONTHS. 118 backup objects, 0 completed, 117 failed, and
+# no base backup had ever existed — so the database had no recovery point at all
+# while appearing "Running" the entire time. It was found only because the WAL it
+# could not archive eventually filled its data volume and locked PostgreSQL out.
+# Full write-up: docs/dr/sonarqube-wal-deadlock-2026-09-07.md
+#
+# WHY STALENESS AND RATES, NOT FAILURE COUNTS: the same reasoning as
+# prometheusrule-cronjobs.yaml. `cnpg_pg_stat_archiver_failed_count` is a
+# cumulative counter that never resets — sonarqube's sat at 1592 immediately
+# after being FIXED — so `> 0` would fire permanently and be tuned out within a
+# week, which is exactly how a real four-month outage stays invisible.
+#
+# WHY REPLICAS ARE EXCLUDED: only the primary reports a backup timestamp.
+# `cnpg_collector_last_available_backup_timestamp` is 0 on every standby
+# (measured: immich-cnpg-main-2), so an unfiltered rule would fire constantly on
+# healthy replicas. `cnpg_pg_replication_in_recovery == 0` is the discriminator
+# (1 = standby, 0 = primary).
+#
+# WHY THE WAL-VOLUME RULES USE kubelet_volume_stats: they cover clusters that
+# export NO cnpg_* metrics at all. tools/paperless-ngx-cnpg-main has monitoring
+# disabled and is invisible to every cnpg_* rule below, but its WAL volume is
+# still measured. Broader coverage AND it is the direct precursor to the
+# deadlock, so it is the most valuable rule in this file.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cnpg-backups
+  namespace: kube-prometheus-stack
+  labels:
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  groups:
+    - name: cnpg-wal-volume
+      rules:
+        # THE ONE THAT WOULD HAVE CAUGHT IT EARLIEST, and the only rule here
+        # that covers every cluster regardless of cnpg metric availability.
+        #
+        # The deadlock is: archiving fails -> PostgreSQL may not recycle
+        # unarchived WAL -> the WAL volume fills -> PostgreSQL refuses to start
+        # -> it cannot archive -> WAL never drains. Once the volume is full the
+        # situation is self-sealing and needs manual repair. Catching the FILL
+        # is catching it while it is still trivially fixable.
+        #
+        # Steady state across all seven WAL volumes is 7-8%, so 70% is roughly
+        # 9x normal and cannot be reached by ordinary churn.
+        - alert: CNPGWALVolumeFilling
+          expr: >-
+            100 * (1 -
+              kubelet_volume_stats_available_bytes{persistentvolumeclaim=~".*-wal"}
+              / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*-wal"}
+            ) > 70
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG WAL volume {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }}% full"
+            description: >-
+              Normal is 7-8%. WAL that cannot be archived is never recycled, so a
+              filling WAL volume almost always means archiving is broken. If it
+              reaches 100% PostgreSQL will refuse to start and cannot archive its
+              way out — see docs/dr/sonarqube-wal-deadlock-2026-09-07.md. Check
+              `kubectl get cluster -n {{ $labels.namespace }} -o wide` and the
+              ContinuousArchiving condition.
+
+        - alert: CNPGWALVolumeCritical
+          expr: >-
+            100 * (1 -
+              kubelet_volume_stats_available_bytes{persistentvolumeclaim=~".*-wal"}
+              / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~".*-wal"}
+            ) > 85
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CNPG WAL volume {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }}% full — PostgreSQL will lock itself out at 100%"
+            description: >-
+              Act now. At 100% PostgreSQL stops and CANNOT recover on its own,
+              because a stopped instance cannot archive the WAL that is blocking
+              it. Expand the PVC to unblock (the CNPG operator does NOT resize it
+              for you — patch the PVC directly), then fix archiving.
+
+    - name: cnpg-backup-health
+      rules:
+        # The strongest signal, and the one that was missing for four months:
+        # a primary with NO backup on record at all. This catches both "backups
+        # configured but have never once succeeded" (sonarqube's actual state)
+        # and "backups were never configured" — deliberately not distinguished,
+        # because a production database with no recovery point is worth knowing
+        # about either way. Silence it explicitly if a cluster is intentionally
+        # unprotected; that forces the decision to be conscious rather than
+        # accidental.
+        #
+        # KNOWN TO FIRE ON ADOPTION: ollama/openwebui-db has no backup stanza at
+        # all. tools/paperless-ngx-cnpg-main also has none but exports no cnpg_*
+        # metrics, so it is invisible here and only covered by the WAL rules
+        # above. Both need a decision — back them up or accept the risk.
+        - alert: CNPGClusterNeverBackedUp
+          expr: >-
+            (cnpg_collector_last_available_backup_timestamp == 0)
+            and on (namespace, pod) (cnpg_pg_replication_in_recovery == 0)
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG cluster {{ $labels.namespace }}/{{ $labels.pod }} has NO backup on record"
+            description: >-
+              No base backup has ever completed for this primary, so its WAL
+              archive — if any — is not a recovery point. This is the state
+              sonarqube-db was in, undetected, for four months. Either configure
+              spec.backup.barmanObjectStore and take a base backup, or silence
+              this alert to record that the risk is accepted.
+
+        # Time-since-last-success. Cannot rot the way a failure count does.
+        # 48h chosen against daily schedules (03:00/03:30 here), so a single
+        # missed run does not page but two consecutive misses do.
+        - alert: CNPGBackupStale
+          expr: >-
+            (time() - cnpg_collector_last_available_backup_timestamp > 48 * 3600)
+            and (cnpg_collector_last_available_backup_timestamp > 0)
+            and on (namespace, pod) (cnpg_pg_replication_in_recovery == 0)
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG backup for {{ $labels.namespace }}/{{ $labels.pod }} is {{ $value | humanizeDuration }} old"
+            description: >-
+              Backups run daily, so this means at least two consecutive runs
+              failed. Check for a WEDGED Backup object first — one stuck in a
+              non-terminal phase (e.g. walArchivingFailing) blocks EVERY
+              subsequent backup indefinitely, including manual ones, and fixing
+              the underlying cause does not clear it:
+              `kubectl get backups.postgresql.cnpg.io -A` and delete any that are
+              neither completed nor failed.
+
+        - alert: CNPGBackupVeryStale
+          expr: >-
+            (time() - cnpg_collector_last_available_backup_timestamp > 7 * 24 * 3600)
+            and (cnpg_collector_last_available_backup_timestamp > 0)
+            and on (namespace, pod) (cnpg_pg_replication_in_recovery == 0)
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "CNPG backup for {{ $labels.namespace }}/{{ $labels.pod }} is over a week old"
+            description: >-
+              A week of failed backups. Beyond the retention window this becomes
+              unrecoverable data loss rather than an inconvenience.
+
+    - name: cnpg-wal-archiving
+      rules:
+        # The earliest available signal — archiving failing is the CAUSE, WAL
+        # accumulation and stale backups are its downstream effects.
+        #
+        # increase() over a window rather than the raw counter: the counter is
+        # cumulative and never resets, so it stays permanently non-zero after any
+        # historical failure (sonarqube read 1592 the moment it was fixed).
+        - alert: CNPGWALArchiveFailing
+          expr: increase(cnpg_pg_stat_archiver_failed_count[1h]) > 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CNPG WAL archiving is failing for {{ $labels.namespace }}/{{ $labels.pod }}"
+            description: >-
+              PostgreSQL cannot recycle a WAL segment until it is archived, so
+              sustained archive failure fills the WAL volume and eventually stops
+              the database. One known cause here: a re-bootstrapped cluster whose
+              object store still holds WAL from the previous incarnation —
+              barman-cloud-check-wal-archive then refuses with
+              "Expected empty archive" and archiving never starts.

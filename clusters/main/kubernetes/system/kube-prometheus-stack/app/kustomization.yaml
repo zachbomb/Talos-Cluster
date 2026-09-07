@@ -14,6 +14,7 @@ resources:
   - prometheusrule-network.yaml
   - prometheusrule-media-integrity.yaml
   - prometheusrule-homeassistant.yaml
+  - prometheusrule-cnpg-backups.yaml
   - homeassistant-token.secret.yaml
   - scrapeconfigs.yaml
   - podmonitor-flux.yaml
