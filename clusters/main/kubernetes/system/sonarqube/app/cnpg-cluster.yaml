@@ -46,13 +46,35 @@ spec:
   # exists, the credentials work, and goodmem/triparr/immich all archive to
   # the SAME endpoint successfully. The fault is specific to this cluster.
   #
-  # 20Gi is headroom to break the deadlock, not a sizing decision -- once
-  # archiving works the WAL drains and real usage should be far lower.
-  # TODO: add a separate `walStorage:` so WAL can never fill the data volume
-  # again. Deliberately NOT done in the same change as the unblock, so that
-  # if something goes wrong there is only one variable.
+  # 20Gi is headroom, not a sizing decision. After the fix the real footprint
+  # is tiny: 707MB total (base 66MB + WAL 641MB) = 4% of the volume. The 9.7GB
+  # was ALL stranded WAL.
   storage:
     size: 20Gi
+
+  # THE RECURRENCE FIX. Without a separate WAL volume, unarchivable WAL grows
+  # on the DATA volume until PostgreSQL cannot start -- which is exactly the
+  # deadlock described above, and it took four months to arrive silently.
+  #
+  # With WAL on its own volume the same archiving failure fills only THIS
+  # volume. PostgreSQL still stops, but the data volume stays healthy and the
+  # failure is isolated and obvious rather than terminal.
+  #
+  # 8Gi, not 2Gi: a 2Gi WAL volume fills in days on an active cluster (learned
+  # the hard way elsewhere in this cluster). 8Gi held the entire 4-month
+  # stranded backlog here (9.7GB peak) with only a little to spare, so it is
+  # sized against a real observed worst case rather than a guess.
+  #
+  # Verified accepted by the CNPG 1.30 validating webhook via
+  # `kubectl apply --dry-run=server` before committing. Adding walStorage to a
+  # live cluster makes the operator provision a new PVC and recycle the
+  # instance, so expect a brief sonarqube outage on reconcile.
+  #
+  # NOTE: no other CNPG cluster here (goodmem, triparr, immich) has walStorage.
+  # They are exposed to the same failure mode. Not changed in this commit --
+  # they are healthy, and one blast radius at a time.
+  walStorage:
+    size: 8Gi
   resources:
     requests:
       memory: "512Mi"
