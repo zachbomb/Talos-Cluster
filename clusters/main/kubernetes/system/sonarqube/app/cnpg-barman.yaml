@@ -21,4 +21,11 @@ spec:
   cluster:
     name: sonarqube-db
   method: barmanObjectStore
-  target: prefer-standby
+  # 2026-09-07: prefer-standby -> primary. The cluster runs `instances: 1`, so
+  # there has never BEEN a standby to prefer. CNPG does fall back to the
+  # primary, so this is not proven to be the cause of the 117 consecutive
+  # backup failures (0 of 118 have ever succeeded, since 2026-05-14) -- but on
+  # a single-instance cluster it is a misleading no-op, and removing it takes
+  # one variable out of the diagnosis. Restore prefer-standby if this ever
+  # gains a replica.
+  target: primary

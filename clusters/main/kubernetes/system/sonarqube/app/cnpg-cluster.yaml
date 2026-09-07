@@ -31,8 +31,28 @@ spec:
       owner: sonarqube_user
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS "uuid-ossp"
+  # 2026-09-07: 10Gi -> 20Gi. The cluster wedged itself SHUT at 101% full
+  # ("Not enough disk space" / "Not enough WAL disk space, avoid starting
+  # PostgreSQL"). Mechanism, and it is a deadlock:
+  #
+  #   WAL archiving stopped 2026-05-14T23:12Z (47 WAL objects archived that
+  #   day, then nothing for ~4 months) -> PostgreSQL cannot recycle a WAL
+  #   segment until it is archived -> WAL accumulated on THIS volume, because
+  #   there is no separate walStorage -> volume hit 100% on 2026-09-05 ->
+  #   PostgreSQL refuses to start on low disk -> it cannot archive -> WAL
+  #   never drains. Self-sustaining.
+  #
+  # Ruled out with evidence: MinIO is up (health 200), bucket cnpg-sonarqube
+  # exists, the credentials work, and goodmem/triparr/immich all archive to
+  # the SAME endpoint successfully. The fault is specific to this cluster.
+  #
+  # 20Gi is headroom to break the deadlock, not a sizing decision -- once
+  # archiving works the WAL drains and real usage should be far lower.
+  # TODO: add a separate `walStorage:` so WAL can never fill the data volume
+  # again. Deliberately NOT done in the same change as the unblock, so that
+  # if something goes wrong there is only one variable.
   storage:
-    size: 10Gi
+    size: 20Gi
   resources:
     requests:
       memory: "512Mi"
