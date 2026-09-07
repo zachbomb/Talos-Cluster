@@ -70,9 +70,9 @@ spec:
   # live cluster makes the operator provision a new PVC and recycle the
   # instance, so expect a brief sonarqube outage on reconcile.
   #
-  # NOTE: no other CNPG cluster here (goodmem, triparr, immich) has walStorage.
-  # They are exposed to the same failure mode. Not changed in this commit --
-  # they are healthy, and one blast radius at a time.
+  # All four CNPG clusters here now carry walStorage 8Gi (goodmem, triparr-db,
+  # immich-cnpg-main, this one). immich already had a WAL volume but at 2Gi,
+  # ~32% full at steady state; it was resized to 8Gi for consistency.
   walStorage:
     size: 8Gi
   resources:

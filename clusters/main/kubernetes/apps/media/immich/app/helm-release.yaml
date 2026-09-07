@@ -232,8 +232,21 @@ spec:
         cluster:
           storage:
             size: 5Gi
+          # 2026-09-07: 2Gi -> 8Gi, matching the standard set across the other
+          # CNPG clusters after sonarqube-db deadlocked on WAL exhaustion
+          # (docs/dr/sonarqube-wal-deadlock-2026-09-07.md).
+          #
+          # immich ALREADY had a separate WAL volume -- the isolation was in
+          # place -- but 2Gi was measured at 609MB/593MB used across the two
+          # instances, i.e. ~32% full at STEADY STATE. That leaves under 1.4GB
+          # of headroom before an archiving failure fills it, which is a matter
+          # of days on a cluster this write-active, not months. The other
+          # clusters sit at 8% of 8Gi for comparison.
+          #
+          # 8Gi is sized against the real observed worst case: sonarqube's
+          # stranded WAL peaked at 9.7GB over four months of failed archiving.
           walStorage:
-            size: 2Gi
+            size: 8Gi
         backups:
           enabled: true
           credentials: s3

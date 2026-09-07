@@ -173,6 +173,28 @@ before upgrading the operator, or backups break cluster-wide.
 
 Also flagged: `spec.monitoring.enablePodMonitor` is deprecated.
 
-**3. No other CNPG cluster has `walStorage`.** goodmem, triparr-db and immich-cnpg-main are all
-exposed to this identical failure mode. Deliberately not changed here — they are healthy, and
-one blast radius at a time — but they are on borrowed time if their archiving ever breaks.
+**3. ~~No other CNPG cluster has `walStorage`.~~ CORRECTED 2026-09-07 — and the error is worth
+keeping, because it came from a parsing bug rather than from the cluster.**
+
+```
+spec.walStorage.size            <- goodmem / triparr / sonarqube
+spec.walStorage.pvcTemplate...  <- what the immich HELM CHART generates
+```
+
+Probing `.get('size')` returns `None` for a pvcTemplate-style spec, so immich reported
+`walStorage=None` when it in fact had one all along. **A None from a field probe means "not
+found at that path", never "not configured"** — check the alternate representation before
+concluding absence.
+
+All four verified and now standardised:
+
+```
+sonarqube/sonarqube-db   walStorage 8Gi          (added 2026-09-07)
+goodmem/goodmem-db       walStorage 8Gi          (added 2026-09-07)
+triparr-bot/triparr-db   walStorage 8Gi          (added 2026-09-07)
+media/immich-cnpg-main   walStorage 2Gi -> 8Gi   (ALREADY isolated; resized)
+```
+
+immich's real problem was never absence, it was SIZING: 2Gi measured 609MB and 593MB used
+across its two instances — **~32% full at steady state**, against 8% for the others. Under an
+archiving failure that fills in days, not months.
