@@ -26,6 +26,26 @@ spec:
         - CREATE EXTENSION IF NOT EXISTS "pgcrypto"
   storage:
     size: 10Gi
+  # 2026-09-07: separate WAL volume, applied after sonarqube-db deadlocked
+  # itself for four months on exactly this exposure. See
+  # docs/dr/sonarqube-wal-deadlock-2026-09-07.md
+  #
+  # If WAL archiving fails, PostgreSQL MAY NOT recycle unarchived segments, so
+  # WAL grows without bound. Sharing the data volume makes that terminal: the
+  # volume fills, PostgreSQL refuses to start, and a stopped PostgreSQL cannot
+  # archive -- so it never drains. On a separate volume the same failure fills
+  # only THIS volume; PostgreSQL still stops, but the data volume stays healthy
+  # and the fault is isolated and legible rather than self-sealing.
+  #
+  # 8Gi, not 2Gi (2Gi fills in days on an active cluster). Current WAL here is
+  # 577MB, and sonarqube's four-month stranded backlog peaked at 9.7GB, so 8Gi
+  # is sized against a real observed worst case.
+  #
+  # Adding walStorage to a live cluster provisions a new PVC and recycles the
+  # instance -- expect a brief outage on reconcile (measured ~3.5 min on
+  # sonarqube, single-instance).
+  walStorage:
+    size: 8Gi
   resources:
     requests:
       memory: "512Mi"
