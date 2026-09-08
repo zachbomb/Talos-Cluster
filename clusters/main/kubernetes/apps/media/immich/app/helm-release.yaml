@@ -252,7 +252,16 @@ spec:
           credentials: s3
           scheduledBackups:
             - name: daily
-              schedule: "0 3 * * *"
+              # 2026-09-07: 5-field -> 6-FIELD cron, AND moved 03:00 -> 04:00.
+              # CNPG uses `sec min hour dom mon dow` (the CRD says it "includes
+              # an additional seconds specifier"), so "0 3 * * *" parsed as
+              # sec=0 min=3 hour=* and fired EVERY HOUR, not daily. Measured:
+              # 24 backups in 24h on the sibling triparr-bot cluster.
+              #
+              # The hour change is a SEPARATE fix: immich and goodmem were both
+              # on :03, so they backed up simultaneously. Staggering to 04:00
+              # keeps them apart even once the frequency is correct.
+              schedule: "0 0 4 * * *"
               backupOwnerReference: none
               immediate: true
           retentionPolicy: "14d"

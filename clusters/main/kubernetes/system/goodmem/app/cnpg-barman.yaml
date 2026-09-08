@@ -15,7 +15,21 @@ metadata:
   name: goodmem-db-daily
   namespace: goodmem
 spec:
-  schedule: "0 3 * * *"
+  # 2026-09-07: 5-field -> 6-FIELD cron. CNPG's ScheduledBackup does NOT use
+  # Kubernetes CronJob syntax -- the CRD's own field description says it
+  # "includes an additional seconds specifier" (robfig/cron), i.e.
+  #   sec min hour dom mon dow
+  #
+  # Written 5-field, "0 3 * * *" parsed as sec=0 min=3 hour=* and fired
+  # EVERY HOUR instead of daily. Measured, not inferred: triparr-bot created
+  # 24 backup objects in 24 hours, all at a fixed minute, one per hour.
+  #
+  # Consequence: 24x the intended backup I/O, and goodmem + immich both landed
+  # on :03 so THREE databases (one of them 120GB) backed up simultaneously every
+  # hour. This saturated the single shared SSD and is the most likely trigger of
+  # the repeated Longhorn instance-manager cascades on 2026-09-05 and 09-07.
+  # See docs/dr/sonarqube-wal-deadlock-2026-09-07.md for the surrounding work.
+  schedule: "0 0 3 * * *"
   backupOwnerReference: self
   cluster:
     name: goodmem-db
