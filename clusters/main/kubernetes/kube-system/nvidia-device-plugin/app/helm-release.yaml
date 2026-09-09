@@ -36,6 +36,39 @@ spec:
       repository: nvcr.io/nvidia/k8s-device-plugin
       tag: v0.20.0
     runtimeClassName: nvidia
+    # 2026-09-09: added requests to lift these pods out of BestEffort QoS.
+    #
+    # Both DaemonSets this chart owns (nvidia-device-plugin and
+    # gpu-feature-discovery) shipped with `resources: {}`, making them
+    # BestEffort -- the highest oom_score_adj on the node. Measured over the
+    # same 19 days on the same node:
+    #
+    #   gpu-feature-discovery   BestEffort   427 restarts
+    #   nvidia-device-plugin    BestEffort   379 restarts
+    #   nfd-worker              Burstable    138 restarts
+    #   nfd-gc                  Burstable     60 restarts
+    #   nfd-master              Burstable     52 restarts
+    #
+    # The failing containers were HEALTHY -- their logs show a complete startup
+    # (nvml detected, gRPC serving, plugin registered with kubelet) immediately
+    # before each kill. The kill was `StartError exit=128 / sandbox container is
+    # not running`, i.e. the sandbox dying under them during node memory
+    # pressure, not the process failing. Same class as the six BestEffort
+    # control-plane pods fixed 2026-08-03/04; these two were missed in that
+    # sweep.
+    #
+    # Verified with `helm template` that this single top-level block reaches
+    # BOTH DaemonSets (the nfd subchart has its own requests and is unaffected).
+    #
+    # CPU LIMIT DELIBERATELY OMITTED -- a cpu limit on infra pods causes CFS
+    # throttling that trips liveness probes, which is the failure mode this is
+    # meant to prevent. Memory limit is safe and bounds a leak.
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
     config:
       map:
         default: |-
