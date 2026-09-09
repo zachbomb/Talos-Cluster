@@ -1,0 +1,85 @@
+---
+# Give longhorn-ui and longhorn-driver-deployer a CPU/memory REQUEST so they
+# stop being BestEffort. Companion to longhorn-engine-image-resources.yaml,
+# which fixed the same class for engine-image pods on 2026-08-25.
+#
+# WHY A KYVERNO POLICY AND NOT HELM VALUES: the Longhorn 1.12.0 chart exposes
+# exactly ONE `resources:` key in its entire values.yaml (under longhornManager).
+# `longhornDriver` offers only log/priorityClass/tolerations/nodeSelector, and
+# `longhornUI` only replicas/priorityClass/affinity/tolerations/nodeSelector.
+# There is no values path to set these -- verified against the published chart
+# values, not assumed. Mutation is the only lever.
+#
+# EVIDENCE (2026-09-09): during a node memory exhaustion caused by a kubelet
+# leak (8.9GB RES / 1521 threads), every BestEffort pod in the cluster was
+# killed repeatedly while its Burstable neighbours survived:
+#
+#     longhorn-driver-deployer  BestEffort  307 restarts
+#     longhorn-ui               BestEffort  133 restarts
+#
+# All of them stopped crashlooping at the exact moment the kubelet was
+# restarted, having been touched in no other way -- they were victims of node
+# memory pressure, not broken applications. BestEffort carries the highest
+# oom_score_adj, so the kernel reaps them first. A request moves them out of
+# that bucket and shrinks the blast radius of the next memory event.
+#
+# REQUESTS ONLY -- deliberately NO cpu limit, for the same reason as the
+# engine-image policy: a CPU limit throttles once quota is exceeded and
+# reintroduces the probe-timeout death this is meant to prevent. No memory
+# limit either; these have none today and adding one would introduce an
+# OOMKill risk that does not currently exist.
+#
+# 25m x 2 pods = 50m of node headroom.
+#
+# NOTE: `default/longhorn-ui` (2 replicas, 172d old) is NOT covered here. It is
+# an orphaned duplicate of this deployment, almost certainly a `helm install`
+# that missed its `-n` flag, and the correct action there is deletion, not a
+# resource request. Deliberately left alone pending that decision.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: longhorn-ui-driver-resources
+  annotations:
+    policies.kyverno.io/title: Longhorn UI and driver-deployer resource requests
+    policies.kyverno.io/category: Resource Management
+    policies.kyverno.io/description: >-
+      Injects CPU/memory requests (never limits) into longhorn-ui and
+      longhorn-driver-deployer pods so they are Burstable rather than
+      BestEffort, preventing the kernel from reaping them first under node
+      memory pressure.
+spec:
+  background: false
+  rules:
+    - name: ui-and-driver-requests
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - longhorn-system
+              selector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - longhorn-ui
+                      - longhorn-driver-deployer
+              # CREATE only. Mutating on UPDATE makes pods PERMANENTLY
+              # UNMODIFIABLE: any metadata-only patch re-triggers the mutation
+              # and the API server rejects the request because pod spec is
+              # immutable. That wedged five VolSync movers for 45h on
+              # 2026-08-08 -- see volsync-mover-resources.yaml.
+              operations:
+                - CREATE
+      mutate:
+        foreach:
+          - list: "request.object.spec.containers"
+            patchStrategicMerge:
+              spec:
+                containers:
+                  - name: "{{ element.name }}"
+                    resources:
+                      requests:
+                        cpu: 25m
+                        memory: 64Mi

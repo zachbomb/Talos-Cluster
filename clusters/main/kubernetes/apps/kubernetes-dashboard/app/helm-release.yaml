@@ -78,3 +78,24 @@ spec:
         cpu: 500m
     podOptions:
       hostUsers: true
+
+    # 2026-09-09: kong is a SUBCHART -- the top-level `resources:` above applies
+    # to this chart's own workloads (main/web/api/auth/scraper) and never
+    # reaches it, so the kong proxy pod was the last BestEffort pod here. It had
+    # 654 restarts, the highest count in the cluster; they all stopped the
+    # moment a leaking kubelet was restarted, so it was being reaped under node
+    # memory pressure (BestEffort = highest oom_score_adj), not failing on its
+    # own. Same class as the six pods fixed 2026-08-03/04.
+    #
+    # Verified with `helm template -f` that `kong.resources` renders onto the
+    # kong deployment's container before committing -- the top-level block does
+    # not, which is exactly why this was missed.
+    #
+    # Requests only: no cpu limit (throttling trips probes) and no memory limit
+    # (would add an OOMKill risk that does not exist today). Kong runs with
+    # nginx_worker_processes: 1 here, so it is light.
+    kong:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi

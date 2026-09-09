@@ -8,3 +8,4 @@ resources:
   - priorityclass-volsync-mover.yaml
   - volsync-mover-resources.yaml
   - longhorn-engine-image-resources.yaml
+  - longhorn-ui-driver-resources.yaml

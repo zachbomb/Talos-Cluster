@@ -56,6 +56,18 @@ spec:
               capabilities: { drop: ["ALL"] }
               seccompProfile:
                 type: RuntimeDefault
+            # 2026-09-09: requests added to lift this pod out of BestEffort QoS.
+            # It had 237 restarts, all of which stopped the moment a leaking
+            # kubelet was restarted -- it was being reaped under node memory
+            # pressure (BestEffort carries the highest oom_score_adj), not
+            # failing on its own. Requests only, no limits: these have none
+            # today and a limit would add an OOMKill risk that does not
+            # currently exist, and a CPU limit would reintroduce the throttling
+            # that trips probes. Same class as the six pods fixed 2026-08-03/04.
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
     defaultPodOptions:
       # bjw-s common v5 defaults this to false for security; system-upgrade-controller
       # explicitly needs the K8s API token to manage Plan/Job CRs.

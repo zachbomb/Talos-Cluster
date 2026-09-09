@@ -80,8 +80,19 @@ spec:
         enabled: false
         grafanaAgent:
           installOperator: false
-      lokiCanary:
-        enabled: false
+
+    # 2026-09-09: MOVED OUT OF `monitoring:`. In loki chart 7.x `lokiCanary` is
+    # a TOP-LEVEL key -- `monitoring` contains only dashboards, rules,
+    # selfMonitoring and serviceMonitor. Nested under `monitoring:` this was a
+    # silent no-op (Helm accepts unknown values without complaint), so the
+    # canary DaemonSet ran on chart defaults the whole time while this file
+    # claimed it was disabled. It was found as a BestEffort pod with 200
+    # restarts during the 2026-09-09 memory-exhaustion investigation.
+    #
+    # Verified against `helm show values grafana/loki --version 7.3.0`:
+    # lokiCanary is at line 788, top level.
+    lokiCanary:
+      enabled: false
 
     # Disable gateway (nginx) — not needed for internal access
     gateway:
