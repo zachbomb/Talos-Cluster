@@ -14,7 +14,16 @@ metadata:
   labels:
     app.kubernetes.io/name: tunarr-token-heal
 spec:
-  schedule: "*/15 * * * *"
+  # 2026-09-11: */15 -> hourly, same reason as ddns-cloudflare (kubelet
+  # cadvisor housekeeping-goroutine leak driven by CronJob container churn;
+  # this job was ~96 pods/day). The Plex token it heals does not expire on a
+  # 15-minute cadence -- it breaks on PMS restarts/re-auth, which are rare and
+  # already self-heal within an hour.
+  #
+  # NOTE: when this job DOES heal a token it patches the deployment, which
+  # rolls Tunarr and kills any in-flight subtitle extraction. Running it less
+  # often also reduces that disruption.
+  schedule: "0 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3

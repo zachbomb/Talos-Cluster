@@ -4,7 +4,19 @@ metadata:
   name: cloudflare-ddns
   namespace: ddns-cloudflare
 spec:
-  schedule: "*/5 * * * *"
+  # 2026-09-11: */5 -> */30. Reduces kubelet goroutine-leak pressure.
+  #
+  # cadvisor v0.56.2 (bundled with kubelet 1.36.1) leaks one
+  # containerData.housekeepingTick goroutine per ~10 containers destroyed.
+  # Measured: 944 housekeeping goroutines against only 555 containers cadvisor
+  # actually reports = ~389 orphaned, driving kubelet RSS 406MB -> 1.1GB in
+  # under 3 days (~10 MB/hr). Three CronJobs produced 672 of 681 pods/day;
+  # this one was 288 of them.
+  #
+  # A residential WAN IP changes rarely, so 30-minute checks lose almost
+  # nothing. Worst case is ~30 min of stale DNS after an ISP re-IP, versus
+  # ~5 min before. See docs/dr/ for the kubelet leak write-up.
+  schedule: "*/30 * * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
