@@ -625,7 +625,24 @@ spec:
           - nolock
       transcoding:
         enabled: true
-        size: 5Gi
+        # 2026-09-14: 5Gi -> 32Gi. Measured steady state is up to 1.29 GB PER
+        # CONCURRENT STREAM (132 .ts at ~9.9 MB each); three concurrent streams
+        # already sat at 2.0 GB / 41% of the 4.9 GB usable. FOUR streams overflow
+        # it, and the ambient design (docs/media/unseen-ambient-playback-design.md)
+        # contemplates channels 40/41/42 together on top of the living room, with
+        # the Pi appliance now running two heads. Overflow is not graceful: ffmpeg
+        # fails to write mid-stream and Tunarr restarts the transcode onto a
+        # volume it still cannot write to -> every active channel drops.
+        #
+        # Subtitle segments are NOT the driver, despite a 284-vs-71 file-count
+        # ratio: 315 .vtt totalled 0.03 MB against 1303 MB of .ts. Count inverts
+        # by bytes. The .ts are the whole story.
+        #
+        # 32Gi covers ~24 concurrent streams. Longhorn had 949 GB free on ssd-hot,
+        # so the extra 27 GB is ~2.8% of free space. NOTE this lands on the SAME
+        # single disk as Plex's SQLite (docs/dr/longhorn-single-disk-io-contention.md)
+        # — the size fixes the ceiling, NOT the I/O contention.
+        size: 32Gi
         mountPath: /.transcode
         # Mount into the cache-purge sidecar too (chart default is main-only). Without
         # this, the sidecar's `find /.transcode -mmin +2 -delete` loop ran against its
