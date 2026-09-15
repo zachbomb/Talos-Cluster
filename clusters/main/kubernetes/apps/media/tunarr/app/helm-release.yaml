@@ -170,8 +170,31 @@ spec:
                     # playlists and subtitles and only age out .ts. Once it stops
                     # producing, the whole directory is dead - remove everything so no
                     # stale playlist can outlive its segments.
+                    # SESSION-AUTHORITATIVE LIVENESS (2026-09-15 outage fix).
+                    # The old test inferred liveness from .ts mtime ("touched in
+                    # the last 2 min"). That is a GUESS, and it was wrong often:
+                    # a live session whose production stalls past 120s - a
+                    # programme boundary, a slow producer start, or simply node
+                    # CPU contention - was classified dead and had stream.m3u8,
+                    # subs.m3u8 and every .vtt deleted underneath a connected
+                    # client. Measured 8 times in one morning; the near-misses
+                    # logged newest_age of 91/108/109/111/116s against a 120s
+                    # threshold, so it was never going to hold.
+                    #   2026-09-15T13:40:48Z dir=bc549eef branch=dead
+                    #     newest_age=130s before=20 after=0 deleted=20 playlist=0
+                    # -> client 404 on stream.m3u8, then 500 on the master.
+                    #
+                    # Tunarr already publishes the truth at /api/sessions, and
+                    # this script ALREADY consumes it for the zombie reaper
+                    # below. Ask the authority instead of guessing from mtime.
+                    #
+                    # FAIL-SAFE: if the API is unreachable PSESS is empty and
+                    # EVERY directory takes the live branch - we delete nothing
+                    # destructive. An API blip must never trigger a mass purge.
+                    PSESS=$$(curl -sf --max-time 10 http://localhost:8000/api/sessions 2>/dev/null)
                     for d in /.transcode/stream_*/; do
                       [ -d "$$d" ] || continue
+                      _p_uuid=$$(basename "$$d"); _p_uuid=$${_p_uuid#stream_}
                       # --- SQ-249 instrumentation. Capture the EXACT quantity that decides
                       # the branch, BEFORE deciding, because it cannot be recovered after.
                       #
@@ -189,7 +212,16 @@ spec:
                       _p_newest=$$(ls -t "$$d"*.ts 2>/dev/null | head -1)
                       _p_age=-1
                       [ -n "$$_p_newest" ] && _p_age=$$(( $$(date +%s) - $$(stat -c %Y "$$_p_newest" 2>/dev/null || date +%s) ))
-                      if [ -n "$$(find "$$d" -maxdepth 1 -name '*.ts' -mmin -2 2>/dev/null | head -1)" ]; then
+                      # Destroy ONLY when BOTH signals agree that the directory is
+                      # orphaned: Tunarr reports no session for this uuid AND
+                      # nothing has been produced recently. Either signal alone
+                      # has a known false positive - mtime alone caused the
+                      # 2026-09-15 outage (live session, stalled >120s, purged),
+                      # and session-absence alone would mass-purge live streams
+                      # if /api/sessions ever answered momentarily empty. Requiring
+                      # agreement makes a single bad signal harmless.
+                      if [ -z "$$PSESS" ] || echo "$$PSESS" | grep -q "$$_p_uuid" \
+                         || [ -n "$$(find "$$d" -maxdepth 1 -name '*.ts' -mmin -2 2>/dev/null | head -1)" ]; then
                         _p_branch=live
                         # 10 MINUTES, not 2. Upstream `trimPlaylist` pins the SERVED
                         # video window to minSegmentRequested; when nothing advances
@@ -213,8 +245,45 @@ spec:
                         # is attributable to the frozen window alone. Cost ~1.5GB per
                         # stream (8.8GB/hr); the 5Gi PVC holds 2-3 concurrent.
                         # Retire this once upstream anchors to the live edge.
-                        find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +10 -delete 2>/dev/null
+                        # 2026-09-15 WEDGE FIX. Age alone can NEVER be safe here.
+                        # Upstream pins the SERVED window to minSegmentRequested;
+                        # when that anchor freezes, the window stops advancing while
+                        # production runs away. Any mtime threshold then ages out the
+                        # very segments the client is still being offered. MEASURED
+                        # 14:37Z: production at data000573, served window frozen at
+                        # 367..386, oldest surviving segment data000394 -> all 20
+                        # advertised segments deleted, client wedged paused-for-cache.
+                        # The old comment here predicted exactly this and only moved
+                        # death from ~2min to ~11min. Retiring it as it said to.
+                        #
+                        # Correct rule: NEVER delete a segment the served playlist
+                        # still lists. Safe to ask for it - playlist GETs do NOT
+                        # advance the anchor (measured independently: served window
+                        # advanced at production pace across 24s silence, 5 GETs at
+                        # 4s spacing, and 10 GETs in 12s alike). Only SEGMENT
+                        # requests move it.
+                        #
+                        # Cost is trivial: the served window is ~20 entries (~80s,
+                        # ~200MB), everything outside it still ages out at 10 min.
+                        _p_served=$$(curl -sf --max-time 5 "http://localhost:8000/stream/channels/$$_p_uuid/hls/stream.m3u8" 2>/dev/null | grep -oE 'data[0-9]+\.ts' | sort -u)
+                        if [ -n "$$_p_served" ]; then
+                          # Protect the advertised window, age out the rest.
+                          for _p_f in $$(find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +10 2>/dev/null); do
+                            echo "$$_p_served" | grep -qx "$$(basename "$$_p_f")" || rm -f "$$_p_f"
+                          done
+                        else
+                          # Could not read the served playlist -> do NOT guess from
+                          # mtime; that is the bug being fixed. Fall back to a much
+                          # more conservative floor purely as a disk backstop.
+                          find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +30 -delete 2>/dev/null
+                        fi
                       else
+                        # Reached ONLY when Tunarr itself reports no session for
+                        # this channel uuid - i.e. the directory is genuinely
+                        # orphaned, not merely stalled. Clearing everything is
+                        # correct here: a stale playlist that outlives its
+                        # segments makes the served media sequence walk backward
+                        # for the NEXT session landing in this reused directory.
                         _p_branch=dead
                         find "$$d" -maxdepth 1 -type f -mmin +2 -delete 2>/dev/null
                       fi
