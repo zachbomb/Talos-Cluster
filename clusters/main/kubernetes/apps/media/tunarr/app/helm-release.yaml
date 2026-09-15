@@ -265,7 +265,30 @@ spec:
                         #
                         # Cost is trivial: the served window is ~20 entries (~80s,
                         # ~200MB), everything outside it still ages out at 10 min.
-                        _p_served=$$(curl -sf --max-time 5 "http://localhost:8000/stream/channels/$$_p_uuid/hls/stream.m3u8" 2>/dev/null | grep -oE 'data[0-9]+\.ts' | sort -u)
+                        # ⚠ ONLY probe when a REAL viewer is connected. 2026-09-15: the
+                        # protection fetch below is an HTTP GET on a stream endpoint, and
+                        # Tunarr COUNTS IT AS A VIEWER CONNECTION (observed in /api/sessions
+                        # as ip=127.0.0.1 ua=curl/8.5.0 with a fresh lastHeartbeat). Probing
+                        # every 2 min therefore refreshed the heartbeat on EVERY session
+                        # forever, so abandoned sessions never fell to 0 connections, never
+                        # got reaped, and their per-programme ffmpeg kept burning CPU on an
+                        # already-starved node. Measured: 4 transcodes running for 1 real
+                        # viewer; ch33 and ch30 alive solely on this probe. Unbounded — every
+                        # channel ever tuned would accumulate one immortal ffmpeg.
+                        #
+                        # A session with no real viewer does not need window protection:
+                        # nothing is reading the window. So skip the probe entirely, which
+                        # also lets our stale heartbeat expire and Tunarr reap it normally.
+                        _p_real=$$(printf '%s' "$$PSESS" | jq -r --arg u "$$_p_uuid" '.[$$u][]?.connections[]? | select(.ip != "127.0.0.1") | .ip' 2>/dev/null | head -1)
+                        if [ -z "$$_p_real" ]; then
+                          # No viewer but the session still exists -> age out normally, do NOT
+                          # touch the HTTP endpoint. Protection is pointless and the probe is
+                          # what keeps the corpse breathing.
+                          find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +10 -delete 2>/dev/null
+                          _p_served=""
+                        else
+                          _p_served=$$(curl -sf --max-time 5 "http://localhost:8000/stream/channels/$$_p_uuid/hls/stream.m3u8" 2>/dev/null | grep -oE 'data[0-9]+\.ts' | sort -u)
+                        fi
                         if [ -n "$$_p_served" ]; then
                           # Protect the advertised window, age out the rest.
                           for _p_f in $$(find "$$d" -maxdepth 1 -type f -name '*.ts' -mmin +10 2>/dev/null); do
