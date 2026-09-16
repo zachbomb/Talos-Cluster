@@ -670,3 +670,53 @@ session for that channel would land. That produced the same *symptom* as the ups
 defect (backward media sequence) by a different route. Fixed by keying the purge on
 session liveness: a directory still producing segments keeps its playlists and subtitle
 segments; a directory that has stopped producing is cleared entirely.
+
+---
+
+## Recovery addendum (2026-09-16) — operational facts for Report 1+2, NOT a new defect
+
+Report 1+2 already establishes the mechanism (shared anchor, `segmentsToKeepBefore: 10`,
+"the on-disk playlist never forgets an entry", "with no consumer fetching segments the
+anchor never leaves 0"). This afternoon a production channel (ch18) hit the degenerate
+form of it and stayed down for ~20 minutes. Everything about the *cause* was already in
+this document. Three facts about *recovery* were not, and they are what cost the time:
+
+**1. A registered connection NEVER expires.** Measured over 3 minutes polling
+`/api/sessions` only (which does not itself register a viewer): the connection count for
+a client that had stopped fetching stayed at 1 for every sample. There is no idle timeout
+that reclaims it. Consequence: one paused, crashed, or probing client pins
+`minSegmentRequested` for **every other viewer of that channel**, indefinitely.
+
+**2. Deleting the session is NOT sufficient — the directory must be removed.**
+`DELETE /api/channels/{id}/sessions` returns 201, the session rebuilds, and it immediately
+re-enters the same state, because `stream.m3u8` on disk survives teardown carrying its
+accumulated entries. Observed at 5729 lines listing `data000000 … data001904` while only
+`data001895+` existed. Only `rm -rf /.transcode/stream_<uuid>/` cleared it. Hand-truncating
+the playlist does not hold either: ffmpeg rewrote it from 5652 to 5658 lines in 9 seconds.
+
+**3. The pinned anchor is a disk-exhaustion path, and it is silent.** Because
+`deleteOldSegments()` will not delete below the anchor, a stuck viewer freezes the
+retention floor. Measured: oldest file pinned at `data000013` while the newest advanced
+32 -> 67, holding **645 MB for a single channel** on a 32 Gi PVC, growing without bound.
+Nothing alerts on this — the channel looks "in use". Note this is distinct from the
+~8.8 GB/hr/stream figure at line 641, which is normal transcode churn; this is retention
+that can never be reclaimed while the connection lives.
+
+**Distinguishing the two failure shapes from a client** (they need opposite responses):
+
+| symptom | cause | correct action |
+|---|---|---|
+| EVERY listed segment 404s, producer healthy | anchor inside the dead prefix | origin: remove session dir |
+| every listed segment 200s, MEDIA-SEQUENCE static | a viewer is not advancing | origin: drop/advance that connection |
+| some segments 404, sequence advancing | ordinary churn (Report 1+2) | client retry |
+
+**Suggested fix, additive to the ones already listed under Report 1+2:** truncate the
+on-disk `stream.m3u8` to the retained window when segments are deleted, so playlist and
+filesystem cannot diverge without bound; and/or expire connections that have not requested
+a segment within N segment-durations, so a dead client cannot pin the anchor for others.
+
+⚠ Methodology note for whoever reproduces this: **any GET against `/stream/...` registers
+the caller as a viewer.** A diagnostic fetch of the first advertised segment pins the
+anchor at the head and manufactures this exact failure. Verify by reading `stream.m3u8`
+and `ls *.ts` on disk and by polling `/api/sessions`; if you must fetch, fetch the TAIL.
+Two of the "failures" observed during this incident were the measurement itself.
