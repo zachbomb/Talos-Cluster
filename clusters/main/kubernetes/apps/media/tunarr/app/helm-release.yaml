@@ -55,6 +55,64 @@ spec:
               # Atomic (temp + mv) so a container killed mid-write cannot leave a
               # truncated wrapper for ffmpeg to exec. Always exits 0 - a failing
               # postStart hook would make Kubernetes kill the container.
+              # ---- ANCHOR HOTFIX: stop subtitle fetches corrupting the video anchor.
+              # Tunarr's segment matcher is /\D+(\d+)\.(ts|mp4|vtt)/ and the anchor map
+              # `_minByIp` (an instance field of BaseHlsSession) is keyed by client IP
+              # ALONE. So sub000NNN.vtt and dataNNNNNN.ts requests OVERWRITE each other's
+              # entry, and since subtitle numbering only advances when cues exist, the two
+              # counters diverge. The served window then rewinds by the divergence on every
+              # alternation -- observed client-side as "Media sequence changed
+              # unexpectedly: 153 -> 2", landing exactly on the subtitle clock.
+              #
+              # Dropping `vtt` from the alternation makes subtitle requests stop touching
+              # the anchor. Safe: trimPlaylist() acts on the PRIMARY playlist only (its
+              # call site is gated on sessionType hls/hls_direct_v2), while subs.m3u8 is an
+              # "additional required file" served raw with ffmpeg's own -segment_list_size
+              # 20 rolling window, so it is unaffected by the anchor.
+              #
+              # WHY `command` AND NOT initContainer OR postStart:
+              #   * an initContainer has its OWN root filesystem - it cannot write to this
+              #     container's image layer at all;
+              #   * postStart RACES the entrypoint, so tunarr would already be running
+              #     unpatched, and the ELF is already mapped by then.
+              # Overriding command is the only placement that is deterministically BEFORE
+              # the process starts. Original entrypoint reproduced verbatim at the end.
+              #
+              # SAFETY: length-preserving (12 bytes -> 12 bytes, no offsets shift);
+              # applies ONLY when the pattern occurs EXACTLY ONCE, so a future image whose
+              # bundle differs is skipped rather than corrupted; idempotent; and it always
+              # exits 0 so a failed patch starts Tunarr UNPATCHED rather than crash-looping.
+              # Pre-flight 2026-09-15: patched copy ran and reported 1.3.14, identical to
+              # the unpatched control, so the binary does not self-verify.
+              #
+              # REVERT: delete this `command:` block and reconcile. Nothing else to undo -
+              # the patch lives only in the pod's ephemeral writable layer.
+              #
+              # RETIRE THIS once upstream keys _minByIp by (ip, rendition) or excludes
+              # non-video renditions from onSegmentRequested.
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  python3 -c "
+                  p='/tunarr/tunarr'
+                  o=b'(ts|mp4|vtt)'
+                  n=b'(ts|mp4|xxx)'
+                  try:
+                      d=open(p,'rb').read()
+                      c=d.count(o)
+                      if c==1:
+                          i=d.index(o)
+                          f=open(p,'r+b'); f.seek(i); f.write(n); f.close()
+                          print('ANCHORPATCH applied at offset', i)
+                      elif c==0 and d.count(n)==1:
+                          print('ANCHORPATCH already applied')
+                      else:
+                          print('ANCHORPATCH SKIPPED occurrences=', c)
+                  except Exception as e:
+                      print('ANCHORPATCH ERROR', repr(e))
+                  " || true
+                  exec dotenvx run -- /tunarr/tunarr server
               lifecycle:
                 postStart:
                   type: exec
