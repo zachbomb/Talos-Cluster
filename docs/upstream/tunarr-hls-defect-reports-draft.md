@@ -720,3 +720,51 @@ the caller as a viewer.** A diagnostic fetch of the first advertised segment pin
 anchor at the head and manufactures this exact failure. Verify by reading `stream.m3u8`
 and `ls *.ts` on disk and by polling `/api/sessions`; if you must fetch, fetch the TAIL.
 Two of the "failures" observed during this incident were the measurement itself.
+
+---
+
+## Report 6 (2026-09-16) — cold tune takes 8.3 s on the cheapest possible channel, and ~57% of it is not the encoder
+
+**Severity: this is the floor, not the bad case.** Measured on the easiest channel available
+(H264/SDR, 1080p source, no HDR, no other load, quiet node), with the session deleted and
+its directory removed first so it was a genuine cold start:
+
+    master GET /stream/channels/{id}?streamMode=hls  ->  HTTP 200 in  8.34 s
+      ffmpeg process appears                                          3.23 s
+      first .ts on disk                                               6.68 s
+      first playlist on disk                                          6.78 s
+
+    SPLIT
+      pre-encoder  (programme resolve + Plex metadata + pipeline build)  3.23 s   39%
+      encoder      (start -> first segment)                             3.45 s   41%
+      post-playlist (playlist exists -> HTTP 200 returned)              1.56 s   19%
+
+So **~57% of a cold tune is Tunarr's own work**, before ffmpeg spawns and after the playlist
+already exists on disk. The pre-encoder phase is Plex I/O and DB work on a single-threaded
+event loop, which is the part that degrades under load.
+
+**Why this matters to clients.** A client observed two consecutive 30 s master-request
+timeouts on a 4K HDR channel and fell back to MPEG-TS (losing subtitle renditions). The
+encoder was NOT the cause: replicating that exact pipeline offline — 74.4 Mbps / 60.2 GB
+HDR10 remux over NFS, mid-file `-ss 1800` seek, tonemap + `h264_vaapi`, 4 s segments —
+**first segment was written in 4.9 s**. The request path, not the transcode, consumed the
+other 25 s.
+
+**Consequence worth fixing:** at a 30 s timeout the encoder has been producing for ~25 s, so
+a client that reaps the session between retry attempts destroys a stream that is already
+healthy and forces the next attempt to pay the full cold-start cost again. Two timeouts then
+compound into a fallback. Clients cannot distinguish "still starting" from "stuck" today.
+
+**Suggested fixes:**
+- Return the master playlist as soon as the first segment exists rather than after the
+  additional ~1.6 s of post-playlist work, or stream a holding response so clients can
+  distinguish progress from a stall.
+- Move programme/Plex resolution off the request path (resolve ahead of the tune, or cache),
+  so a cold tune is bounded by the encoder rather than by Plex latency.
+- Expose session start state so a client can wait on "starting" instead of guessing with a
+  timeout.
+
+**Probe note for anyone reproducing:** the cold-tune entry point is
+`/stream/channels/{id}?streamMode=hls`. `/stream/channels/{id}/hls/stream.m3u8` returns
+**HTTP 404 in ~0.01 s** until a session already exists, which is easy to mistake for a fast
+failure.
