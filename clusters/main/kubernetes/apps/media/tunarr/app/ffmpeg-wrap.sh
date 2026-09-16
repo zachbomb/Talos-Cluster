@@ -336,6 +336,51 @@ while [ "$1" != "///WRAPEND2///" ]; do
 done
 shift  # drop the ///WRAPEND2/// sentinel
 
+# pass 2c: rewrite the OpenCL HDR tonemap chain to the native VAAPI filter (tunarr#1951).
+#
+# WHY: on VAAPI, Tunarr's pipeline ALWAYS builds an OpenCL tonemap and offers no way to
+# select `tonemap_vaapi`, though the binary contains both filters (TonemapOpenclFilter,
+# TonemapVaapiFilter). The generated chain round-trips every frame VAAPI -> OpenCL ->
+# VAAPI:
+#     hwmap=derive_device=opencl,tonemap_opencl=...,hwmap=derive_device=vaapi:reverse=1
+# The two hwmap device derivations, not the tonemap maths, are the cost.
+#
+# MEASURED 2026-09-16 on this node, same HDR10 source (3840x2160 yuv420p10le smpte2084
+# -> 1080p SDR h264), back to back:
+#     opencl (as generated) : cpu 60.32s  wall 81.43s = 0.74x realtime  100.5% of a core
+#     tonemap_vaapi         : cpu  5.98s  wall 37.34s = 1.61x realtime   10.0% of a core
+# 2.18x faster, ~10x less CPU. 0.74x is BELOW REALTIME, i.e. a 4K HDR channel can never
+# sustain itself: every client drains its buffer and rebuffers forever. Observed live on
+# ch18 as 0.80x segment production, confirmed independently by the panel at 0.797x.
+#
+# Upstream issue tunarr#1951 reports the same root cause with the opposite symptom: on an
+# iGPU whose OpenCL runtime lacks VA interop the chain FAILS outright ("Function not
+# implemented") and shows the error slate. Ours succeeds and merely runs under realtime,
+# which is harder to notice. That issue documents this exact rewrite as its workaround.
+#
+# FAIL-SAFE: rewrites ONLY when the full opencl->tonemap->vaapi triple is present; any
+# other filter graph passes through byte-for-byte. If the sed produces nothing, the
+# original value is kept.
+tm_pend=0
+set -- "$@" "///WRAPEND2C///"
+while [ "$1" != "///WRAPEND2C///" ]; do
+  a="$1"; shift
+  if [ "$tm_pend" = 1 ]; then
+    tm_pend=0
+    case "$a" in
+      *hwmap=derive_device=opencl,tonemap_opencl=*hwmap=derive_device=vaapi:reverse=1*)
+        _tm=$(printf '%s' "$a" | sed \
+          -e 's/hwmap=derive_device=opencl,tonemap_opencl=[^,]*,hwmap=derive_device=vaapi:reverse=1/tonemap_vaapi=format=nv12:t=bt709:m=bt709:p=bt709/g')
+        [ -n "$_tm" ] && a="$_tm"
+        ;;
+    esac
+    set -- "$@" "-filter_complex" "$a"; continue
+  fi
+  if [ "$a" = "-filter_complex" ]; then tm_pend=1; continue; fi
+  set -- "$@" "$a"
+done
+shift  # drop the ///WRAPEND2C/// sentinel
+
 # pass 3: seed a header-only LIVE subtitle playlist BEFORE exec (SQ-70).
 # Tunarr's readiness gate (waitForStreamReady) polls for every file from
 # getAdditionalRequiredFiles() — which includes the subtitle playlist (subs.m3u8) —
