@@ -43,4 +43,16 @@ regexes = [
   '''324728643559358464''',   # Discord owner ID
   '''1448028450748104796''',  # Discord channel ID
   '''1404592[0-9]{10}''',     # Discord application/guild ID
+
+  # Documentation PLACEHOLDERS in `curl -u user:<pw>` form. The curl-auth-user
+  # rule matches the SHAPE of `-u user:pass` regardless of content, so runbooks
+  # that show an auth example trip it. This pattern requires the password half to
+  # be an angle-bracketed placeholder (`<pw>`, `<token>`, ...), which a real
+  # credential never is — so a genuine secret in the same position still fails.
+  #
+  # Added 2026-09-17 after this single false positive kept the scan RED for ~6
+  # weeks (100+ consecutive failing runs, first appearing when
+  # docs/runbooks/proxmox-talos-vcpu-8-to-10.md landed 2026-08-07) and, because
+  # automerge gates on checks, silently blocked every open Renovate PR.
+  '''['"]?[A-Za-z0-9_.-]+:<[A-Za-z_][A-Za-z0-9_-]*>['"]?''',
 ]
