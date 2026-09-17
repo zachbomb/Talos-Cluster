@@ -7,7 +7,23 @@ spec:
   plugin:
     bouncer:
       enabled: true
-      crowdsecMode: live
+      # stream (not live): the bouncer keeps the banned-IP list in a local
+      # cache and re-syncs every updateIntervalSeconds, instead of querying
+      # LAPI on every single request.
+      #
+      # updateMaxFailure: -1 means "never block on LAPI failure". Combined
+      # with stream mode that is NOT "security off during an outage" -- the
+      # bouncer keeps enforcing the last successfully-synced ban list. The
+      # default (0) fails CLOSED, which on 2026-09-17 turned a ~2h LAPI
+      # outage (05:46-07:40Z, LAPI pod lost after a node event at 05:38Z)
+      # into a 403 on every hostname behind Traefik. Measured at 05:40Z:
+      # 403 at 0.06/s vs 200 at 0.03/s.
+      #
+      # Tradeoff accepted: a new ban takes up to updateIntervalSeconds to
+      # apply instead of being instant.
+      crowdsecMode: stream
+      updateIntervalSeconds: 60
+      updateMaxFailure: -1
       crowdsecLapiHost: crowdsec-service.crowdsec.svc.cluster.local:8080
       crowdsecLapiScheme: https
       crowdsecLapiTLSInsecureVerify: true
