@@ -73,6 +73,40 @@ to three concurrent streams.
 
 ## The ViewEdge display
 
+> **UPDATED 2026-09-14 from the appliance session — the panel is INSTALLED and
+> running, and several assumptions below were wrong. Corrections first:**
+>
+> * **It is on `HDMI-A-2`, not HDMI-A-1.** HDMI-A-1 is the Sony 4K TV. Any
+>   `edid-decode /sys/class/drm/card*-HDMI-A-1/edid` decodes the TELEVISION and
+>   returns a confident wrong answer. The panel is `card1-HDMI-A-2`.
+> * **The EDID is NOT thin or absent.** Full 256 bytes + 1 extension block:
+>   mfg LZT, product 0x0001, EDID 1.3, 12/2017, descriptor name "Viewedge.CR".
+>   Exactly ONE usable detailed timing: **1080x1200 @ 89.992 Hz** (pclk 147.900
+>   MHz, htotal 1356, vtotal 1212). Remaining descriptors are malformed filler.
+> * **⚠ THE RANGE DESCRIPTOR LIES.** It claims vert 23-75 Hz / horiz 15-240 kHz /
+>   pclk <=300 MHz, but the panel locks ONLY its single DTD. Proven: a runtime
+>   modeset to 1080x1200@71.928 plus a full output off/on cycle both produced a
+>   BLACK panel, while the host measured perfect — 1.000x achieved rate, 0.00
+>   delayed frames/s (vs ~4.0/s at 90 Hz), cadence exactly 3.0000 refreshes/frame.
+>   **So the 24p judder on firmware 1 is STRUCTURAL and no host-side work fixes
+>   it.** 48/72 Hz is not available; firmware 2's mode list is the only lever left.
+> * **Rotation is already solved** by the compositor (`transform=270` on that
+>   output, set by `~/start-pmp-ambient.sh` `apply_output_layout`), and survives
+>   mode changes. The `cmdline.txt` approach below is NOT what is used.
+> * The ambient panel does **not** route through `~/select-display-mode.sh` —
+>   that script still owns the TV on HDMI-A-1, so the 16:9-only caveat applies
+>   only to that path.
+>
+> **Firmware:** two buttons on the drive board; one is "basically not used", the
+> other toggles between firmware 1 (WIN mode, default) and firmware 2 (WIN+MAC
+> compatible). It is a hardware toggle — nothing to flash. No press duration, no
+> active-firmware indicator, and no button labelling is published by the vendor.
+> After a button press the EDID was byte-for-byte identical, and `status` stayed
+> `connected` through a `wlr-randr --off/--on`, so HPD never dropped and the
+> kernel served its cached EDID. Open: inert button vs toggle-needs-power-cycle
+> vs both firmwares sharing one HDMI EDID. A full power-and-HDMI unplug decides it.
+
+
 Cary Works ViewEdge — 3.81" AM-OLED, **1200x1080 (10:9)**, 90 Hz, HDMI in, USB-C power.
 Three known difficulties, all consistent with a driver-board panel with poor/absent EDID:
 arrives flipped, capped at 90 Hz, and shows nothing unless fed its exact native resolution.
@@ -121,6 +155,42 @@ and the judder problem disappears rather than being tolerated.
 - Trakt API app (blocked on account owner) — then device-code auth.
 - Emby profile for Liz (blocked on account owner) — then watched sync + playlists.
 - Verify Plex smart-playlist creation via API (`uri=server://.../all?type=1&unwatched=1`).
-- Pi not yet built; EDID unknown; PMP Live TV support unverified (Konvergo's is patchy — if it
-  cannot tune Tunarr, ambient screens shuffle the `Ambient` playlist instead, which is exactly
-  why the dedicated account matters).
+- Pi not yet built; EDID unknown — `edid-decode` is an owner step once the hardware exists.
+- ~~PMP Live TV support unverified~~ **RESOLVED 2026-09-10.** Reported by the appliance
+  session (their direct testing, not verified here): **PMP tunes Tunarr channels fine over
+  HLS** via the native EPG guide, with channel up/down, mini-guide and a live OSD. The
+  Tunarr-direct path is the same code, so an ambient box on that image inherits it.
+  **⚠ PRECISE CLAIM (do not broaden it):** that client tunes Tunarr **DIRECTLY over Tunarr's
+  own HLS endpoints, bypassing PMS for live**. What was observed is that tuning a Tunarr
+  channel THROUGH Plex DVR — the PMS live remux/transcoder path — segfaults SERVER-side. So
+  "HLS is mandatory" is true *for this client's Tunarr path*; it is NOT a general statement
+  about Plex DVR. The PMS-side segfault is the appliance board's SQ-95 finding and is
+  PMS-version dependent. Channels 40/41/42 would tune by number. The shuffle-the-`Ambient`-playlist fallback is STILL worth
+  keeping (their words, correcting an earlier overstatement of mine that this made it
+  redundant); a "Play Random" enhancement with season scope and a fresh order each run is on
+  the PMP board as US-4.
+- **Identity mechanism confirmed** (appliance session): the modern client signs in via a
+  plex.tv PIN and the token lives in the CLIENT'S LOCAL STORAGE PER BOX. So an ambient image
+  simply logs in as `Ambient` once. Nothing in PMP scrobbles outside the signed-in account and
+  the host never marks watched on its own — which is exactly the property the
+  "prevention by identity" decision depends on.
+- **⚠ CAPACITY — size the channels BEFORE all three go live.** Measured 2026-09-09/10 under
+  contention: the media NFS export delivered only **3.9 MB/s** to a client alongside one live
+  stream, and ~25 MB/s read from inside a pod. Three Tunarr transcodes at ~8.8 GB/hr
+  (**~2.4 MB/s each**) plus one 4K remux direct-play (**7.75 MB/s sustained**) comes to
+  ~15 MB/s — which EXCEEDS what the export actually delivered that day. Longhorn is also
+  single-disk (see docs/dr/longhorn-single-disk-io-contention.md). Bring channels up one at a
+  time and measure.
+- `panscan` confirmed cheap to expose: it is an mpv runtime property and the appliance player
+  already proxies mpv properties over its host API. Burned-in wide subs DO clip at
+  panscan=1.0; mpv-rendered subs stay centered.
+- Mode selection on the appliance image is done by `~/select-display-mode.sh`, which picks
+  among EDID-advertised modes with a content-rate-matching policy. **NOT automatic for this
+  panel:** that script has only ever run against 16:9 TV/projector EDIDs, and a 10:9
+  driver-board panel with a thin or absent EDID is precisely the case it has not seen.
+  Record as: *expected* to pick a 24-multiple mode if one is advertised — **verify on first
+  boot** with `edid-decode` plus the script's `Mode select:` log line.
+
+**NOTE — do not conflate two devices.** The compositor/4K appliance session runs on a Sony 4K
+TV for testing (production display: 1080p Optoma projector). That is NOT the ViewEdge panel.
+None of the 1200x1080 / rotate=180 / 90 Hz items above apply to it.
