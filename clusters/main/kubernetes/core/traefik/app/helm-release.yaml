@@ -25,7 +25,7 @@ spec:
     spec:
       chart: traefik
       # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
-      version: 40.3.0
+      version: 41.6.0
       sourceRef:
         kind: HelmRepository
         name: traefik
@@ -43,12 +43,24 @@ spec:
       spec:
         externalTrafficPolicy: Cluster
 
-    logs:
-      general:
-        level: INFO
-      access:
-        enabled: true
-        format: json
+    # Chart v41 aligned the logging keys with upstream Traefik syntax
+    # (traefik-helm-chart#1887): `logs.general` -> `log`, `logs.access` ->
+    # `accessLog`. Both the v40 and v41 values schemas set
+    # `additionalProperties: false` at the root, so there is NO valid
+    # intermediate state -- v40 rejects `log`/`accessLog` and v41 rejects
+    # `logs`. The rename therefore has to land in the same commit as the
+    # chart bump, not as a separate prep commit.
+    #
+    # Leaving the old key in place would not be a silent no-op either: it
+    # fails schema validation outright, and `accessLog.enabled` defaults to
+    # false, so a silent acceptance would have switched off the JSON access
+    # log that CrowdSec parses.
+    log:
+      level: INFO
+
+    accessLog:
+      enabled: true
+      format: json
 
     ingressClass:
       enabled: true
