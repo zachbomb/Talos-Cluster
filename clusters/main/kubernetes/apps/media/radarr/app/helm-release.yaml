@@ -1,3 +1,12 @@
+# OPERATIONAL NOTE (SQ-158, 2026-09-22): Radarr's Media Management config
+# (recycleBin, recycleBinCleanupDays, etc.) lives in the app's own DB on the
+# `config` PVC, NOT in this HelmRelease — same non-GitOps trap as TMM config.
+# recycleBin was set to /media/media/_recycle/radarr (recycleBinCleanupDays: 7)
+# via PUT /api/v3/config/mediamanagement/1 so upgrade/replace deletes are
+# recoverable instead of immediate. Same-filesystem sibling of the existing
+# /media/media/_quarantine/, outside the movies library root
+# (/media/media/movies) so Radarr/Plex/Emby never rescan it. If this PVC is
+# ever recreated, reapply via the API — this chart has no values key for it.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
