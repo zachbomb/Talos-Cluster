@@ -144,9 +144,17 @@ def main():
         return
 
     # Sonarr supplies quality/language per path; we override ONLY the episode binding.
+    # Folder only - NO seriesId. With seriesId, Sonarr scans the SERIES folder and
+    # ignores `folder`: it returns 0 items, or HTTP 500 DirectoryNotFound when the
+    # series has never had a file. Without it Sonarr reports "Unknown Series" for
+    # every file, which is expected - the series and episodes come from the manifest.
     detected = {i["path"]: i for i in sonarr(
         "GET", f"manualimport?folder={urllib.request.quote(args.intake)}"
-               f"&seriesId={args.series_id}&filterExistingFiles=false", key, base, timeout=600)}
+               f"&filterExistingFiles=false", key, base, timeout=600)}
+    undetected = [path for _, path in plan if not (detected.get(path) or {}).get("quality")]
+    if undetected:
+        sys.exit(f"   ABORT: Sonarr returned no quality for {len(undetected)} file(s), e.g. {undetected[0]}. "
+                 "Nothing imported.")
     files = []
     for row, path in plan:
         d = detected.get(path, {})
