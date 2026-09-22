@@ -1,4 +1,14 @@
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+#
+# OPERATIONAL NOTE (SQ-158, 2026-09-22): Sonarr's Media Management config
+# (recycleBin, recycleBinCleanupDays, etc.) lives in the app's own DB on the
+# `config` PVC, NOT in this HelmRelease — same non-GitOps trap as TMM config.
+# recycleBin was set to /media/media/_recycle/sonarr (recycleBinCleanupDays: 7)
+# via PUT /api/v3/config/mediamanagement/1 so upgrade/replace deletes are
+# recoverable instead of immediate. Same-filesystem sibling of the existing
+# /media/media/_quarantine/, outside the tv library root (/media/media/tv) so
+# Sonarr/Plex/Emby never rescan it. If this PVC is ever recreated, reapply
+# via the API — this chart has no values key for it.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
