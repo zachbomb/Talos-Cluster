@@ -423,6 +423,52 @@ if [ -n "$seglist" ]; then
   fi
 fi
 
+# pass 4: a session's FIRST transcode must not append to a dead session's playlist (SQ-167).
+# Symptom: every served segment 404s while ffmpeg runs at 1.0x. The on-disk stream.m3u8 lists
+# thousands of entries from data000000 while only the newest ~100 files exist, and Tunarr's
+# served window (anchored at segment 0 until a client requests one) lists only deleted names.
+#
+# Mechanism, from the 1.3.15 bundle and its logs. HlsSession.initDirectories() already
+# rm -rf's the stream dir when a session starts. But the torn-down session's ffmpeg is
+# SIGKILLed ~15-17s after "Stopping stream session", and until then it keeps rewriting its
+# whole in-memory playlist into the recreated dir. The new session's first ffmpeg starts ~2s
+# after the cleanup. With append_list it parses that resurrected list and continues its
+# numbering, and it collides with the old writer's names while both run. ch12 2026-09-23:
+# stop 18:10:09.9, cleanup 18:10:10.2, new ffmpeg 18:10:12, old one killed 18:10:26.9.
+# So deleting files cannot fix this: Tunarr already deletes them, and the old writer re-creates
+# them. The fix is that the first transcode does not READ an existing playlist at all.
+#
+# Only the first transcode is touched. Tunarr's HlsOutputFormat adds discont_start (and
+# -mpegts_flags +initial_discontinuity) whenever isFirstTranscode is false. HlsSession sets
+# that flag true for its first transcode only and false after it, so every programme-boundary
+# relaunch carries discont_start and keeps append_list for in-session continuity. Without
+# append_list the first transcode starts a fresh playlist at data000000 and ignores the corpse.
+# The old writer's segments are numbered far above that, so the two cannot collide.
+#
+# Only the `hls` session type (base URL .../hls/). hls_direct_v2 always passes ptsOffset 0, so
+# its mid-session offline/error fillers would also look like a first transcode. hls_concat
+# never uses append_list. Anything else passes through byte-for-byte.
+hlsnew=n/a; _hb=""; _h_prev=""
+set -- "$@" "///WRAPEND4///"
+while [ "$1" != "///WRAPEND4///" ]; do
+  a="$1"
+  [ "$_h_prev" = "-hls_base_url" ] && _hb="$a"
+  if [ "$_h_prev" = "-hls_flags" ]; then
+    case "$_hb" in
+      */hls/)
+        case "+$a+" in
+          *+discont_start+*) hlsnew=no ;;
+          *+append_list+*)
+            a="+$a+"; a="${a%%+append_list+*}+${a#*+append_list+}"; a="${a#+}"; a="${a%+}"
+            hlsnew=yes ;;
+        esac ;;
+    esac
+  fi
+  set -- "$@" "$a"
+  _h_prev="$1"; shift
+done
+shift  # drop the ///WRAPEND4/// sentinel
+
 # Decision trace. Added 2026-08-04 after the subtitle-timeline fix measured as having
 # NO effect in production while every offline check passed: emission verified against
 # the real captured argv (119/119 tokens in order, 8 injected at the correct
@@ -448,12 +494,12 @@ if [ -w "$(dirname "$_log")" ] 2>/dev/null; then
     tail -c 131072 "$_log" > "$_log.tmp" 2>/dev/null && mv -f "$_log.tmp" "$_log" 2>/dev/null || true
   fi
   {
-    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s args=%s\n' \
+    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s hlsnew=%s args=%s\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)" \
       "${srt_ord:-0}" "${preval:-none}" "${sub_off:-none}" "${sub_burst:-none}" \
       "$([ -n "$sub_off" ] && echo yes || echo no)" \
       "$([ -n "$sub_trim" ] && echo pretrim || { [ -n "$sub_off" ] && echo seek || echo none; })" \
-      "${seed:-nosub}" "$#"
+      "${seed:-nosub}" "${hlsnew:-n/a}" "$#"
   } >> "$_log" 2>/dev/null || true
 fi
 
