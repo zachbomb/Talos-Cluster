@@ -160,7 +160,10 @@ def main():
         d = detected.get(path, {})
         files.append({"path": path, "seriesId": args.series_id, "episodeIds": [row["episodeId"]],
                       "quality": d.get("quality"), "languages": d.get("languages") or [{"id": 1, "name": "English"}],
-                      "releaseGroup": d.get("releaseGroup") or "", "indexerFlags": 0,
+                      # Never pass Sonarr's guess through: it derives a "release group" from
+                      # the intake folder/file name ("love-the", "as-nature", "S01E04") and
+                      # bakes it into every filename via {-Release Group}.
+                      "releaseGroup": "", "indexerFlags": 0,
                       "releaseType": "singleEpisode"})
     cmd = sonarr("POST", "command", key, base, {"name": "ManualImport", "files": files, "importMode": "move"})
     print(f"\n   ManualImport queued (command {cmd['id']}); waiting ...", flush=True)
