@@ -43,7 +43,7 @@ import argparse, json, os, subprocess, sys, time, urllib.request
 NS = "media"
 POD_SELECTOR = "app.kubernetes.io/instance=sonarr"
 CONTAINER = "sonarr"          # the pod's DEFAULT container is exportarr, which has no shell
-VIDEO_EXT = ("mp4", "mkv", "avi", "m4v")
+VIDEO_EXT = ("mp4", "mkv", "avi", "m4v", "mpg", "mpeg")  # archive.org ships some items only as MPEG-PS
 
 
 def kube(*args):
