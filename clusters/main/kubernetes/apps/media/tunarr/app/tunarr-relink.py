@@ -12,8 +12,10 @@ dead program uuid for the healthy one. This was done by hand on 2026-08-12
 (swap_lineups.py, 198 -> 15) and 2026-08-13. On 2026-09-24 an audit found 3046
 of 4962 Plex keys dead across 35 channels, so the repair is now a tool.
 
-MATCHING. A dead program matches its live copy by the durable plex-guid only,
-never by title: a title join once "recovered" the wrong show. Steps:
+MATCHING. A dead program matches its live copy by the durable plex-guid,
+never by title: a title join once "recovered" the wrong show. For EPISODES whose
+plex-guid Plex has re-issued, a fallback matches the TVDB (else IMDb) episode id
+inside the same show; the new Tunarr row must carry that same id. Steps:
   dead row's plex-guid -> Plex /library/all?guid= -> current ratingKey
   -> Tunarr batch/lookup -> healthy program row, whose own plex-guid must match.
 If Plex finds 0 or more than 1 item for a guid, or Tunarr has not ingested the
@@ -40,7 +42,7 @@ Flags: --apply, --slots, --ch=N (repeatable), --backup-dir=PATH,
 NB: this file may be mounted through a Flux-substituted ConfigMap. Do not add
 a dollar sign anywhere in it.
 """
-import json, os, re, sys, time, urllib.parse, urllib.request
+import html, json, os, re, sys, time, urllib.parse, urllib.request
 
 PLEX = os.environ.get("PLEX_URL", "http://192.168.10.203:32400").rstrip("/")
 TOKEN = os.environ.get("PLEX_API", "")
@@ -79,6 +81,69 @@ def guid_of(program):
         if i.get("type") == "plex-guid":
             return i.get("id")
     return None
+
+
+def pick_edition(keys, want_ms):
+    if not want_ms:
+        return None
+    close = []
+    for k in keys:
+        d = re.search(r'<Media\b[^>]*\bduration="(\d+)"', plex("/library/metadata/" + k))
+        if d and abs(int(d.group(1)) - want_ms) <= 0.03 * want_ms:
+            close.append(k)
+    return close[0] if len(close) == 1 else None
+
+
+def norm(t):
+    return re.sub(r"[^a-z0-9]+", "", html.unescape(str(t or "")).casefold())
+
+
+def ext_id(program, kind):
+    for i in program.get("identifiers") or []:
+        if i.get("type") == kind:
+            return str(i.get("id"))
+    return None
+
+
+def episode_by_external_id(p, cache):
+    """Find a dead EPISODE's current Plex key by its TVDB (else IMDb) episode id,
+    searching only its own show. Returns ("ok", key, (kind, id)), ("fail", reason), or None."""
+    if p.get("type") != "episode":
+        return None
+    show = p.get("show") or {}
+    sg = ext_id(show, "plex-guid")
+    if not sg:
+        return ("fail", "episode's show has no plex-guid")
+    if sg not in cache:
+        x = plex("/library/all?guid=" + urllib.parse.quote(sg, safe=""))
+        sk = re.findall(r'ratingKey="(\d+)"', x)
+        idx = {}
+        if len(sk) == 1:
+            leaves = plex("/library/metadata/" + sk[0] + "/allLeaves?includeGuids=1")
+            for block in re.findall(r"<Video\b.*?</Video>", leaves, re.S):
+                key = re.search(r'ratingKey="(\d+)"', block).group(1)
+                title = (re.search(r'<Video\b[^>]*\btitle="([^"]*)"', block) or [None, ""])[1]
+                for gid in re.findall(r'<Guid id="([a-z]+://[^"]+)"', block):
+                    idx.setdefault(gid, []).append((key, title))
+        cache[sg] = (len(sk), idx)
+    nshows, idx = cache[sg]
+    if nshows != 1:
+        return ("fail", "episode's show not found in Plex (" + str(nshows) + " matches)")
+    for kind in ("tvdb", "imdb"):
+        eid = ext_id(p, kind)
+        if not eid:
+            continue
+        hits = idx.get(kind + "://" + eid, [])
+        if len(hits) > 1:
+            return ("fail", "ambiguous: " + str(len(hits)) + " episodes share " + kind + " id")
+        if len(hits) == 1:
+            # GUARD, not a match key: providers renumber and swap episode ids (American
+            # Masters S33E07/E08, 2026-09-24: tvdb 7246864 moved from McNally to Robert
+            # Shaw). An id hit whose title differs is refused rather than trusted.
+            if norm(hits[0][1]) != norm(p.get("title")):
+                return ("fail", kind + " id now belongs to a differently titled episode (" + hits[0][1] + ")")
+            return ("ok", hits[0][0], (kind, eid))
+    return ("fail", "gone from Plex (no episode with its tvdb/imdb id)")
 
 
 def live_keys(keys):
@@ -126,28 +191,43 @@ def main():
     swap, unresolved = {}, {}
     src_of = {}
     guid_cache = {}
+    show_cache = {}
     for uuid, p in dead.items():
         g = guid_of(p)
-        if not g:
-            unresolved[uuid] = "no plex-guid"; continue
-        if g not in guid_cache:
-            x = plex("/library/all?guid=" + urllib.parse.quote(g, safe=""))
-            guid_cache[g] = re.findall(r'ratingKey="(\d+)"', x)
-        keys = guid_cache[g]
-        if len(keys) != 1:
-            unresolved[uuid] = ("gone from Plex" if not keys else "ambiguous: " + str(len(keys)) + " Plex items share the guid"); continue
-        src_of[uuid] = (p.get("mediaSourceId"), keys[0], g)
+        keys = []
+        if g:
+            if g not in guid_cache:
+                x = plex("/library/all?guid=" + urllib.parse.quote(g, safe=""))
+                guid_cache[g] = re.findall(r'ratingKey="(\d+)"', x)
+            keys = guid_cache[g]
+        if len(keys) == 1:
+            src_of[uuid] = (p.get("mediaSourceId"), keys[0], ("plex-guid", g)); continue
+        if len(keys) > 1:
+            # Editions share one guid (Theatrical / TV / Silent cut, 2026-09-24). Keep the
+            # edition the channel was built with: the ONE whose runtime is within 3% of the
+            # dead row's duration. Several or none within 3% -> leave it for a human.
+            k = pick_edition(keys, p.get("duration"))
+            if k:
+                src_of[uuid] = (p.get("mediaSourceId"), k, ("plex-guid", g)); continue
+            unresolved[uuid] = "ambiguous: " + str(len(keys)) + " editions share the guid, none uniquely matches the scheduled runtime"; continue
+        # Fallback for EPISODES only: Plex sometimes re-issues its own episode guids
+        # (Kids in the Hall S04, 2026-09-24). The TVDB/IMDb episode id is unchanged, so
+        # match on that inside the same show. Never on title or SxxExx.
+        hit = episode_by_external_id(p, show_cache)
+        if hit and hit[0] == "ok":
+            src_of[uuid] = (p.get("mediaSourceId"), hit[1], hit[2]); continue
+        unresolved[uuid] = hit[1] if hit else ("gone from Plex" if g else "no plex-guid")
     for i in range(0, len(src_of), 100):
         chunk = list(src_of.items())[i:i + 100]
         ids = ["plex|" + ms + "|" + k for _, (ms, k, _) in chunk]
         got = tun("/api/programming/batch/lookup", {"externalIds": ids}) or {}
         by_key = {str(v.get("externalId")): v for v in got.values() if v.get("uuid")}
-        for uuid, (ms, k, g) in chunk:
+        for uuid, (ms, k, check) in chunk:
             v = by_key.get(k)
             if not v:
                 unresolved[uuid] = "Tunarr has not ingested new key " + k + " yet"
-            elif guid_of(v) != g:
-                unresolved[uuid] = "guid mismatch on new key " + k
+            elif ext_id(v, check[0]) != check[1]:
+                unresolved[uuid] = check[0] + " mismatch on new key " + k
             elif not v.get("duration"):
                 unresolved[uuid] = "new row has no duration"
             else:

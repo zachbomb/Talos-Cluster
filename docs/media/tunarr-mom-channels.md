@@ -49,6 +49,16 @@ The endpoints that exist (from `GET /openapi.json`, Tunarr 1.3.13):
 
 ## Re-programming a channel (after adding films to a MoM collection)
 
+> **⚠ Check the collection's size first (2026-09-24).** Collection membership is
+> a tag on each Plex item. When Plex re-creates an item under a new ratingKey
+> (file move or rename, re-import), the new item does NOT carry the tag. By
+> 2026-09-24 the MoM collections had shrunk badly: Wiseman 23 → 1, Deleuze
+> 90 → 7, Birth of Cinema 64 → 4. Re-programming from a shrunken collection
+> silently guts the channel. If `childCount` is below the channel's current
+> pool, **do not** use this recipe. Repair dead programs with
+> `tools/media/tunarr_relink.py --slots`, which keeps the channel's own pool and
+> schedule. That also runs nightly as the `media/tunarr-relink` CronJob.
+
 Re-run steps 2-3 for the collection's ratingKey to get the updated Program uuid
 list, then step 5 against the existing channel id. The schedule is regenerated
 from scratch (new shuffle); that is fine for these channels.
