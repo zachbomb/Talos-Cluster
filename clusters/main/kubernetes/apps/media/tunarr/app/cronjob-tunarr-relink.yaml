@@ -1,0 +1,82 @@
+# Nightly: re-point Tunarr lineups from dead Plex ratingKeys to the live copies.
+# Plex re-creates items under new keys whenever files move or are renamed (TMM
+# renames, season merges, re-imports); Tunarr's lineups keep the dead rows, which
+# play error slates, and no rescan repairs them. By 2026-09-24 this had reached
+# 3046 of 4962 keys on 35 channels. The script matches dead -> live strictly by
+# plex-guid, keeps each channel's schedule rules, verifies after every write, and
+# leaves anything it can't match untouched. Source: tunarr-relink.py beside this
+# file (tools/media/tunarr_relink.py for ad-hoc runs; dry run unless --apply).
+# Memory: tunarr-stale-plex-ratingkey-repair.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tunarr-relink
+  namespace: media
+  labels:
+    app.kubernetes.io/name: tunarr-relink
+spec:
+  # 04:00 Pacific: after the VolSync window, before plex-dvr-sync (04:30) and the
+  # Plex butler (06:00). Each channel rewrite costs Tunarr CPU, hence --pause.
+  schedule: "0 4 * * *"
+  timeZone: America/Los_Angeles
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 5400
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: tunarr-relink
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: relink
+              image: python:3.14-alpine
+              imagePullPolicy: IfNotPresent
+              command: ["python3", "/script/tunarr-relink.py", "--slots", "--apply", "--pause=30", "--backup-dir=/backup"]
+              env:
+                - name: PLEX_API
+                  value: "${PLEX_API}"
+                - name: PLEX_URL
+                  value: "http://plex:32400"
+                - name: TUNARR_URL
+                  value: "http://tunarr-app-template:8000"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  cpu: 300m
+                  memory: 256Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /script
+                  readOnly: true
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: script
+              configMap:
+                name: tunarr-relink-script
+            # Per-run pre-write snapshots of each channel's programming. Ephemeral:
+            # the script verifies every write, and the job log names what changed.
+            - name: backup
+              emptyDir:
+                sizeLimit: 256Mi

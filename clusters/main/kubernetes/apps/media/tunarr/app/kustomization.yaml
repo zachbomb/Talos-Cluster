@@ -4,9 +4,14 @@ resources:
   - helm-release.yaml
   - cronjob-token-heal.yaml
   - cronjob-plex-dvr-sync.yaml
+  - cronjob-tunarr-relink.yaml
   - exporter.yaml
 configMapGenerator:
   - name: plex-dvr-sync-script
     namespace: media
     files:
       - plex-dvr-sync.py
+  - name: tunarr-relink-script
+    namespace: media
+    files:
+      - tunarr-relink.py

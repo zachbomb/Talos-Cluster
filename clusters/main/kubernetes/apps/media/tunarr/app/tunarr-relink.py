@@ -20,18 +20,23 @@ If Plex finds 0 or more than 1 item for a guid, or Tunarr has not ingested the
 new key yet, the slot is left alone and reported. The new row's duration is
 used, because that is the file that will actually play.
 
-SCOPE. Only channels WITHOUT a slot schedule (manual lineups). A slot channel's
-programming view shows only the generated window, so rebuilding it from that
-view could shrink its pool. Re-program those from their Plex collection
-instead (docs/media/tunarr-mom-channels.md). A lineup entry of any type other
-than content aborts that channel untouched.
+SCOPE. By default only channels WITHOUT a slot schedule (manual lineups); a
+lineup entry of any type other than content aborts that channel untouched.
+--slots also handles slot-scheduled ("random") channels: the channel's own
+program pool is re-posted with dead uuids swapped for their live copies and
+the schedule rules unchanged. Do NOT re-program those from their Plex
+collection: when Plex re-creates an item the collection tag is lost, so on
+2026-09-24 the MoM collections had shrunk (Wiseman 23 -> 1). The channel pool
+is the surviving record. A slot channel is written only if the rebuilt pool is
+the same size as before; any schedule type other than "random" is skipped.
 
 SAFETY. Dry run unless --apply. Before a write, the channel's full programming
 is saved to --backup-dir. After a write, the channel is re-read: its slot count
 must be unchanged and every swapped slot must hold the new uuid.
 
 Env: PLEX_URL, PLEX_API (never on argv), TUNARR_URL.
-Flags: --apply, --ch=N (repeatable), --backup-dir=PATH.
+Flags: --apply, --slots, --ch=N (repeatable), --backup-dir=PATH,
+--pause=SECONDS between channel writes (each rewrite costs Tunarr CPU).
 NB: this file may be mounted through a Flux-substituted ConfigMap. Do not add
 a dollar sign anywhere in it.
 """
@@ -41,6 +46,8 @@ PLEX = os.environ.get("PLEX_URL", "http://192.168.10.203:32400").rstrip("/")
 TOKEN = os.environ.get("PLEX_API", "")
 TUNARR = os.environ.get("TUNARR_URL", "http://192.168.10.205:8000").rstrip("/")
 APPLY = "--apply" in sys.argv
+SLOTS = "--slots" in sys.argv
+PAUSE = int(next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--pause=")), "0"))
 ONLY = {a.split("=", 1)[1] for a in sys.argv if a.startswith("--ch=")}
 BACKUP = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--backup-dir=")), "/tmp/tunarr-relink-backup")
 TIMEOUT = 300
@@ -98,19 +105,22 @@ def main():
         except Exception:
             pass
         if sched and sched.get("schedule"):
-            log("ch" + str(c["number"]) + " " + c["name"] + ": slot schedule; skipped (re-program from its collection)")
+            if not SLOTS:
+                log("ch" + str(c["number"]) + " " + c["name"] + ": slot schedule; skipped (use --slots)")
+                continue
+            work.append((c, tun("/api/channels/" + c["id"] + "/programming"), sched["schedule"]))
             continue
-        work.append((c, tun("/api/channels/" + c["id"] + "/programming")))
+        work.append((c, tun("/api/channels/" + c["id"] + "/programming"), None))
 
     plex_progs = {}
-    for c, prog in work:
+    for c, prog, _ in work:
         for uuid, v in (prog.get("programs") or {}).items():
             p = (v or {}).get("program") or {}
             if p.get("sourceType") == "plex" and str(p.get("externalId") or "").isdigit():
                 plex_progs[uuid] = p
     alive = live_keys({str(p["externalId"]) for p in plex_progs.values()})
     dead = {u: p for u, p in plex_progs.items() if str(p["externalId"]) not in alive}
-    log("manual channels " + str(len(work)) + " | plex programs " + str(len(plex_progs)) + " | dead " + str(len(dead)))
+    log("channels " + str(len(work)) + " | plex programs " + str(len(plex_progs)) + " | dead " + str(len(dead)))
 
     # Resolve each dead program to its healthy twin by plex-guid.
     swap, unresolved = {}, {}
@@ -150,7 +160,12 @@ def main():
     if APPLY:
         os.makedirs(BACKUP, exist_ok=True)
     total, failed = 0, 0
-    for c, prog in work:
+    for c, prog, sched in work:
+        if sched is not None:
+            t, f = relink_slots(c, prog, sched, swap)
+            total += t; failed += f
+            if t and APPLY: time.sleep(PAUSE)
+            continue
         lineup = prog.get("lineup") or []
         hits = [e for e in lineup if e.get("id") in swap]
         if not hits:
@@ -176,8 +191,39 @@ def main():
         ok = len(back) == len(rebuilt) and all(b.get("id") == r["id"] for b, r in zip(back, rebuilt))
         log("  verify: " + ("OK" if ok else "MISMATCH (backup " + path + ")"))
         failed += not ok
+        time.sleep(PAUSE)
     log(("APPLIED " if APPLY else "DRY RUN: would re-point ") + str(total) + " slots" + ("" if APPLY else ". Re-run with --apply."))
     return 1 if failed else 0
+
+
+def relink_slots(c, prog, sched, swap):
+    """Re-post a random-slot channel's pool with dead uuids swapped. Returns (swapped, failed)."""
+    tag = "ch" + str(c["number"]) + " " + c["name"]
+    if sched.get("type") != "random":
+        log(tag + ": schedule type " + str(sched.get("type")) + " not handled; skipped"); return 0, 0
+    pool = [u for u, v in (prog.get("programs") or {}).items() if (v or {}).get("type") == "content"]
+    hits = [u for u in pool if u in swap]
+    if not hits:
+        return 0, 0
+    new_pool, seen = [], set()
+    for u in pool:
+        n = swap[u]["id"] if u in swap else u
+        if n not in seen:
+            seen.add(n); new_pool.append(n)
+    eg = swap[hits[0]]
+    log(tag + ": slot pool " + str(len(pool)) + ", " + str(len(hits)) + " re-pointed, e.g. '" + eg["old"] + "' -> key " + eg["new_key"])
+    if len(new_pool) != len(pool):
+        log("  pool would change size " + str(len(pool)) + " -> " + str(len(new_pool)) + " (a live twin is already in the pool); ABORT channel")
+        return 0, 1
+    if not APPLY:
+        return len(hits), 0
+    path = os.path.join(BACKUP, "ch" + str(c["number"]) + "-slots-" + time.strftime("%Y%m%dT%H%M%S") + ".json")
+    json.dump({"programming": prog, "schedule": sched}, open(path, "w"))
+    tun("/api/channels/" + c["id"] + "/programming", {"type": "random", "programs": new_pool, "schedule": sched})
+    back = tun("/api/channels/" + c["id"] + "/programming").get("programs") or {}
+    ok = set(back) <= set(new_pool) and not (set(back) & set(hits)) and len(back) >= min(len(new_pool), len(pool)) * 0.9
+    log("  verify: " + ("OK, pool " + str(len(back)) if ok else "MISMATCH, pool " + str(len(back)) + " (backup " + path + ")"))
+    return len(hits), (0 if ok else 1)
 
 
 def p_title(p):
