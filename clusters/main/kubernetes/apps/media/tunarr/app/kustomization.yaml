@@ -3,4 +3,10 @@ kind: Kustomization
 resources:
   - helm-release.yaml
   - cronjob-token-heal.yaml
+  - cronjob-plex-dvr-sync.yaml
   - exporter.yaml
+configMapGenerator:
+  - name: plex-dvr-sync-script
+    namespace: media
+    files:
+      - plex-dvr-sync.py
