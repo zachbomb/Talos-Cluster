@@ -129,9 +129,13 @@ spec:
                 requests:
                   memory: 2Gi
                   # Right-sized 2026-07-21: reserved 500m, idle ~3m. Transcode is VAAPI/iGPU,
-                  # so streaming CPU is muxing/IO (~150-250m). 250m GUARANTEES that under node
-                  # contention (request = guaranteed floor); 4-core limit still covers peaks.
-                  cpu: 250m
+                  # so streaming CPU is muxing/IO (~150-250m); 4-core limit covers peaks.
+                  # 2026-09-24: 250m -> 1000m. Under node saturation (load 120+, 0.1 core
+                  # idle) the request is Tunarr's CFS weight: at 250m its cgroup sat at 96%
+                  # CPU pressure and live transcodes fell to 0.53x/0.73x realtime -> Apple
+                  # TV hitching. Two concurrent streams plus meilisearch need ~1 core of
+                  # guaranteed share. Node CPU requests 76% -> ~84% (<97% exhaustion line).
+                  cpu: 1000m
                 limits:
                   gpu.intel.com/i915: 1
                   memory: 8Gi
