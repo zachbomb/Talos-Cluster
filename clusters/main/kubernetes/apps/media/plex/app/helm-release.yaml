@@ -205,9 +205,16 @@ spec:
               resources:
                 requests:
                   memory: 2Gi
-                  # Right-sized 2026-07-21: reserved 500m, used ~7m idle. 250m covers
-                  # library-scan/thumbnail bursts; HW transcode uses the iGPU + 4-core limit.
-                  cpu: 250m
+                  # Right-sized 2026-07-21: reserved 500m, used ~7m idle; HW transcode was
+                  # assumed to run on the iGPU.
+                  # 2026-09-25: 250m -> 1000m. That assumption fails for Live TV: the Plex
+                  # tvOS app sends directPlay=0&directStream=0 for Live TV regardless of its
+                  # settings, and PMS DECODES in software ("no hardware decode accelerator
+                  # found"; only the encode is VAAPI). Under node contention the request is
+                  # the CFS weight: at 250m the Apple TV re-encode ran 0.1-0.4x (stutter).
+                  # Same fix as Tunarr's 250m -> 1000m (0.73x -> 1.00x). Node requests
+                  # 83% -> ~91%, under the ~97% exhaustion line.
+                  cpu: 1000m
                 limits:
                   memory: 8Gi
                   cpu: "4"
@@ -256,7 +263,7 @@ spec:
     resources:
       requests:
         memory: 2Gi
-        cpu: 250m   # right-sized 2026-07-21 (see container-level note)
+        cpu: 1000m  # 2026-09-25: was 250m; see container-level note (Live TV sw decode)
       limits:
         memory: 8Gi
         cpu: "4"
