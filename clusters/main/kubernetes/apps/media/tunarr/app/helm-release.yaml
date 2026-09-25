@@ -169,19 +169,29 @@ spec:
                     periodSeconds: 10
                     failureThreshold: 90
                     timeoutSeconds: 5
-                # Liveness/readiness stay tcp on 8000 to match the chart, but with real
-                # margin. NOTE they are WEAK signals here: a tcpSocket check passes while
-                # HTTP is completely wedged (seen twice - /api/version 200 while
-                # /api/channels hangs, then both hanging, port still open throughout).
-                # Do not read "probes passing" as "Tunarr healthy".
+                # LIVENESS IS HTTP (2026-09-24). A tcpSocket check passes while Tunarr's
+                # event loop is completely wedged: the kernel still completes the TCP
+                # handshake. On 2026-09-24 Tunarr hung twice (15:12-15:27 and 16:27-16:32
+                # PDT) with its main thread in D-state on SQLite (Longhorn IO pressure),
+                # "TCP accepted, no HTTP" and silent logs; the tcp probe passed throughout
+                # and it needed manual restarts. /api/version (~40 ms, no DB access) times
+                # out in exactly that state.
+                # Tolerance: 6 x 30s with a 10s timeout = restart only after ~3 min of
+                # CONTINUOUS unresponsiveness, well above the seconds-long stalls from
+                # heavy lineup writes, well below the 15-min hangs.
+                # Limit: /api/version kept answering in an older partial wedge where only
+                # /api/channels hung; this probe does not catch that shape.
+                # Readiness stays tcp on purpose: an http readiness would withdraw the
+                # endpoint during brief stalls and cut every live stream.
                 liveness:
                   enabled: true
-                  type: tcp
+                  type: http
+                  path: /api/version
                   port: 8000
                   spec:
                     initialDelaySeconds: 30
                     periodSeconds: 30
-                    failureThreshold: 10
+                    failureThreshold: 6
                     timeoutSeconds: 10
                 readiness:
                   enabled: true
