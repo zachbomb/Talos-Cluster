@@ -443,7 +443,9 @@ shift  # drop the ///WRAPEND2C/// sentinel
 #   an endless stream, so shortest=1 ends the overlay with the VIDEO. Without the
 #   loop, a single-frame logo would be the shortest input and end the output at once.
 # ROLLOUT: WMGPU_CHANNELS lists the channel ids to rewrite ("all" = every channel).
-WMGPU_CHANNELS="abfe8281-f638-4be1-815b-91c82dbb845e"
+# 2026-09-29: ch5 only (live-verified: wm=gpu, overlay_vaapi running), then "all" on the
+# owner's instruction. Only watermark-enabled channels (ch1-8) carry the graph at all.
+WMGPU_CHANNELS="all"
 WM_PERIOD=120; WM_FADE=1
 wm=pass:nowm
 _p=""; _hb=""; _fc=""; _dur=""; _hwof=""; _vdev=""; _io=0; _wmord=0
