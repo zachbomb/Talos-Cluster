@@ -381,6 +381,180 @@ while [ "$1" != "///WRAPEND2C///" ]; do
 done
 shift  # drop the ///WRAPEND2C/// sentinel
 
+# pass 2d: channel watermark on the GPU, with a periodic fade (2026-09-29).
+#
+# WHY: on VAAPI, Tunarr draws the channel watermark in SOFTWARE. Every decoded frame is
+# pulled off the GPU (hwdownload), a ~192px logo is blended onto the full 1080p frame on
+# ONE thread (-threads 1), and the frame is pushed back (hwupload). The logo is only
+# visible for the first 15s, but the round trip runs on every frame of the airing. On
+# the contended node that is what dropped ch5 to 0.60x live (Apple TV stalls).
+#
+# The watermark is a REQUIRED feature (owner, 2026-09-29), so it is moved, not removed:
+#   * video stays on the GPU: `hwdownload,format=nv12` -> `scale_vaapi=format=nv12`
+#     (which also converts p010 -> nv12 on the GPU, so 10-bit sources work; the software
+#     path cannot take a p010 frame at all);
+#   * the logo is prepared on the CPU (tiny: scale + opacity), uploaded, and blended
+#     with `overlay_vaapi`;
+#   * the display cycle is what the owner asked for: fade in over 1s, hold for the
+#     channel's watermark duration (15s), fade out over 1s, repeating every 2 minutes
+#     from the start of each programme.
+#
+# WHY NOT TUNARR'S OWN `fadeConfig`: tested on ch5. It alternates on/off every period
+# (2 min on, 2 min off), and with a duration set it still gates the overlay with
+# enable=between(t,0,duration), so the logo fades in, is hard-cut at 15s and never
+# returns. It also keeps the same software round trip.
+# WHY NOT `geq` for the envelope: a per-pixel expression on every logo frame measured
+# 0.73x vs 2.13x. The `fade` + `enable` chain below costs nothing measurable.
+#
+# THE LOGO IS PREPARED ONCE. Decode, scale and opacity run on the single image, then
+# `loop=loop=-1:size=1` repeats that finished frame (setpts=N/24/TB gives it a 24fps
+# clock for the fades). The first draft used `-loop 1 -framerate 24` on the input,
+# which RE-DECODES and re-scales the image every frame, and that alone cost more CPU
+# than Tunarr's whole software round trip.
+#
+# MEASURED on ch5's REAL production argv (subtitles, join seek and all), CPU seconds
+# per 28s of video, 2 runs each:
+#   no watermark at all (floor)                  7.2s  (26% of a core)
+#   Tunarr's software chain (today)             13.9s  (50%)
+#   GPU overlay, logo re-decoded 24fps (draft)  15.0s  (54%)   <- rejected
+#   GPU overlay, logo prepared once (this)       8.0s  (28%)
+# so the watermark's own cost drops from ~24% of a core to ~3%, and a watermarked
+# stream from 50% to 28%. (Wall-clock speed on the full argv is capped elsewhere,
+# at ~1.5x by the realtime subtitle input, so CPU is the honest measure for a
+# contended node.) Frame-index check against a no-logo render: fade-in 0-1s, full
+# from 1s, fading at 15.5/16.25/16.5s, gone from 17s; position, size and opacity
+# match Tunarr's chain. The envelope repeats every 120s (sampled to 250s).
+#
+# SCOPE / FAIL-SAFE: rewrites ONLY Tunarr's exact VAAPI watermark graph (exactly one
+# each of the video, logo, overlay and upload pieces below), only with -hwaccel_output_format
+# vaapi and -vaapi_device present, only for WMGPU_CHANNELS, and only when the x/y
+# expressions contain nothing but W H w h digits and + - * / ( ) . characters. Anything
+# else passes through byte-for-byte (wm=pass:<reason> in the trace log).
+#   Tunarr (1.3.15) emits:
+#     [0:0]<vaapi filters>hwdownload,format=nv12[v]
+#     [1:0]scale=192:-2,format=yuva420p|...|ya8,colorchannelmixer=aa=0.81,format=yuva420p[wm]
+#     [v][wm]overlay=x=W-w-0:y=H-h-0:format=0:enable='between(t,0,15)'[vwm]
+#     [vwm]format=nv12,hwupload[vpf]
+#   rewritten to:
+#     [0:0]<vaapi filters>scale_vaapi=format=nv12[v]
+#     [1:0]scale=192:-2,format=bgra,colorchannelmixer=aa=0.81,<fade chain>,hwupload[wm]
+#     [v][wm]overlay_vaapi=x=main_w-overlay_w-0:y=main_h-overlay_h-0:shortest=1[vpf]
+#   where the logo is `...,loop=loop=-1:size=1,setpts=N/24/TB,<fades>,hwupload[wm]`:
+#   an endless stream, so shortest=1 ends the overlay with the VIDEO. Without the
+#   loop, a single-frame logo would be the shortest input and end the output at once.
+# ROLLOUT: WMGPU_CHANNELS lists the channel ids to rewrite ("all" = every channel).
+WMGPU_CHANNELS="abfe8281-f638-4be1-815b-91c82dbb845e"
+WM_PERIOD=120; WM_FADE=1
+wm=pass:nowm
+_p=""; _hb=""; _fc=""; _dur=""; _hwof=""; _vdev=""; _io=0; _wmord=0
+for a in "$@"; do
+  case "$_p" in
+    -hls_base_url) _hb="$a" ;;
+    -filter_complex) _fc="$a" ;;
+    -t) case "$a" in *ms) _dur="$a" ;; esac ;;
+    -hwaccel_output_format) _hwof="$a" ;;
+    -vaapi_device) _vdev="$a" ;;
+  esac
+  if [ "$_p" = "-i" ]; then
+    _io=$((_io + 1))
+    case "$a" in */cache/images/*) [ "$_wmord" = 0 ] && _wmord=$_io ;; esac
+  fi
+  _p="$a"
+done
+case "$_fc" in *'[v][wm]overlay='*) wm=pass:shape ;; esac
+_chan=""; case "$_hb" in /stream/channels/*/hls/) _chan="${_hb#/stream/channels/}"; _chan="${_chan%/hls/}" ;; esac
+if [ "$wm" = pass:shape ]; then
+  if [ "$_hwof" != vaapi ] || [ -z "$_vdev" ] || [ "$_wmord" = 0 ]; then
+    wm=pass:nohw
+  elif [ "$WMGPU_CHANNELS" != all ] && { [ -z "$_chan" ] || ! case " $WMGPU_CHANNELS " in *" $_chan "*) true ;; *) false ;; esac; }; then
+    wm=pass:notlisted
+  else
+    # classify the graph's pieces; each of the four must occur exactly once
+    _nv=0; _nl=0; _no=0; _nu=0; _new=""
+    _oldifs=$IFS; IFS=';'; set -f
+    for _pc in $_fc; do
+      IFS=$_oldifs
+      case "$_pc" in
+        \[*:*\]*hwdownload,format=nv12\[v\])
+          _pre="${_pc%hwdownload,format=nv12\[v\]}"          # "[0:0]" + any vaapi filters
+          _flt="${_pre#\[*\]}"; _ok=1
+          if [ -n "$_flt" ]; then
+            _rest="$_flt"
+            while [ -n "$_rest" ]; do
+              _f="${_rest%%,*}"; _rest="${_rest#"$_f"}"; _rest="${_rest#,}"
+              case "${_f%%=*}" in *_vaapi) : ;; *) _ok=0 ;; esac
+            done
+          fi
+          [ "$_ok" = 1 ] || { _nv=9; }
+          _pc="${_pre}scale_vaapi=format=nv12[v]"; _nv=$((_nv + 1)) ;;
+        \[*:0\]scale=*,format=yuva420p\|yuva444p\|yuva422p\|rgba\|abgr\|bgra\|gbrap\|ya8,colorchannelmixer=aa=*,format=yuva420p\[wm\])
+          _lin="${_pc%%scale=*}"
+          _scl="${_pc#"$_lin"scale=}"; _scl="${_scl%%,*}"
+          _aa="${_pc#*colorchannelmixer=aa=}"; _aa="${_aa%%,*}"
+          case "$_scl" in *[!0-9:-]*|'') _nl=9 ;; esac
+          case "$_aa" in *[!0-9.]*|'') _nl=9 ;; esac
+          # dropped here; re-emitted (rewritten) at the overlay's position below
+          _lpc="$_lin"; _nl=$((_nl + 1)); _pc="" ;;
+        '[v][wm]overlay=x='*':y='*':format=0'*'[vwm]')
+          _ov="${_pc#\[v\]\[wm\]overlay=x=}"
+          _ox="${_ov%%:y=*}"; _ov="${_ov#*:y=}"
+          _oy="${_ov%%:format=0*}"; _ov="${_ov#*:format=0}"
+          case "$_ov" in
+            "[vwm]") _hold="" ;;
+            ":enable='between(t,0,"*")'[vwm]") _hold="${_ov#:enable=\'between(t,0,}"; _hold="${_hold%)\'\[vwm\]}" ;;
+            *) _no=9 ;;
+          esac
+          # The class lives in a variable: a literal `)` inside a case pattern ends the
+          # pattern in dash ("Syntax error: ( unexpected"), even inside [...].
+          _xybad='*[!WHwh0-9+*/().-]*'
+          case "$_ox$_oy" in $_xybad|'') _no=9 ;; esac
+          case "$_hold" in *[!0-9]*) _no=9 ;; esac
+          _no=$((_no + 1)); _pc="///OVERLAY///" ;;
+        '[vwm]format=nv12,hwupload[vpf]')
+          _nu=$((_nu + 1)); _pc="" ;;
+      esac
+      [ -n "$_pc" ] && _new="${_new}${_new:+;}${_pc}"
+      IFS=';'
+    done
+    IFS=$_oldifs; set +f
+    if [ "$_nv$_nl$_no$_nu" != 1111 ]; then
+      wm=pass:pieces=$_nv$_nl$_no$_nu
+    else
+      # fade chain: one fade-in and one fade-out per period, enough periods for the airing
+      _fch=""
+      if [ -n "$_hold" ]; then
+        _secs=10800
+        case "${_dur%ms}" in ''|*[!0-9]*) : ;; *) _secs=$(( ${_dur%ms} / 1000 )) ;; esac
+        _k=0; _n=$(( _secs / WM_PERIOD + 2 ))
+        while [ "$_k" -lt "$_n" ]; do
+          _s=$(( _k * WM_PERIOD )); _o=$(( _s + WM_FADE + _hold ))
+          _fch="$_fch,fade=in:st=$_s:d=$WM_FADE:alpha=1:enable='between(t,$_s,$(( _s + WM_FADE )))'"
+          _fch="$_fch,fade=out:st=$_o:d=$WM_FADE:alpha=1:enable='between(t,$_o,$(( _s + WM_PERIOD )))'"
+          _k=$(( _k + 1 ))
+        done
+      fi
+      _gx=$(printf '%s' "$_ox" | sed -e 's/w/overlay_w/g' -e 's/h/overlay_h/g' -e 's/W/main_w/g' -e 's/H/main_h/g')
+      _gy=$(printf '%s' "$_oy" | sed -e 's/w/overlay_w/g' -e 's/h/overlay_h/g' -e 's/W/main_w/g' -e 's/H/main_h/g')
+      _lpc="${_lpc}scale=${_scl},format=bgra,colorchannelmixer=aa=${_aa},loop=loop=-1:size=1,setpts=N/24/TB${_fch},hwupload[wm]"
+      _ovn="[v][wm]overlay_vaapi=x=${_gx}:y=${_gy}:shortest=1[vpf]"
+      _new=$(printf '%s' "$_new" | sed "s|///OVERLAY///|$_lpc;$_ovn|")
+      if [ -n "$_new" ] && [ -n "$_gx" ] && [ -n "$_gy" ]; then
+        wm=gpu:hold=${_hold:-always}
+        _p=""
+        set -- "$@" "///WRAPEND2D///"
+        while [ "$1" != "///WRAPEND2D///" ]; do
+          a="$1"; shift
+          if [ "$_p" = "-filter_complex" ]; then a="$_new"; fi
+          set -- "$@" "$a"; _p="$a"
+        done
+        shift  # drop the ///WRAPEND2D/// sentinel
+      else
+        wm=pass:build
+      fi
+    fi
+  fi
+fi
+
 # pass 3: seed a header-only LIVE subtitle playlist BEFORE exec (SQ-70).
 # Tunarr's readiness gate (waitForStreamReady) polls for every file from
 # getAdditionalRequiredFiles() — which includes the subtitle playlist (subs.m3u8) —
@@ -494,12 +668,12 @@ if [ -w "$(dirname "$_log")" ] 2>/dev/null; then
     tail -c 131072 "$_log" > "$_log.tmp" 2>/dev/null && mv -f "$_log.tmp" "$_log" 2>/dev/null || true
   fi
   {
-    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s hlsnew=%s args=%s\n' \
+    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s hlsnew=%s wm=%s args=%s\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)" \
       "${srt_ord:-0}" "${preval:-none}" "${sub_off:-none}" "${sub_burst:-none}" \
       "$([ -n "$sub_off" ] && echo yes || echo no)" \
       "$([ -n "$sub_trim" ] && echo pretrim || { [ -n "$sub_off" ] && echo seek || echo none; })" \
-      "${seed:-nosub}" "${hlsnew:-n/a}" "$#"
+      "${seed:-nosub}" "${hlsnew:-n/a}" "${wm:-n/a}" "$#"
   } >> "$_log" 2>/dev/null || true
 fi
 
