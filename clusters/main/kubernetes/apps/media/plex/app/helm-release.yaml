@@ -127,6 +127,26 @@ spec:
           - noatime
           - nodiratime
           - nolock
+      # Live TV hardware decode (see plex-transcoder-wrap.sh). Names are kept short
+      # because of the TrueCharts ≤63-byte label limit.
+      pmscopy:
+        enabled: true
+        type: emptyDir
+        targetSelector:
+          main:
+            main:
+              mountPath: /opt/pmscopy
+            pmscopy:
+              mountPath: /opt/pmscopy
+      txwrap:
+        enabled: true
+        type: configmap
+        objectName: plex-transcoder-wrap
+        expandObjectName: false
+        defaultMode: "0755"
+        mountPath: /usr/lib/plexmediaserver/Plex Transcoder
+        subPath: plex-transcoder-wrap.sh
+        readOnly: true
       backup:
         enabled: true
         size: 5Gi
@@ -200,6 +220,23 @@ spec:
     workload:
       main:
         podSpec:
+          initContainers:
+            # Live TV hardware decode (2026-09-28): copies the Plex install tree out
+            # of THIS pod's image on every start, so the real transcoder the wrapper
+            # execs always matches the running PMS version. See
+            # plex-transcoder-wrap.sh and the pmscopy/txwrap persistence below.
+            pmscopy:
+              enabled: true
+              type: init
+              imageSelector: image
+              command:
+                - /bin/sh
+                - -c
+                - >-
+                  set -e;
+                  cp -a /usr/lib/plexmediaserver/. /opt/pmscopy/;
+                  test -x "/opt/pmscopy/Plex Transcoder";
+                  echo "pmscopy ok"
           containers:
             main:
               resources:

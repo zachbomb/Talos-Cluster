@@ -4,3 +4,20 @@ resources:
   - helm-release.yaml
   - exporter.yaml
   - runtime.yaml
+configMapGenerator:
+  # Live TV hardware-decode wrapper, mounted over "Plex Transcoder" (see the header of
+  # plex-transcoder-wrap.sh). The readable .sh IS the deployed source: no base64 copy
+  # that can drift.
+  # - substitute: disabled -> Flux postBuild must not envsubst the script's shell vars.
+  # - no name hash -> the HelmRelease values reference the name literally, and kustomize
+  #   cannot rewrite references inside HelmRelease values.
+  #   A script change therefore needs `kubectl -n media rollout restart deploy/plex`
+  #   (subPath mounts never live-update).
+  - name: plex-transcoder-wrap
+    namespace: media
+    files:
+      - plex-transcoder-wrap.sh
+    options:
+      disableNameSuffixHash: true
+      annotations:
+        kustomize.toolkit.fluxcd.io/substitute: disabled
