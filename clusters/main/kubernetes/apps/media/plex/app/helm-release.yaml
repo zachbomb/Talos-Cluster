@@ -234,8 +234,8 @@ spec:
                 - -c
                 - >-
                   set -e;
-                  cp -a /usr/lib/plexmediaserver/. /opt/pmscopy/;
-                  test -x "/opt/pmscopy/Plex Transcoder";
+                  cp -a /usr/lib/plexmediaserver /opt/pmscopy/pms;
+                  test -x "/opt/pmscopy/pms/Plex Transcoder";
                   echo "pmscopy ok"
           containers:
             main:
