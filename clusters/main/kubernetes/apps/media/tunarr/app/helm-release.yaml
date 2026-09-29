@@ -351,7 +351,14 @@ spec:
                         # A session with no real viewer does not need window protection:
                         # nothing is reading the window. So skip the probe entirely, which
                         # also lets our stale heartbeat expire and Tunarr reap it normally.
-                        _p_real=$$(printf '%s' "$$PSESS" | jq -r --arg u "$$_p_uuid" '.[$$u][]?.connections[]? | select(.ip != "127.0.0.1") | .ip' 2>/dev/null | head -1)
+                        # ...and the viewer must be LIVE, not merely listed. 2026-09-29: after a
+                        # zap-away the client's connection stays listed until its heartbeat
+                        # expires (~2.5 min), so "any non-localhost connection" kept this probe
+                        # firing and renewing OUR localhost heartbeat past it, extending every
+                        # surfed channel's orphan transcode by up to one more cycle (9 ffmpegs
+                        # seen for 1 kiosk). A real player fetches a segment every ~4s, so a
+                        # heartbeat older than 30s is a departed viewer.
+                        _p_real=$$(printf '%s' "$$PSESS" | jq -r --arg u "$$_p_uuid" '.[$$u][]?.connections[]? | select(.ip != "127.0.0.1" and ((now * 1000) - (.lastHeartbeat // 0)) < 30000) | .ip' 2>/dev/null | head -1)
                         if [ -z "$$_p_real" ]; then
                           # No viewer but the session still exists -> age out normally, do NOT
                           # touch the HTTP endpoint. Protection is pointless and the probe is
