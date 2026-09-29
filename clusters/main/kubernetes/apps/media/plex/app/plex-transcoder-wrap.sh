@@ -41,7 +41,9 @@
 #     transcode passes through unchanged (back to software decode, never broken).
 # Decisions are appended to /transcode/plex-wrap.log (tmpfs, cleared on restart).
 
-REAL_DIR=/opt/pmscopy
+# A subdir that cp creates itself: the emptyDir mount root is root-owned, so
+# `cp -a` onto it fails for uid 1000 (EPERM setting its times).
+REAL_DIR=/opt/pmscopy/pms
 REAL="$REAL_DIR/Plex Transcoder"
 LOG=/transcode/plex-wrap.log
 
