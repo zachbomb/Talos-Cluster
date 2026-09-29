@@ -88,7 +88,11 @@ spec:
     persistence:
       config:
         enabled: true
-        size: 2Gi
+        # 2026-09-29: 2Gi -> 6Gi. The volume hit 100% (kuma.db alone 1.9G of monitor
+        # history) -> SQLITE_FULL -> 632 restarts in 2d17h, and ~615 HA uptime_kuma
+        # entities went unavailable. Also set a history retention in Uptime Kuma
+        # (Settings > Monitor History) so the DB stops growing unbounded.
+        size: 6Gi
         mountPath: /app/data
         volsync:
           - name: config
