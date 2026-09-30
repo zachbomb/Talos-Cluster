@@ -381,6 +381,57 @@ while [ "$1" != "///WRAPEND2C///" ]; do
 done
 shift  # drop the ///WRAPEND2C/// sentinel
 
+# pass 2c2: pin filter hardware to the VAAPI device when an OpenCL device is also
+# initialised (SQ-176, 2026-09-30).
+#
+# WHY: for HDR sources Tunarr 1.3.15 initialises two devices (`vaapi=va:...`, then
+# `opencl=ocl@va`) and never passes -filter_hw_device. ffmpeg then gives filters the
+# LAST initialised device, OpenCL. Any `hwupload` in the graph therefore produces OpenCL
+# frames that scale_vaapi/overlay_vaapi/h264_vaapi reject:
+#   "Impossible to convert between the formats supported by the filter 'Parsed_hwupload_N'
+#    and the filter 'auto_scale_N'" -> Error reinitializing filters -> error slate (218).
+# Only two HDR graph shapes contain an hwupload: non-16:9 sources (CPU letterbox pad, e.g.
+# The Sparks Brothers 1.85:1) and image-subtitle burn-in (e.g. 2001). Loki, 29 days:
+# 13/13 of those failed; 29/29 all-GPU tonemap graphs ran. Pass 2c removes the OpenCL
+# tonemap but not the device, so it does not help here.
+# Upstream fixed exactly this in tunarr 5213e56658 (v2026.9.0+) by adding
+# -filter_hw_device for vaapi; this pass carries that fix locally.
+#
+# FAIL-SAFE: acts only when BOTH a named vaapi device and an opencl device are
+# initialised and no -filter_hw_device is already present. Otherwise args pass through.
+# PLACEMENT MATTERS: ffmpeg resolves -filter_hw_device by name AS IT PARSES, so it must
+# come AFTER the `-init_hw_device vaapi=<name>:...` that creates the device. Placed before
+# it, ffmpeg aborts with "Invalid filter device" (verified with ffmpeg 9.0.2, videotoolbox
+# stand-in), which would kill every HDR stream. Inserted right after that pair.
+_fhd_va=""; _fhd_ocl=0; _fhd_have=0; _fhd_prev=""
+for a in "$@"; do
+  if [ "$_fhd_prev" = "-init_hw_device" ]; then
+    case "$a" in
+      vaapi=*:*) [ -z "$_fhd_va" ] && { _fhd_va="${a#vaapi=}"; _fhd_va="${_fhd_va%%:*}"; } ;;
+      opencl=*) _fhd_ocl=1 ;;
+    esac
+  fi
+  [ "$a" = "-filter_hw_device" ] && _fhd_have=1
+  _fhd_prev="$a"
+done
+fhd="pass"
+if [ "$_fhd_ocl" = 1 ] && [ -n "$_fhd_va" ] && [ "$_fhd_have" = 0 ]; then
+  _fhd_prev=""; _fhd_done=0
+  set -- "$@" "///WRAPEND2C2///"
+  while [ "$1" != "///WRAPEND2C2///" ]; do
+    a="$1"; shift
+    set -- "$@" "$a"
+    if [ "$_fhd_done" = 0 ] && [ "$_fhd_prev" = "-init_hw_device" ]; then
+      case "$a" in
+        vaapi=*) set -- "$@" "-filter_hw_device" "$_fhd_va"; _fhd_done=1 ;;
+      esac
+    fi
+    _fhd_prev="$a"
+  done
+  shift  # drop the ///WRAPEND2C2/// sentinel
+  fhd="$_fhd_va"
+fi
+
 # pass 2d: channel watermark on the GPU, with a periodic fade (2026-09-29).
 #
 # WHY: on VAAPI, Tunarr draws the channel watermark in SOFTWARE. Every decoded frame is
@@ -670,12 +721,12 @@ if [ -w "$(dirname "$_log")" ] 2>/dev/null; then
     tail -c 131072 "$_log" > "$_log.tmp" 2>/dev/null && mv -f "$_log.tmp" "$_log" 2>/dev/null || true
   fi
   {
-    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s hlsnew=%s wm=%s args=%s\n' \
+    printf '%s srt_ord=%s preval=%s sub_off=%s burst=%s inject=%s mode=%s seed=%s hlsnew=%s wm=%s fhd=%s args=%s\n' \
       "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo -)" \
       "${srt_ord:-0}" "${preval:-none}" "${sub_off:-none}" "${sub_burst:-none}" \
       "$([ -n "$sub_off" ] && echo yes || echo no)" \
       "$([ -n "$sub_trim" ] && echo pretrim || { [ -n "$sub_off" ] && echo seek || echo none; })" \
-      "${seed:-nosub}" "${hlsnew:-n/a}" "${wm:-n/a}" "$#"
+      "${seed:-nosub}" "${hlsnew:-n/a}" "${wm:-n/a}" "${fhd:-n/a}" "$#"
   } >> "$_log" 2>/dev/null || true
 fi
 
