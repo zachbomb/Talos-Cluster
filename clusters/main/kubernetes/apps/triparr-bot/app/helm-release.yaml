@@ -89,6 +89,16 @@ spec:
                 APPLE_MAPS_PRIVATE_KEY: ${TRIPARR_APPLE_MAPS_PRIVATE_KEY}
                 # Runtime
                 NODE_ENV: production
+                # V8 heap cap BELOW the 3Gi cgroup limit. Without it V8 sizes old-space
+                # from the node's RAM (47Gi -> ~4Gi ceiling), so it never GCs hard before
+                # the cgroup OOMKills it. 2026-09-30 incident: 158 OOMKills in 3.5 days,
+                # each a sudden 2.5GB+ burst after init. This converts that into a V8
+                # "heap out of memory" FATAL with a JS stack on stderr, which is also
+                # the allocation evidence the root-cause hunt needs. MITIGATION, not the
+                # fix: the burst's source is still being located in Triparr (SQ-14).
+                # A memory note recorded this as "tuned" after the June #518 OOM; it was
+                # never in this manifest.
+                NODE_OPTIONS: "--max-old-space-size=2560"
                 LOG_LEVEL: info
                 HEALTH_CHECK_ENABLED: "true"
                 HEALTH_CHECK_PORT: "3001"
