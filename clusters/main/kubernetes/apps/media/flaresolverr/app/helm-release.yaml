@@ -50,6 +50,18 @@ spec:
             port: 8191
 
     persistence:
+      # 2026-10-01 (SQ-177): /tmp is TrueCharts' default medium:Memory emptyDir, charged to
+      # the 1Gi memory limit and kept across container restarts. Orphaned Chromium and
+      # undetected-chromedriver profiles (tmpXXXX + org.chromium.Chromium.*) piled up
+      # there: 7 OOMKills in 4.7d with /tmp at 243MB+ and growing. Working-set graphs
+      # can't see tmpfs. Disk-backed instead, capped so it can't fill node ephemeral
+      # storage: hitting the cap evicts the pod, which recreates /tmp empty.
+      tmp:
+        enabled: true
+        type: emptyDir
+        medium: ""
+        size: 2Gi
+        mountPath: /tmp
       config:
         enabled: true
         size: 2Gi
