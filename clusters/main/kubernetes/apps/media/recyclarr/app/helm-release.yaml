@@ -27,7 +27,7 @@ spec:
     image:
       pullPolicy: IfNotPresent
       repository: ghcr.io/recyclarr/recyclarr
-      tag: 8.7.2
+      tag: 8.7.3
     portal:
       open:
         enabled: false
