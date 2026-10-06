@@ -12,7 +12,7 @@ spec:
     spec:
       chart: sonarqube
       # renovate: datasource=helm depName=sonarqube registryUrl=https://SonarSource.github.io/helm-chart-sonarqube
-      version: "2026.5.1001"
+      version: "2026.5.1002"
       sourceRef:
         kind: HelmRepository
         name: sonarsource
