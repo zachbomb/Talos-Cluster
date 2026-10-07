@@ -1,0 +1,65 @@
+---
+# Workload OOM-loop detection. Added 2026-10-06.
+#
+# WHY THIS EXISTS: two OOM loops went unnoticed for days.
+#   - triparr-bot (2026-09-27 to 09-30): 158 OOMKills in 3.5 days. Chromium debris
+#     filled its memory-backed /tmp (a TrueCharts emptyDir, medium: Memory), and the
+#     restart loop thrashed the single SSD, which hung Tunarr 4 times in one day.
+#   - flaresolverr (2026-09-30 to 10-05): 7 OOMKills, first from the same /tmp class,
+#     then from Chromium outgrowing a 1Gi limit.
+# KubePodCrashLooping never fired for either. Each restart got past the backoff
+# window, so the pod rarely sat in CrashLoopBackOff, and working-set graphs looked
+# flat because tmpfs did not show in them.
+#
+# WHY RESTARTS + LAST REASON, NOT MEMORY RATIOS: the termination reason is
+# unambiguous and does not depend on how memory is split between working set,
+# page cache and tmpfs. Backtested against Prometheus history on 2026-10-06:
+#   - 24h/>=2: matched triparr-bot (129 restarts) and flaresolverr on 09-30, 10-01
+#     and 10-05.
+#   - No matches at 10-02, 10-04, 10-06 or now.
+#
+# FIRST CHECK WHEN THIS FIRES: kubelet stats/summary volume usedBytes for the
+# pod's tmp/devshm emptyDirs (memory: reference_truecharts_tmp_is_tmpfs_hidden_from_working_set).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: workloads
+  namespace: kube-prometheus-stack
+  labels:
+    app.kubernetes.io/part-of: kube-prometheus-stack
+spec:
+  groups:
+    - name: workload-oom
+      rules:
+        - alert: ContainerOOMKilledRepeatedly
+          expr: >-
+            (increase(kube_pod_container_status_restarts_total[24h]) >= 2)
+            and on (namespace, pod, container)
+            (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1)
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.container }} OOMKilled repeatedly ({{ $value | humanize }} restarts in 24h)"
+            description: >-
+              Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }}
+              has restarted {{ $value | humanize }} times in 24h, and its last termination
+              was OOMKilled. First check whether a memory-backed emptyDir (/tmp, /dev/shm)
+              is filling: kubelet stats/summary, volume usedBytes. Working-set graphs do not
+              show tmpfs. Otherwise the process itself needs a higher memory limit.
+        - alert: ContainerOOMLoop
+          expr: >-
+            (increase(kube_pod_container_status_restarts_total[6h]) >= 3)
+            and on (namespace, pod, container)
+            (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1)
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.container }} in an OOM restart loop ({{ $value | humanize }} restarts in 6h)"
+            description: >-
+              {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) has been
+              OOMKilled {{ $value | humanize }} times in 6h. On this single-node cluster a fast
+              OOM loop re-reads its image from the shared SSD on every boot, which starves
+              other apps (triparr-bot on 2026-09-30 hung Tunarr this way). Consider scaling it
+              to 0 until it is fixed. Check tmpfs emptyDirs first (kubelet stats/summary).
