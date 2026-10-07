@@ -80,11 +80,13 @@ spec:
                 schedule: "37 9 * * *"
 
     resources:
+      # 2026-10-06: 1Gi -> 2Gi limit. After the /tmp fix (SQ-177) it still OOMKilled:
+      # Chromium process memory peaked at 1070-1073MB, pinned at the old limit, over 3 days.
       requests:
-        memory: 256Mi
+        memory: 512Mi
         cpu: 10m
       limits:
-        memory: 1Gi
+        memory: 2Gi
         cpu: 1000m
 
     autoscaling:
