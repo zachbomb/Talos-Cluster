@@ -25,7 +25,7 @@ spec:
     spec:
       chart: traefik
       # renovate: datasource=helm depName=traefik registryUrl=https://traefik.github.io/charts
-      version: 41.6.1
+      version: 41.7.0
       sourceRef:
         kind: HelmRepository
         name: traefik
