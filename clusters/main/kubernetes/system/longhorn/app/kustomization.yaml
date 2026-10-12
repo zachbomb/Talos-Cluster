@@ -8,3 +8,4 @@ resources:
   - jobs
   - instance-manager-rotation-cronjob.yaml
   - prometheus-rules.yaml
+  - metrics-networkpolicy.yaml

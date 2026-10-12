@@ -1,0 +1,34 @@
+# Let Prometheus scrape longhorn-manager :9500/metrics.
+#
+# Longhorn chart 1.12.1 (Renovate, 2026-09-18) added
+# networkPolicies.restrictInternalTraffic, default true, which renders a
+# `longhorn-manager` NetworkPolicy admitting only Longhorn's own pods. Prometheus
+# lives in kube-prometheus-stack, so every scrape of the longhorn-backend target
+# hung until the 45s scrapeTimeout ("context deadline exceeded") and all
+# longhorn_* series went absent from 2026-09-18 04:16 UTC. The endpoint itself
+# answered in ~1.3s through the API-server pod proxy.
+#
+# NetworkPolicies are additive, so this admits the scrape without loosening the
+# chart's internal-traffic restriction for anything else.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: longhorn-manager-allow-prometheus
+  namespace: longhorn-system
+spec:
+  podSelector:
+    matchLabels:
+      app: longhorn-manager
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-prometheus-stack
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - port: 9500
+          protocol: TCP
