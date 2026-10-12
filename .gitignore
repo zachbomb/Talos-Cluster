@@ -1,5 +1,6 @@
-# Scripts directory contains hardcoded credentials (API keys, passwords, tokens)
-scripts/
+# Root scripts directory contains hardcoded credentials (API keys, passwords, tokens).
+# Anchored to the root so tracked CI helpers under .github/scripts/ are not ignored.
+/scripts/
 
 age.agekey
 ^clustertool.exe

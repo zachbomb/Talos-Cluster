@@ -1,0 +1,60 @@
+name: "Talos/Kubernetes version compat"
+
+# Blocks any PR (Renovate included) that pins a Kubernetes minor newer than the
+# pinned Talos release can run. Talos's ceiling is DefaultKubernetesVersion in
+# pkg/machinery/constants/constants.go at the Talos tag; the script fetches it
+# and compares minors. It also fails when upgradesettings.yaml and
+# talconfig.yaml disagree with each other, and it fails closed when the
+# upstream fetch fails.
+#
+# Automerge gating follows the existing do-not-merge pattern (see
+# .github/renovate.json5 and automerge.yaml MERGE_LABELS): on failure this
+# workflow attaches the `do-not-merge` label, which automerge.yaml's
+# `!do-not-merge` rule hard-blocks. The label is NOT removed on a later pass,
+# because Renovate also attaches it on purpose to every Talos/kubelet PR; clear
+# it by hand once the PR is fixed. Renovate kubelet PRs already carry the label
+# from renovate.json5, so the usual race (Placeholder finishing before this
+# workflow) cannot let one through.
+#
+# Order of operations for a real upgrade: docs/runbooks/talos-kubernetes-upgrade-order.md
+#
+# Security note: this workflow interpolates NO untrusted GitHub event inputs
+# (PR titles, bodies, branch names) into run: commands. The only event value
+# used is the numeric PR number, passed through an env var.
+
+on:
+  pull_request:
+    paths:
+      - "clusters/main/kubernetes/flux-system/flux/upgradesettings.yaml"
+      - "clusters/main/talos/talconfig.yaml"
+      - ".github/scripts/check-talos-k8s-compat.sh"
+      - ".github/workflows/talos-k8s-compat.yaml"
+
+concurrency:
+  group: talos-k8s-compat-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write # label do-not-merge on failure
+
+jobs:
+  compat:
+    name: Kubernetes minor is supported by pinned Talos
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check Talos/Kubernetes compatibility
+        id: check
+        run: bash .github/scripts/check-talos-k8s-compat.sh "$GITHUB_WORKSPACE"
+
+      - name: Block automerge with the do-not-merge label
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label do-not-merge
+          echo "::notice::Added do-not-merge to PR #${PR_NUMBER}; automerge.yaml's !do-not-merge rule blocks it until a human clears the label."
