@@ -252,8 +252,13 @@ spec:
         # Growth is extrapolated from 10.2 days and assumes series count holds.
         # Re-measure prometheus_tsdb_storage_blocks_bytes before trusting it for
         # any further increase.
+        #
+        # 2026-10-12: 85GB -> 75GB. The size cap became binding at day ~56 as predicted,
+        # and steady state (85GB of blocks + WAL + one compacting block) sat the 100Gi PVC
+        # at 86-92% used, which fires PVCNearFull (>85%) permanently. 75GB keeps the
+        # steady state near 70-80% for ~53 days of history instead of 60.
         retention: 60d
-        retentionSize: 85GB
+        retentionSize: 75GB
         # External labels to add to any time series or
         # alerts when communicating with external systems
         externalLabels:
