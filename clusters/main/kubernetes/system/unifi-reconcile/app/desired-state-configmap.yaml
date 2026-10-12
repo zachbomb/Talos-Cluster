@@ -75,15 +75,31 @@ data:
     errors = []
 
 
+    # 2026-10-12: on UniFi OS 5.1.33 / Network 10.6.106 every API-key request
+    # takes 7-60s (unauthenticated /status answers in 0.2s). The old 30s
+    # timeout failed every run from 2026-10-10. Allow 120s and retry a
+    # timeout or connection error once; HTTP errors are not retried.
+    API_TIMEOUT = 120
+    API_ATTEMPTS = 2
+
+
     def api(path, method="GET", body=None):
         url = f"{CONTROLLER}/proxy/network/{path}"
         data = json.dumps(body).encode() if body is not None else None
-        req = urllib.request.Request(url, data=data, method=method)
-        req.add_header("X-API-Key", API_KEY)
-        if body is not None:
-            req.add_header("Content-Type", "application/json")
-        with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as r:
-            return json.loads(r.read().decode())
+        for attempt in range(1, API_ATTEMPTS + 1):
+            req = urllib.request.Request(url, data=data, method=method)
+            req.add_header("X-API-Key", API_KEY)
+            if body is not None:
+                req.add_header("Content-Type", "application/json")
+            try:
+                with urllib.request.urlopen(req, context=SSL_CTX, timeout=API_TIMEOUT) as r:
+                    return json.loads(r.read().decode())
+            except urllib.error.HTTPError:
+                raise
+            except (TimeoutError, urllib.error.URLError) as e:
+                if attempt == API_ATTEMPTS:
+                    raise
+                print(f"{method} {path}: {e}; retrying", file=sys.stderr)
 
 
     def unwrap(resp):
