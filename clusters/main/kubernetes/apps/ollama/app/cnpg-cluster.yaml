@@ -9,6 +9,14 @@ spec:
   primaryUpdateStrategy: unsupervised
   storage:
     size: 5Gi
+  # 2026-10-12 (SQ-181): separate WAL volume, added together with backups.
+  # Enabling barmanObjectStore turns on WAL archiving; without walStorage an
+  # archiving failure strands WAL on the DATA volume until PostgreSQL refuses
+  # to start (the sonarqube-db deadlock, docs/dr/sonarqube-wal-deadlock-2026-09-07.md).
+  # 8Gi matches the other CNPG clusters here. Adding it provisions a new PVC
+  # and recycles the single instance once (brief Open WebUI DB outage).
+  walStorage:
+    size: 8Gi
   resources:
     requests:
       memory: 128Mi
@@ -20,6 +28,25 @@ spec:
     parameters:
       shared_buffers: "128MB"
       max_connections: "50"
+  # 2026-10-12 (SQ-181): this cluster had never been backed up -- no backup
+  # block and no ScheduledBackup were ever configured. Bucket cnpg-openwebui
+  # created on MinIO (un-versioned). Schedule + creds live in cnpg-barman.yaml.
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://cnpg-openwebui/
+      endpointURL: ${S3URL}
+      s3Credentials:
+        accessKeyId:
+          name: openwebui-db-s3-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: openwebui-db-s3-creds
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: "30d"
   monitoring:
     # Postgres server metrics (cnpg_*/pg_*) via CNPG native exporter :9187;
     # Prometheus podMonitorSelector={} auto-scrapes the operator PodMonitor.

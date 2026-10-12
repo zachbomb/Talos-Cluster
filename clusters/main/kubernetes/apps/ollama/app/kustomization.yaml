@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - cnpg-cluster.yaml
+  - cnpg-barman.yaml
   - helm-release.yaml
   - exporter.yaml
   - pibb-ops-rbac.yaml

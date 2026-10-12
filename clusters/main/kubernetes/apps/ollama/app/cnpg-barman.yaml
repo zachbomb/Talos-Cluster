@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openwebui-db-s3-creds
+  namespace: ollama
+type: Opaque
+stringData:
+  ACCESS_KEY_ID: ${S3ID}
+  ACCESS_SECRET_KEY: ${S3KEY}
+---
+# 02:30 daily -- staggered between triparr-db (02:00) and goodmem-db (03:00),
+# sonarqube-db (03:30) and immich (04:00) to avoid MinIO/disk contention.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: openwebui-db-daily
+  namespace: ollama
+spec:
+  # 6-FIELD cron (sec min hour dom mon dow). CNPG uses robfig/cron with a
+  # seconds specifier; a 5-field "30 2 * * *" would fire EVERY HOUR. See the
+  # 2026-09-07 note in system/goodmem/app/cnpg-barman.yaml.
+  schedule: "0 30 2 * * *"
+  # Take one backup as soon as this object is created so the cluster is not
+  # left unprotected until the first 02:30 run.
+  immediate: true
+  backupOwnerReference: self
+  cluster:
+    name: openwebui-db
+  method: barmanObjectStore
+  # Single-instance cluster: there is no standby to prefer.
+  target: primary
