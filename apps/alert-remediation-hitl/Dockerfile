@@ -1,4 +1,4 @@
-FROM python:3.15-alpine@sha256:e7044ccc46c44b6174e0051dbdcb84c79e19d0f2c398d28d5d45521ea42b01e2
+FROM python:3.15-alpine@sha256:2699b90f4d562a22e2dd076c82f964032f64814204bff36d271a54ba4cc2c7e2
 
 # Run as non-root (UID 65534 = nobody on Alpine).
 ARG UID=65534
