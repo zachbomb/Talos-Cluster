@@ -1,0 +1,266 @@
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+# Jellyfin pilot (SQ-189, design in the SQ-188 spike report, section 6).
+# Runs BESIDE Plex/Emby/Tunarr; nothing here touches them. No Live TV, no
+# watched-state migration: those are later phases.
+#
+# First-run settings that the chart cannot set (do these in the Jellyfin UI):
+#   - Trickplay image extraction OFF on every library (it is 30-100+ GB on
+#     /data for this library size and hammers the single Longhorn disk).
+#   - NFO/artwork/subtitle/lyrics savers OFF: the media mounts are read-only
+#     and TMM + Bazarr own those files.
+#   - Transcoding: NVENC/NVDEC on the A4000; "delete segments" on.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: jellyfin
+  namespace: media
+spec:
+  interval: 15m
+  timeout: 20m
+  releaseName: jellyfin
+  chart:
+    spec:
+      chart: jellyfin
+      # renovate: datasource=helm depName=jellyfin registryUrl=oci://oci.trueforge.org/truecharts
+      version: 25.0.4
+      sourceRef:
+        kind: HelmRepository
+        name: truecharts
+        namespace: flux-system
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  values:
+    TZ: America/Los_Angeles
+    credentials:
+      s3:
+        type: s3
+        url: ${S3URL}
+        bucket: "${S3PREFIX}-jellyfin"
+        accessKey: ${S3ID}
+        secretKey: ${S3KEY}
+        encrKey: ${S3KEY}
+    # LAN autodiscovery (UDP 7359) stays off for the pilot, so do not render
+    # its extra Service either.
+    autodiscovery:
+      enabled: false
+    ingress:
+      main:
+        enabled: true
+        hosts:
+          - host: jellyfin.${BASE_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        integrations:
+          nginx:
+            enabled: false
+            ingressClassName: internal
+          traefik:
+            enabled: true
+            entrypoints:
+              - websecure
+          certManager:
+            enabled: true
+            certificateIssuer: wethecommon-prod-cert
+          homepage:
+            enabled: true
+            name: Jellyfin
+            group: Media Players
+            description: Media Player (pilot)
+            icon: ""
+            widget:
+              # No API key exists until first-run setup; add a JELLYFIN_API
+              # clusterenv var and enable the widget in a later phase.
+              enabled: false
+    service:
+      main:
+        enabled: true
+        type: LoadBalancer
+        loadBalancerIP: ${JELLYFIN_IP}
+        annotations:
+          metallb.io/loadBalancerIPs: ${JELLYFIN_IP}
+        ports:
+          main:
+            port: 8096
+            targetPort: 8096
+            protocol: http
+      autodiscovery:
+        enabled: false
+    persistence:
+      # Longhorn + VolSync. Schedules are staggered away from the 00:00
+      # VolSync window, plex (06:00 / 10:04) and emby (06:51).
+      config:
+        enabled: true
+        size: 1Gi
+        mountPath: /config
+        volsync:
+          - name: config
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 1Gi
+            src:
+              enabled: true
+              cacheCapacity: 1Gi
+              trigger:
+                schedule: "22 7 * * *"
+      data:
+        enabled: true
+        size: 20Gi
+        mountPath: /data
+        volsync:
+          - name: data
+            type: restic
+            credentials: s3
+            dest:
+              enabled: true
+              cacheCapacity: 5Gi
+            src:
+              enabled: true
+              cacheCapacity: 5Gi
+              trigger:
+                schedule: "37 7 * * *"
+      # emptyDirs land on the Talos EPHEMERAL partition, a thin zvol on the
+      # etcd pool: the size caps are mandatory. `size` renders as sizeLimit.
+      # NOT medium: Memory, host RAM is at its physical maximum.
+      logs:
+        enabled: true
+        type: emptyDir
+        size: 1Gi
+        mountPath: /logs
+      cache:
+        enabled: true
+        type: emptyDir
+        size: 10Gi
+        mountPath: /cache
+      transcode:
+        enabled: true
+        type: emptyDir
+        size: 20Gi
+        mountPath: /cache/transcodes
+      # Same NFS exports as plex/emby, mounted READ-ONLY: TMM owns renames
+      # and metadata, Bazarr owns subtitles. /media root and /usenet are not
+      # needed by a player and are deliberately not mounted.
+      movies:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/movies
+        mountPath: /movies
+        readOnly: true
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      tv:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/tv
+        mountPath: /tv
+        readOnly: true
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+      music:
+        enabled: true
+        type: nfs
+        server: 192.168.10.123
+        path: /mnt/Pibbs-Horde/media/data/media/music
+        mountPath: /music
+        readOnly: true
+        mountOptions:
+          - nfsvers=4
+          - tcp
+          - intr
+          - hard
+          - noatime
+          - nodiratime
+          - nolock
+    securityContext:
+      container:
+        runAsUser: 1000
+        runAsGroup: 1000
+        UMASK: "0022"
+      pod:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+    workload:
+      main:
+        podSpec:
+          # Required for nvidia.com/gpu to be usable - the device plugin alone
+          # is not enough, the pod must run under the nvidia container runtime
+          # (same wiring as apps/ollama and media/tdarr).
+          runtimeClassName: "nvidia"
+          containers:
+            main:
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 1Gi
+                limits:
+                  # cpu 0 = no CPU limit (house rule). The chart omits the key.
+                  cpu: 0
+                  memory: 4Gi
+                  # NVENC/NVDEC + CUDA tone mapping on the RTX A4000 (time-sliced
+                  # with Ollama; VRAM is NOT partitioned, see SQ-188 Q6).
+                  nvidia.com/gpu: 1
+              probes:
+                # HTTP, not TCP: a TCP probe passed straight through both Tunarr
+                # SQLite D-state hangs. Generous thresholds for the single disk.
+                startup:
+                  enabled: true
+                  type: http
+                  path: /health
+                  port: 8096
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 10
+                    failureThreshold: 90
+                    timeoutSeconds: 5
+                liveness:
+                  enabled: true
+                  type: http
+                  path: /health
+                  port: 8096
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 30
+                    failureThreshold: 10
+                    timeoutSeconds: 10
+                readiness:
+                  enabled: true
+                  type: http
+                  path: /health
+                  port: 8096
+                  spec:
+                    initialDelaySeconds: 30
+                    periodSeconds: 15
+                    failureThreshold: 10
+                    timeoutSeconds: 10
+        replicas: 1
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 0
+        memory: 4Gi

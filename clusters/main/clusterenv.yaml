@@ -183,6 +183,7 @@ GRAFANA_API_TOKEN: ENC[AES256_GCM,data:GIbJCW0T6up0Iey+iMshCR/xxvoGzeJm1KJ1W94v6
 LETTERBOXD_PASSWORD: ENC[AES256_GCM,data:3T9zPEQFDw7zoqM=,iv:yFru/urzzmUpNwqtGWYWg3HoNMDwKRQpGfM/IOu5/nQ=,tag:ULHXdUoSEy3soMqoUUANXA==,type:str]
 LETTERBOXD_USERNAME: ENC[AES256_GCM,data:K1MJFpMZaZvSpEI=,iv:v9hhb+YEuXrRhxSM8fl4JsCodYcWTuK38/cwim4r7Dg=,tag:Y6+b+wqG/odZaF0jIMrzug==,type:str]
 TRUENAS_API_KEY: ENC[AES256_GCM,data:DNhrNRtn8ValJTy8IVdYB/DdwvpnIM5w+jj3Xfyx8yyv3rw9Ch+OdFUxmt7DXM6z66ZFGkFYUc1YbIpoRbqo0fy5,iv:+DuzztsFmwuEWmuQGR78HEA6PSQI8MtqB4y+vgzGDHA=,tag:en/W36gpR+KCaG77h6Yf/A==,type:str]
+JELLYFIN_IP: ENC[AES256_GCM,data:g08oKIAmEcp2NJSyfho=,iv:HAd6AxKOMbfSCQ5y+zv3lnsF2DF+34RIEgqphH7M/Dw=,tag:kuQ5fi87WMEkIlcSk+RKHg==,type:str]
 sops:
     age:
         - enc: |
@@ -194,8 +195,8 @@ sops:
             W8830P1ELE0h7fv2nx1TV8j3l8vdJ2iGaVoe0BWzyh3crHoJWJkp/g==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1xuryc2afg7fh6tg2d85mydr05rh93xf8dhrcq4xata7ec33t8uvs6kl3yw
-    lastmodified: "2026-07-15T05:24:09Z"
-    mac: ENC[AES256_GCM,data:brh+T25AzpSY4nrf1dsBctluhqOYHXOfVhwQnF6KSlSQwJQ7W+gGoWNydLJOm3vwOLDrYqXs6Jzbzow+wblKea027sfmwSgrLv+g1bo6v+O8ML0MMWp/noJ1wIuOqcmN08cAckg4PlHQWjav2GmcZzJjtRXyV2LeXez8k4Xkp7U=,iv:izlpav/0Sjo/PbC3sXFMpEFJdSMVKafF+HJMlsPy/1I=,tag:HDTP+NBlGlVuzFJmwVjFWQ==,type:str]
+    lastmodified: "2026-10-22T03:28:27Z"
+    mac: ENC[AES256_GCM,data:UbBNzlykDaLziaLMF5E68bD9TgyWmc+d3M2rL+QugJKFT8HJXvLGKt4cpW9jCUgyUZ4sbjxfUJrOIK7duiNto+XPhNgHkY82/Jokcq/V3b0v7Ues1t/bKP6ODKfjDIJKL6N50RliPkQxerDFwE/7hHJXRlJZGV6+M7Kf+N3njSg=,iv:RHA+EvY8M4dXUCUbPztznVEdaNdcIvtpCjAWlk50yLA=,tag:Z3SAoIE1LH0C6j6Gmd6/sw==,type:str]
     shamir_threshold: 3
     unencrypted_suffix: _unencrypted
     version: 3.11.0

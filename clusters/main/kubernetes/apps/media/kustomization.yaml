@@ -17,6 +17,7 @@ resources:
   - tinymediamanager/ks.yaml
   - plex/ks.yaml
   - emby/ks.yaml
+  - jellyfin/ks.yaml
   - tautulli/ks.yaml
   - notifiarr/ks.yaml
   - recyclarr/ks.yaml
