@@ -214,7 +214,7 @@ spec:
             main:
               resources:
                 requests:
-                  cpu: 250m
+                  cpu: 50m
                   memory: 1Gi
                 limits:
                   # cpu 0 = no CPU limit (house rule). The chart omits the key.
@@ -259,7 +259,7 @@ spec:
         replicas: 1
     resources:
       requests:
-        cpu: 250m
+        cpu: 50m
         memory: 1Gi
       limits:
         cpu: 0
