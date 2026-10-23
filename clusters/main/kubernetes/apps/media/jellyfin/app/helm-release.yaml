@@ -77,9 +77,9 @@ spec:
             description: Media Player (pilot)
             icon: ""
             widget:
-              # No API key exists until first-run setup; add a JELLYFIN_API
-              # clusterenv var and enable the widget in a later phase.
-              enabled: false
+              enabled: true
+              custom:
+                key: ${JELLYFIN_API}
     service:
       main:
         enabled: true

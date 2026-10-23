@@ -184,6 +184,7 @@ LETTERBOXD_PASSWORD: ENC[AES256_GCM,data:3T9zPEQFDw7zoqM=,iv:yFru/urzzmUpNwqtGWY
 LETTERBOXD_USERNAME: ENC[AES256_GCM,data:K1MJFpMZaZvSpEI=,iv:v9hhb+YEuXrRhxSM8fl4JsCodYcWTuK38/cwim4r7Dg=,tag:Y6+b+wqG/odZaF0jIMrzug==,type:str]
 TRUENAS_API_KEY: ENC[AES256_GCM,data:DNhrNRtn8ValJTy8IVdYB/DdwvpnIM5w+jj3Xfyx8yyv3rw9Ch+OdFUxmt7DXM6z66ZFGkFYUc1YbIpoRbqo0fy5,iv:+DuzztsFmwuEWmuQGR78HEA6PSQI8MtqB4y+vgzGDHA=,tag:en/W36gpR+KCaG77h6Yf/A==,type:str]
 JELLYFIN_IP: ENC[AES256_GCM,data:g08oKIAmEcp2NJSyfho=,iv:HAd6AxKOMbfSCQ5y+zv3lnsF2DF+34RIEgqphH7M/Dw=,tag:kuQ5fi87WMEkIlcSk+RKHg==,type:str]
+JELLYFIN_API: ENC[AES256_GCM,data:8zmAnLhY7N/ij8tWGpn15CcaTNTH1rkbYXJevYuIpoQ=,iv:Yh4slWO0t4auDCWEzcBd3sLPGAnCgiMv527LaLJZV9Y=,tag:5CdFbAb48yJCqxOp+QTzSg==,type:str]
 sops:
     age:
         - enc: |
@@ -195,8 +196,8 @@ sops:
             W8830P1ELE0h7fv2nx1TV8j3l8vdJ2iGaVoe0BWzyh3crHoJWJkp/g==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1xuryc2afg7fh6tg2d85mydr05rh93xf8dhrcq4xata7ec33t8uvs6kl3yw
-    lastmodified: "2026-10-22T03:28:27Z"
-    mac: ENC[AES256_GCM,data:UbBNzlykDaLziaLMF5E68bD9TgyWmc+d3M2rL+QugJKFT8HJXvLGKt4cpW9jCUgyUZ4sbjxfUJrOIK7duiNto+XPhNgHkY82/Jokcq/V3b0v7Ues1t/bKP6ODKfjDIJKL6N50RliPkQxerDFwE/7hHJXRlJZGV6+M7Kf+N3njSg=,iv:RHA+EvY8M4dXUCUbPztznVEdaNdcIvtpCjAWlk50yLA=,tag:Z3SAoIE1LH0C6j6Gmd6/sw==,type:str]
+    lastmodified: "2026-10-23T05:03:02Z"
+    mac: ENC[AES256_GCM,data:vsAxZslU3LkM9whLlkVfQOIPfXfpsnSI+kmaNIiHGOOnzjIURJIu/WSpkUUkqD9Q476OFtT0G344PfXzMLHfHlTt41/SvzBd1H753V5L18dpR9n0JFO7kwNa09s8lkSZ8s4zqA6oCECH7mx4OmDiL040mH7co9irA38xyNPxlPs=,iv:aO/PCN/e0ZM/OpnRB2TeLcOD/jrOW/nghItGafkEGaA=,tag:mMolHd29r/F7DYLcUMwbKQ==,type:str]
     shamir_threshold: 3
     unencrypted_suffix: _unencrypted
     version: 3.11.0
