@@ -144,9 +144,14 @@ spec:
                 OLLAMA_LOAD_TIMEOUT: "15m"
                 # Open WebUI RAG is TOP_K 20 x CHUNK 512 (~10K tokens) plus a
                 # ~3.5K-token system prompt: Ollama's 4K default silently
-                # truncates retrieved context. Gemma 4 uses sliding-window
-                # attention, so 32K is cheap in KV memory.
-                OLLAMA_CONTEXT_LENGTH: "32768"
+                # truncates retrieved context. Raised 32K -> 64K 2026-10-23 so the
+                # same resident model also serves Claude Code sessions
+                # (scripts/claude-local), whose system prompt + tool schemas need
+                # more than 32K. One model name on purpose: a second name for the
+                # same weights would be a second runner and evict the preloaded
+                # primary on every swap. Gemma 4 uses sliding-window attention,
+                # so the 12B's KV cache at 64K still fits beside the weights.
+                OLLAMA_CONTEXT_LENGTH: "65536"
               # Preload the primary model as soon as the server answers, so the
               # ~15 min cold start of this passthrough VM (host->GPU ~11-65 MB/s,
               # SQ-190) is paid at deploy time rather than on the first user
