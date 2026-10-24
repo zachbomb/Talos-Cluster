@@ -69,22 +69,18 @@ spec:
         memory: 64Mi
       limits:
         memory: 256Mi
+    # No `sharing:` block: the single RTX A4000 is advertised as exactly one
+    # un-shared nvidia.com/gpu, exclusive to Ollama (2026-10-23). Jellyfin and
+    # Tdarr moved to the Intel i915 in commit edfef5a63. Time-slicing could not
+    # simply be set to 1 replica - the plugin rejects it ("number of replicas
+    # must be >= 2") and then registers NO devices (allocatable 0), which is what
+    # e402f3919 did. To share the GPU again, restore sharing.timeSlicing with
+    # replicas >= 2 under `default:` below.
     config:
       map:
         default: |-
           version: v1
           flags:
             migStrategy: none
-          sharing:
-            timeSlicing:
-              renameByDefault: false
-              failRequestsGreaterThanOne: false
-              resources:
-                - name: nvidia.com/gpu
-                  # 5 -> 1 on 2026-10-23: the RTX A4000 is exclusive to Ollama.
-                  # Jellyfin and Tdarr moved to the Intel i915 (commit edfef5a63),
-                  # so a single replica means nothing else can even schedule onto
-                  # the NVIDIA GPU; VRAM is never shared out from under a model.
-                  replicas: 1
     gfd:
       enabled: true
