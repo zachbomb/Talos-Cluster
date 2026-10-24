@@ -147,6 +147,27 @@ spec:
                 # truncates retrieved context. Gemma 4 uses sliding-window
                 # attention, so 32K is cheap in KV memory.
                 OLLAMA_CONTEXT_LENGTH: "32768"
+              # Preload the primary model as soon as the server answers, so the
+              # ~15 min cold start of this passthrough VM (host->GPU ~11-65 MB/s,
+              # SQ-190) is paid at deploy time rather than on the first user
+              # request. The image has no curl, so the ollama CLI is used; the
+              # work is detached with setsid so the hook returns at once and the
+              # pod can become Ready. OLLAMA_KEEP_ALIVE=-1 then keeps it resident.
+              # Every shell `$$` below is a doubled `$` for Flux envsubst.
+              lifecycle:
+                postStart:
+                  type: exec
+                  command:
+                    - /bin/sh
+                    - -c
+                    - |
+                      setsid /bin/sh -c '
+                        i=0
+                        until ollama list >/dev/null 2>&1 || [ "$$i" -ge 120 ]; do
+                          i=$$((i+1)); sleep 5
+                        done
+                        ollama run gemma4:12b-it-qat "Warm-up. Reply with exactly: OK" >/dev/null 2>&1
+                      ' >/dev/null 2>&1 &
               probes:
                 liveness:
                   enabled: true
