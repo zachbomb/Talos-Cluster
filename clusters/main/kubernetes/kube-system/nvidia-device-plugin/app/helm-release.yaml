@@ -81,6 +81,10 @@ spec:
               failRequestsGreaterThanOne: false
               resources:
                 - name: nvidia.com/gpu
-                  replicas: 5
+                  # 5 -> 1 on 2026-10-23: the RTX A4000 is exclusive to Ollama.
+                  # Jellyfin and Tdarr moved to the Intel i915 (commit edfef5a63),
+                  # so a single replica means nothing else can even schedule onto
+                  # the NVIDIA GPU; VRAM is never shared out from under a model.
+                  replicas: 1
     gfd:
       enabled: true
