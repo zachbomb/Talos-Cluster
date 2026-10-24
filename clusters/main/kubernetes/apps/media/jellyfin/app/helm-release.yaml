@@ -206,10 +206,6 @@ spec:
     workload:
       main:
         podSpec:
-          # Required for nvidia.com/gpu to be usable - the device plugin alone
-          # is not enough, the pod must run under the nvidia container runtime
-          # (same wiring as apps/ollama and media/tdarr).
-          runtimeClassName: "nvidia"
           containers:
             main:
               resources:
@@ -220,9 +216,13 @@ spec:
                   # cpu 0 = no CPU limit (house rule). The chart omits the key.
                   cpu: 0
                   memory: 4Gi
-                  # NVENC/NVDEC + CUDA tone mapping on the RTX A4000 (time-sliced
-                  # with Ollama; VRAM is NOT partitioned, see SQ-188 Q6).
-                  nvidia.com/gpu: 1
+                  # Intel UHD 630 (i915, Gen 9.5) QSV/VAAPI for H.264/HEVC
+                  # transcode + tone mapping. Moved off the RTX A4000 2026-10-23
+                  # so Ollama owns the NVIDIA GPU exclusively. No AV1 encode on
+                  # this iGPU. /dev/dri render nodes are world-rw and the chart
+                  # already adds supplementalGroups 44/107/568, so no extra
+                  # permission wiring is needed.
+                  gpu.intel.com/i915: 1
               probes:
                 # HTTP, not TCP: a TCP probe passed straight through both Tunarr
                 # SQLite D-state hangs. Generous thresholds for the single disk.

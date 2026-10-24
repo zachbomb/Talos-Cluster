@@ -125,6 +125,28 @@ spec:
               imageSelector: image
               env:
                 OLLAMA_BIND_ADDRESS: "0.0.0.0"
+                # GPU/VRAM tuning for the single RTX A4000 (16GB), exclusive to
+                # Ollama as of 2026-10-23. Flash attention is required for a
+                # quantized KV cache; q8_0 halves KV memory vs f16.
+                OLLAMA_FLASH_ATTENTION: "1"
+                OLLAMA_KV_CACHE_TYPE: "q8_0"
+                # Single-user homelab: one parallel slot (each slot multiplies
+                # the KV cache); one big primary + the embedding model resident.
+                OLLAMA_NUM_PARALLEL: "1"
+                OLLAMA_MAX_LOADED_MODELS: "2"
+                # Pin loaded models: no cold-start reload off the single Longhorn
+                # disk. Nothing else may use the GPU, so idle VRAM costs nothing.
+                OLLAMA_KEEP_ALIVE: "-1"
+                # Host->GPU copies run at only ~65 MB/s in this passthrough VM
+                # (measured 2026-10-23: 14.4GB loaded from page cache in 220s),
+                # so a 15-17GB model takes 4-4.5 min to load, right at the 5m
+                # default that failed the first gemma4 load. Give loads room.
+                OLLAMA_LOAD_TIMEOUT: "15m"
+                # Open WebUI RAG is TOP_K 20 x CHUNK 512 (~10K tokens) plus a
+                # ~3.5K-token system prompt: Ollama's 4K default silently
+                # truncates retrieved context. Gemma 4 uses sliding-window
+                # attention, so 32K is cheap in KV memory.
+                OLLAMA_CONTEXT_LENGTH: "32768"
               probes:
                 liveness:
                   enabled: true
@@ -202,7 +224,13 @@ spec:
         # "field can not be less than status.capacity" because helm wanted
         # to set 50Gi while the bound PVC was already 60Gi (Kubernetes
         # rejects PVC shrinks).
-        size: 60Gi
+        # Bumped 60Gi → 100Gi 2026-10-23: room for the gemma4:12b-it-qat primary
+        # (7.2GB) plus gemma4:26b-a4b-it-qat (14.4GB, parked until the Proxmox
+        # host->GPU transfer path is fixed) and qwen3.6:27b (16.8GB, slow
+        # quality-only A/B) beside the existing roster. Longhorn online expansion;
+        # the live PVC was patched to 100Gi the same day so Helm and the bound
+        # PVC agree (see the 50→60 note above for why a mismatch fails).
+        size: 100Gi
         mountPath: /root/.ollama
         volsync:
           - name: config

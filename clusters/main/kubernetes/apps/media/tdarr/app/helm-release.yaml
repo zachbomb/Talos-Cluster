@@ -139,12 +139,6 @@ spec:
           - noatime
           - nodiratime
           - nolock
-    workload:
-      main:
-        podSpec:
-          # Required for nvidia.com/gpu to be usable - the device plugin alone is
-          # not enough, the pod must run under the nvidia container runtime.
-          runtimeClassName: "nvidia"
     resources:
       requests:
         memory: 512Mi
@@ -153,21 +147,10 @@ spec:
         memory: 8Gi
         cpu: "2"
         gpu.intel.com/i915: 1
-        # Originally added for GPU subtitle OCR (Florence2). That work was DROPPED:
-        # the 33% blank-cue rate was never an OCR-accuracy problem, it was an
-        # unconditional ImageOps.invert in pgsocr's preprocess_image, and fixing
-        # that on CPU beat anything a model would have bought. No GPU workload
-        # currently uses this reservation.
-        #
-        # Deliberately LEFT IN PLACE (owner decision 2026-09-03): harmless while
-        # Ollama is idle, and it keeps the runtimeClassName/device-plugin wiring
-        # proven for whenever Ollama is set up properly or a lightweight model
-        # justifies it. Remove this and runtimeClassName above if the A4000 is
-        # needed elsewhere.
-        #
-        # Intel i915 above is UNRELATED and must stay - that is tdarr's normal
-        # VAAPI transcoding path. The two serve different jobs.
-        nvidia.com/gpu: 1
+        # NVIDIA reservation removed 2026-10-23: the RTX A4000 is now exclusive
+        # to Ollama (nvidia device-plugin time-slicing dropped to 1 replica).
+        # Tdarr transcodes on the Intel i915 (VAAPI) above, which was always
+        # its real path; the NVIDIA slot had no workload using it.
     autoscaling:
       vpa:
         enabled: true
