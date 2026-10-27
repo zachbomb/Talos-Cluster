@@ -1,7 +1,7 @@
 clusterName: ${CLUSTERNAME}
 # Variables defined in clusters/main/clusterenv.yaml (SOPS encrypted).
 # renovate: datasource=docker depName=ghcr.io/siderolabs/talosctl
-talosVersion: v1.14.2 # do NOT genconfig/apply with the 1.14 contract until SecurityProfileConfig workloadIsolation:false is pinned (SQ-186 R1, breaks Longhorn iscsi)
+talosVersion: v1.14.5 # do NOT genconfig/apply with the 1.14 contract until SecurityProfileConfig workloadIsolation:false is pinned (SQ-186 R1, breaks Longhorn iscsi)
 # renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
 kubernetesVersion: v1.36.4
 endpoint: https://${VIP}:6443
