@@ -163,6 +163,20 @@ spec:
               cacheCapacity: 3Gi
               trigger:
                 schedule: "4 10 * * *"
+      # 2026-10-28: the chart default for /transcode is a medium:Memory emptyDir
+      # (8Gi tmpfs). A single remote Live TV viewer whose stream Plex had to
+      # software-transcode filled it to 5.8 GB in 35 min; node MemAvailable went
+      # 8.3 -> 3.0 GB, the kernel reclaimed, the already 85%-busy node hit load
+      # 300, and KCM/scheduler lost their leases cluster-wide (20:50 and again
+      # 22:12 PDT). Disk-backed instead, same idiom as jellyfin's cache: `size`
+      # renders as sizeLimit; exceeding it evicts Plex (streams drop, node lives).
+      # Live TV timeshift accumulates ~10 GB/h per software-transcoded stream.
+      transcode:
+        enabled: true
+        type: emptyDir
+        medium: ""
+        size: 20Gi
+        mountPath: /transcode
     plex:
       additionalAdvertiseURL: ""
       disableGDM: false

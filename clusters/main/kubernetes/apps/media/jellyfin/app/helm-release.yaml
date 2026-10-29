@@ -1,15 +1,22 @@
 ---
 # yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
-# Jellyfin pilot (SQ-189, design in the SQ-188 spike report, section 6).
-# Runs BESIDE Plex/Emby/Tunarr; nothing here touches them. No Live TV, no
-# watched-state migration: those are later phases.
+# Jellyfin (SQ-189, design in the SQ-188 spike report, section 6).
+# Runs BESIDE Plex/Emby/Tunarr; nothing here touches them. Live TV = Tunarr's
+# M3U + XMLTV (192.168.10.205:8000). Zach's watched state, collections and the
+# metadata-lens fixes (identification, version merges) are applied through the
+# API and live in the config/data PVCs; Liz's user + history are still pending.
 #
-# First-run settings that the chart cannot set (do these in the Jellyfin UI):
+# Settings that the chart cannot set (done in the Jellyfin UI / API):
 #   - Trickplay image extraction OFF on every library (it is 30-100+ GB on
 #     /data for this library size and hammers the single Longhorn disk).
 #   - NFO/artwork/subtitle/lyrics savers OFF: the media mounts are read-only
 #     and TMM + Bazarr own those files.
-#   - Transcoding: NVENC/NVDEC on the A4000; "delete segments" on.
+#   - Transcoding: Intel QSV on the UHD 630 (/dev/dri/renderD128); "delete
+#     segments" on. Low-power (VDEnc) encoders OFF: measured no-op on this iGPU
+#     (ffmpeg logs "not supported under Low power mode"; no HEVC LP entrypoint).
+#   - "Refresh Guide" task: 24h interval + daily 04:00 trigger. The interval
+#     alone restarts from pod start, so Renovate image bumps kept deferring it
+#     until the guide ran dry (2026-10-27).
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -74,7 +81,7 @@ spec:
             enabled: true
             name: Jellyfin
             group: Media Players
-            description: Media Player (pilot)
+            description: Media Player
             icon: ""
             widget:
               enabled: true
