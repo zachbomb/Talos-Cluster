@@ -168,15 +168,24 @@ spec:
       # software-transcode filled it to 5.8 GB in 35 min; node MemAvailable went
       # 8.3 -> 3.0 GB, the kernel reclaimed, the already 85%-busy node hit load
       # 300, and KCM/scheduler lost their leases cluster-wide (20:50 and again
-      # 22:12 PDT). Disk-backed instead, same idiom as jellyfin's cache: `size`
-      # renders as sizeLimit; exceeding it evicts Plex (streams drop, node lives).
-      # Live TV timeshift accumulates ~10 GB/h per software-transcoded stream.
+      # 22:12 PDT). Live TV timeshift accumulates ~10 GB/h per software-transcoded
+      # stream.
+      # 2026-10-29: a disk emptyDir lands under /var/lib/kubelet on the node's
+      # system disk, which is the Solidigm pool etcd lives on (the Jul 23 cascade
+      # had transcode I/O on etcd's disk as a contributor). Longhorn PVC instead:
+      # default-disk has scheduling off, so the single replica lands on ssd-hot
+      # (/var/mnt/longhorn-ssd, a separate device) - the same idiom as Tunarr's
+      # `transcoding` volume. No VolSync: scratch data. The tx-purge sidecar
+      # (workload below) removes dead session dirs and guards capacity, so Plex
+      # never writes into a full volume (which drops every active stream).
       transcode:
         enabled: true
-        type: emptyDir
-        medium: ""
-        size: 20Gi
+        size: 32Gi
         mountPath: /transcode
+        targetSelector:
+          main:
+            main: { mountPath: /transcode }
+            tx-purge: { mountPath: /transcode }
     plex:
       additionalAdvertiseURL: ""
       disableGDM: false
@@ -301,6 +310,52 @@ spec:
                     periodSeconds: 15
                     failureThreshold: 10
                     timeoutSeconds: 10
+            # 2026-10-29: /transcode dumping system (see persistence.transcode).
+            # Plex removes a session dir when the session ends cleanly; it leaves
+            # the dir behind after a crash, a kill (the 10-28 terminate), or an
+            # eviction, and a Live TV timeshift buffer keeps growing for as long
+            # as the viewer stays tuned. Two rules, checked every 2 min:
+            #   1. a session dir with no file written in the last 10 min is dead
+            #      -> remove it (a live transcode writes a segment every few s).
+            #   2. volume >= 85% full -> remove the oldest session dir, live or
+            #      not; one viewer loses a buffer, nobody loses the volume.
+            # Runs as the pod user (1000), the same uid Plex writes with, so it
+            # needs no extra capabilities. `$$` is for Flux envsubst.
+            tx-purge:
+              enabled: true
+              image:
+                repository: alpine
+                tag: "3.24"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "tx-purge started: dead sessions (no write in 10m) removed every 2m; capacity guard at 85%"
+                  while true; do
+                    for d in /transcode/Transcode/Sessions/*/; do
+                      [ -d "$$d" ] || continue
+                      if [ -z "$$(find "$$d" -type f -mmin -10 2>/dev/null | head -1)" ]; then
+                        echo "purge dead session $$d"
+                        find "$$d" -mindepth 1 -delete 2>/dev/null; rmdir "$$d" 2>/dev/null
+                      fi
+                    done
+                    pct=$$(df -P /transcode | awk 'NR==2 {gsub("%","",$$5); print $$5}')
+                    if [ "$${pct:-0}" -ge 85 ]; then
+                      oldest=$$(ls -1dtr /transcode/Transcode/Sessions/*/ 2>/dev/null | head -1)
+                      if [ -n "$$oldest" ]; then
+                        echo "capacity $${pct}% - purging oldest session $$oldest"
+                        find "$$oldest" -mindepth 1 -delete 2>/dev/null; rmdir "$$oldest" 2>/dev/null
+                      fi
+                    fi
+                    sleep 120
+                  done
+              resources:
+                requests:
+                  cpu: 5m
+                  memory: 16Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
         replicas: 1
     scheduling:
       topologyKey: kubernetes.io/hostname
