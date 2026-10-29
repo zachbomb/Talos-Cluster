@@ -180,6 +180,10 @@ spec:
       # never writes into a full volume (which drops every active stream).
       transcode:
         enabled: true
+        # `type` must be explicit: the chart default for this entry is
+        # `type: emptyDir, medium: Memory`, and Helm's deep merge keeps those
+        # keys unless overridden (rendered as the 8Gi tmpfs again without it).
+        type: pvc
         size: 32Gi
         mountPath: /transcode
         targetSelector:
