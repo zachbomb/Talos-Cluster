@@ -356,6 +356,14 @@ spec:
                 limits:
                   cpu: 100m
                   memory: 64Mi
+              # The chart requires a probes block on every container.
+              probes:
+                liveness:
+                  enabled: false
+                readiness:
+                  enabled: false
+                startup:
+                  enabled: false
         replicas: 1
     scheduling:
       topologyKey: kubernetes.io/hostname
