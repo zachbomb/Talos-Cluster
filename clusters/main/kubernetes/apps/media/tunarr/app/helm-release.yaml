@@ -28,7 +28,7 @@ spec:
     image:
       # renovate: datasource=github-releases depName=chrisbenincasa/tunarr extractVersion=^v(?<version>.+)$
       repository: ghcr.io/chrisbenincasa/tunarr
-      tag: 1.3.15
+      tag: 2026.11.1
       pullPolicy: IfNotPresent
     env:
       TZ: America/Los_Angeles
@@ -266,7 +266,11 @@ spec:
                     PSESS=$$(curl -sf --max-time 10 http://localhost:8000/api/sessions 2>/dev/null)
                     for d in /.transcode/stream_*/; do
                       [ -d "$$d" ] || continue
-                      _p_uuid=$$(basename "$$d"); _p_uuid=$${_p_uuid#stream_}
+                      # Tunarr 2026.x names the dir stream_<channel>_<instance> (one per session);
+                      # 1.3.x used stream_<channel>. Channel uuids hold no "_", so cutting at the
+                      # first "_" yields the channel id under both layouts. Without it no live
+                      # session matches and a stalled live stream is purged as dead.
+                      _p_uuid=$$(basename "$$d"); _p_uuid=$${_p_uuid#stream_}; _p_uuid=$${_p_uuid%%_*}
                       # --- SQ-249 instrumentation. Capture the EXACT quantity that decides
                       # the branch, BEFORE deciding, because it cannot be recovered after.
                       #
@@ -508,7 +512,8 @@ spec:
                     if [ -n "$$SESS" ]; then
                       for d in /.transcode/stream_*/; do
                         [ -d "$$d" ] || continue
-                        u=$$(basename "$$d"); u=$${u#stream_}
+                        # Channel id only; see the stream_<channel>_<instance> note in the purge loop.
+                        u=$$(basename "$$d"); u=$${u#stream_}; u=$${u%%_*}
                         if [ -n "$$(find "$$d" -maxdepth 1 -name '*.ts' -mmin -1 2>/dev/null | head -1)" ]; then
                           if echo "$$SESS" | grep -q "$$u"; then
                             rm -f "/tmp/zombie_$$u"
