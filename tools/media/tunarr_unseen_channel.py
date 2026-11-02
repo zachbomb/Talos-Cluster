@@ -6,9 +6,11 @@ when programming is built rather than tracking them live (upstream issue #15,
 Milestone 2.0). So a channel goes stale as films get watched, and this script is
 meant to be re-run nightly after the collection is recomputed.
 
-Programming is a MANUAL shuffled lineup rather than Time Slots: Time Slots apply
-a Max Lateness that truncates films mid-playback, which is fine for 22-minute
-episodes and ruinous for a 2-hour feature.
+Programming is Random Slots rather than Time Slots: Time Slots apply a Max
+Lateness that truncates films mid-playback, which is fine for 22-minute episodes
+and ruinous for a 2-hour feature. Tunarr 2026.10.4 removed the "movie" slot, so
+the films go into a custom show ("<channel name> Movies", the name Tunarr's own
+migration gave it) that one custom-show slot plays from. Each run refills it.
 
 Transcoding must use VAAPI. The QSV path pins output to 24.000 fps via a
 constant-parser bug (normalizeFrameRate is inert), so QSV channels judder.
@@ -48,6 +50,17 @@ def collection_items(ip, tok, section, title):
     raise SystemExit(f"collection {title!r} not found")
 
 
+def custom_show_for(name, progs, base):
+    """Id of the custom show called `name`, created if missing, holding exactly `progs`."""
+    shows = {s["name"]: s["id"] for s in tun("/api/custom-shows", base=base)}
+    if name in shows:
+        tun(f"/api/custom-shows/{shows[name]}", "PUT", {"programs": progs, "enableSync": False}, base=base)
+        return shows[name]
+    return tun("/api/custom-shows", "POST", {"name": name, "programs": progs, "syncMediaSourceId": None,
+                                             "syncMediaSourceType": None, "syncExternalPlaylistId": None},
+               base=base)["id"]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--collection", required=True)
@@ -63,8 +76,13 @@ def main():
     ap.add_argument("--mode", choices=["random", "manual"], default="random",
                     help="random = Tunarr Random Slots (re-shuffles each regeneration); "
                          "manual = fixed lineup that replays in identical order forever")
-    ap.add_argument("--max-days", type=int, default=14)
-    ap.add_argument("--cooldown-days", type=int, default=30)
+    # Tunarr 2026.x builds slot schedules in a worker with a hard-coded 60 s deadline.
+    # 14 days over ~1170 films missed it (HTTP 500, worker replaced); 7 days fits.
+    ap.add_argument("--max-days", type=int, default=7)
+    # Tunarr 2026.x enforces cooldownMs on the SLOT, not per film: with the one slot
+    # this channel has, 30 days meant one film then a month of flex (ch40, 2026-11-02).
+    # A shuffled pass over ~1900 hours cannot repeat inside --max-days anyway.
+    ap.add_argument("--cooldown-days", type=int, default=0)
     ap.add_argument("--apply", action="store_true")
     args = ap.parse_args()
 
@@ -126,17 +144,21 @@ def main():
     else:
         # Random Slots: Tunarr generates `maxDays` ahead and RE-SHUFFLES on each
         # regeneration, so the channel does not replay a fixed order at end of
-        # cycle. cooldownMs stops a film recurring too soon.
+        # cycle.
         # flexPreference "end" keeps pad AFTER the film — "distribute" can place
         # flex mid-slot, which is fine for episodes and wrong for a feature.
         import uuid as _u
+        show_id = custom_show_for(f"{args.channel_name} Movies", progs, args.tunarr)
+        print(f"   custom show '{args.channel_name} Movies' id={show_id}: {len(progs)} films")
         body = {"type": "random",
                 "programs": [p["id"] for p in progs],
                 "schedule": {
                     "type": "random", "flexPreference": "end",
                     "maxDays": args.max_days, "padMs": 300000, "padStyle": "slot",
                     "randomDistribution": "uniform",
-                    "slots": [{"id": str(_u.uuid4()), "type": "movie",
+                    "slots": [{"id": str(_u.uuid4()), "type": "custom-show",
+                               "customShowId": show_id,
+                               "durationSpec": {"type": "dynamic", "programCount": 1},
                                "order": "shuffle", "weight": 1,
                                "cooldownMs": args.cooldown_days * 86400000}],
                 }}

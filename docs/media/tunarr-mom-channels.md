@@ -4,6 +4,14 @@ Ten Tunarr channels (27-36) built from the Karagarga `MoM: *` Plex collections
 (see `kg-mom-catalog.json` / `kg-mom-coverage.json` in this directory). Created
 2026-08-25 (SQ-134).
 
+> **Tunarr 2026.11.1 (2026-11-02).** The `movie` slot type is gone. Upgrading
+> turned each channel's slot into a `custom-show` slot on a fixed
+> "<Channel> Movies" show holding the channel's films (counts preserved). The
+> step-5 recipe below now needs a custom show plus a custom-show slot, and the
+> nightly `tunarr-relink --slots` repairs those shows. Do not set `cooldownMs` on
+> a channel's only slot: 2026.x enforces it per SLOT, so the channel plays one
+> film and then flex until the cooldown ends.
+
 ## THE BIG CAVEAT: Plex collections are SNAPSHOTTED, not tracked
 
 Tunarr copies a collection's membership at programming time (Tunarr issue #15,

@@ -45,9 +45,9 @@ spec:
             - name: relink
               image: python:3.14-alpine
               imagePullPolicy: IfNotPresent
-              # No --slots since Tunarr 2026.10.4: movie slots became snapshot custom-show
-              # slots, and relink_slots() rewrites the channel pool, not the custom show.
-              command: ["python3", "/script/tunarr-relink.py", "--apply", "--pause=30", "--backup-dir=/backup"]
+              # --slots repairs the custom shows behind slot channels (Tunarr 2026.10.4
+              # turned movie slots into custom-show slots), then rebuilds their lineups.
+              command: ["python3", "/script/tunarr-relink.py", "--slots", "--apply", "--pause=30", "--backup-dir=/backup"]
               env:
                 - name: PLEX_API
                   value: "${PLEX_API}"

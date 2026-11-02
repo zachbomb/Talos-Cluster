@@ -24,13 +24,17 @@ used, because that is the file that will actually play.
 
 SCOPE. By default only channels WITHOUT a slot schedule (manual lineups); a
 lineup entry of any type other than content aborts that channel untouched.
---slots also handles slot-scheduled ("random") channels: the channel's own
-program pool is re-posted with dead uuids swapped for their live copies and
-the schedule rules unchanged. Do NOT re-program those from their Plex
-collection: when Plex re-creates an item the collection tag is lost, so on
-2026-09-24 the MoM collections had shrunk (Wiseman 23 -> 1). The channel pool
-is the surviving record. A slot channel is written only if the rebuilt pool is
-the same size as before; any schedule type other than "random" is skipped.
+--slots also handles slot-scheduled ("random") channels. Since Tunarr 2026.10.4
+their films live in custom shows (movie slots were converted to custom-show
+slots on fixed "<Channel> Movies" shows). Each custom show a slot uses is
+re-saved with dead uuids swapped for their live copies, then the channel's
+schedule is re-posted unchanged so the precalculated lineup is rebuilt from
+the repaired show. Do NOT rebuild those shows from their Plex collection:
+when Plex re-creates an item the collection tag is lost, so on 2026-09-24 the
+MoM collections had shrunk (Wiseman 23 -> 1). The custom show is the
+surviving record. A show is written only if its repaired list keeps its size;
+any schedule type other than "random", and any slot type other than
+custom-show, show, flex, filler or redirect, skips the channel.
 
 SAFETY. Dry run unless --apply. Before a write, the channel's full programming
 is saved to --backup-dir. After a write, the channel is re-read: its slot count
@@ -65,6 +69,12 @@ def tun(path, body=None):
                                  headers={"Content-Type": "application/json"})
     raw = urllib.request.urlopen(req, timeout=TIMEOUT).read()
     return json.loads(raw) if raw.strip() else None
+
+
+def tun_put(path, body):
+    req = urllib.request.Request(TUNARR + path, data=json.dumps(body).encode(), method="PUT",
+                                 headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=TIMEOUT).read()
 
 
 def plex(path):
@@ -276,34 +286,120 @@ def main():
     return 1 if failed else 0
 
 
-def relink_slots(c, prog, sched, swap):
-    """Re-post a random-slot channel's pool with dead uuids swapped. Returns (swapped, failed)."""
-    tag = "ch" + str(c["number"]) + " " + c["name"]
-    if sched.get("type") != "random":
-        log(tag + ": schedule type " + str(sched.get("type")) + " not handled; skipped"); return 0, 0
-    pool = [u for u, v in (prog.get("programs") or {}).items() if (v or {}).get("type") == "content"]
-    hits = [u for u in pool if u in swap]
+SLOT_TYPES_HANDLED = {"custom-show", "show", "flex", "filler", "redirect"}
+REPAIRED_SHOWS = {}                             # custom show id -> repaired program ids, or None if it failed
+
+
+def show_entries(show_id):
+    entries = tun("/api/custom-shows/" + show_id + "/programs") or []
+    return sorted(entries, key=lambda e: e.get("index", 0))
+
+
+def ids_of(entries):
+    return [e["id"] for e in entries]
+
+
+def scheduled_ids(prog):
+    return list(prog.get("programs") or {})
+
+
+def dead_among(ids, swap):
+    return [u for u in ids if u in swap]
+
+
+def swapped(ids, swap):
+    return list(dict.fromkeys(swap[u]["id"] if u in swap else u for u in ids))
+
+
+def custom_show_ids(sched):
+    return list(dict.fromkeys(s["customShowId"] for s in sched["slots"] if s.get("type") == "custom-show"))
+
+
+def backup_path(name):
+    return os.path.join(BACKUP, name + "-" + time.strftime("%Y%m%dT%H%M%S") + ".json")
+
+
+def log_verdict(label, ok, detail):
+    log("  verify " + label + ": " + ("OK" if ok else "MISMATCH") + ", " + detail)
+
+
+def repair_show(show_id, swap, tag):
+    """Swap dead uuids inside one custom show. Returns its program ids after repair, or None on failure."""
+    if show_id not in REPAIRED_SHOWS:
+        REPAIRED_SHOWS[show_id] = planned_show_repair(show_id, swap, tag)
+    return REPAIRED_SHOWS[show_id]
+
+
+def planned_show_repair(show_id, swap, tag):
+    entries = show_entries(show_id)
+    ids = ids_of(entries)
+    hits = dead_among(ids, swap)
     if not hits:
-        return 0, 0
-    new_pool, seen = [], set()
-    for u in pool:
-        n = swap[u]["id"] if u in swap else u
-        if n not in seen:
-            seen.add(n); new_pool.append(n)
-    eg = swap[hits[0]]
-    log(tag + ": slot pool " + str(len(pool)) + ", " + str(len(hits)) + " re-pointed, e.g. '" + eg["old"] + "' -> key " + eg["new_key"])
-    if len(new_pool) != len(pool):
-        log("  pool would change size " + str(len(pool)) + " -> " + str(len(new_pool)) + " (a live twin is already in the pool); ABORT channel")
-        return 0, 1
+        return ids
+    repaired = swapped(ids, swap)
+    log(tag + ": custom show " + show_id[:8] + " has " + str(len(ids)) + " films, " + str(len(hits))
+        + " re-pointed, e.g. '" + swap[hits[0]]["old"] + "' -> key " + swap[hits[0]]["new_key"])
+    if len(repaired) != len(ids):
+        log("  show would change size " + str(len(ids)) + " -> " + str(len(repaired)) + " (a live twin is already in it); ABORT show")
+        return None
     if not APPLY:
-        return len(hits), 0
-    path = os.path.join(BACKUP, "ch" + str(c["number"]) + "-slots-" + time.strftime("%Y%m%dT%H%M%S") + ".json")
+        return repaired
+    return write_show(show_id, entries, repaired, {swap[u]["id"]: swap[u]["duration"] for u in hits})
+
+
+def write_show(show_id, entries, repaired, new_durations):
+    path = backup_path("show-" + show_id[:8])
+    json.dump({"id": show_id, "programs": ids_of(entries)}, open(path, "w"))
+    duration = {e["id"]: e.get("duration") or 0 for e in entries}
+    duration.update(new_durations)
+    body = [{"type": "content", "id": n, "duration": duration[n]} for n in repaired]
+    tun_put("/api/custom-shows/" + show_id, {"programs": body, "enableSync": False})
+    ok = ids_of(show_entries(show_id)) == repaired
+    log_verdict("show", ok, "backup " + path)
+    return repaired if ok else None
+
+
+def failed_repairs(show_ids, swap, tag):
+    return sum(repair_show(show_id, swap, tag) is None for show_id in show_ids)
+
+
+def unhandled_schedule(sched):
+    """Why a slot channel is out of scope, or None when this tool can repair it."""
+    if sched.get("type") != "random":
+        return "schedule type " + str(sched.get("type"))
+    unhandled = sorted({s.get("type") for s in sched.get("slots") or []} - SLOT_TYPES_HANDLED)
+    return "slot types " + str(unhandled) if unhandled else None
+
+
+def relink_slots(c, prog, sched, swap):
+    """Repair the custom shows behind a random-slot channel, then rebuild its lineup. Returns (swapped, failed)."""
+    tag = "ch" + str(c["number"]) + " " + c["name"]
+    why = unhandled_schedule(sched)
+    if why:
+        log(tag + ": " + why + " not handled; skipped"); return 0, 0
+    dead_in_lineup = dead_among(scheduled_ids(prog), swap)
+    if not dead_in_lineup:
+        return 0, 0
+    show_ids = custom_show_ids(sched)
+    failed = failed_repairs(show_ids, swap, tag)
+    if failed:
+        log("  " + tag + ": lineup NOT rebuilt (a custom show failed)"); return 0, failed
+    log(tag + ": " + str(len(dead_in_lineup)) + " dead films in the scheduled lineup; rebuilding it from the schedule")
+    if not APPLY:
+        return len(dead_in_lineup), 0
+    return len(dead_in_lineup), rebuild_lineup(c, prog, sched, show_ids, dead_in_lineup)
+
+
+def rebuild_lineup(c, prog, sched, show_ids, dead_in_lineup):
+    """Re-post the unchanged schedule so the lineup is regenerated from the repaired shows. Returns failures (0/1)."""
+    path = backup_path("ch" + str(c["number"]) + "-slots")
     json.dump({"programming": prog, "schedule": sched}, open(path, "w"))
-    tun("/api/channels/" + c["id"] + "/programming", {"type": "random", "programs": new_pool, "schedule": sched})
-    back = tun("/api/channels/" + c["id"] + "/programming").get("programs") or {}
-    ok = set(back) <= set(new_pool) and not (set(back) & set(hits)) and len(back) >= min(len(new_pool), len(pool)) * 0.9
-    log("  verify: " + ("OK, pool " + str(len(back)) if ok else "MISMATCH, pool " + str(len(back)) + " (backup " + path + ")"))
-    return len(hits), (0 if ok else 1)
+    programs = list(dict.fromkeys(u for show_id in show_ids for u in REPAIRED_SHOWS[show_id]))
+    tun("/api/channels/" + c["id"] + "/programming", {"type": "random", "programs": programs, "schedule": sched})
+    back = scheduled_ids(tun("/api/channels/" + c["id"] + "/programming"))
+    ok = bool(back) and not set(back) & set(dead_in_lineup)
+    log_verdict("lineup", ok, str(len(back)) + " distinct programs (backup " + path + ")")
+    return 0 if ok else 1
 
 
 def p_title(p):
